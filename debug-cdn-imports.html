@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug CDN Imports</title>
+</head>
+<body>
+    <h1>Debug CDN Module Imports</h1>
+    <button onclick="testConfetti()">Test React Confetti</button>
+    <button onclick="testColorPicker()">Test Color Picker</button>
+    <div id="output"></div>
+
+    <script type="module">
+        window.testConfetti = async () => {
+            try {
+                console.log('Testing react-confetti...');
+                const module = await import('https://esm.sh/react-confetti@6.1.0?external=react');
+                
+                console.log('Module keys:', Object.keys(module));
+                console.log('Module.default:', module.default);
+                console.log('Module.default type:', typeof module.default);
+                console.log('Module.default.name:', module.default?.name);
+                console.log('Full module:', module);
+                
+                document.getElementById('output').innerHTML += `
+                    <h2>React Confetti Module Analysis:</h2>
+                    <pre>Keys: ${Object.keys(module).join(', ')}
+Default: ${module.default}
+Default type: ${typeof module.default}
+Default name: ${module.default?.name || 'undefined'}
+Is function: ${typeof module.default === 'function'}</pre>
+                `;
+            } catch (error) {
+                console.error('Error importing react-confetti:', error);
+                document.getElementById('output').innerHTML += `<p>Error: ${error.message}</p>`;
+            }
+        };
+
+        window.testColorPicker = async () => {
+            try {
+                console.log('Testing react-color Chrome...');
+                const module = await import('https://esm.sh/react-color@2.19.3/lib/Chrome?external=react');
+                
+                console.log('Module keys:', Object.keys(module));
+                console.log('Module.default:', module.default);
+                console.log('Module.default type:', typeof module.default);
+                console.log('Module.default.name:', module.default?.name);
+                console.log('Full module:', module);
+                
+                document.getElementById('output').innerHTML += `
+                    <h2>React Color Chrome Module Analysis:</h2>
+                    <pre>Keys: ${Object.keys(module).join(', ')}
+Default: ${module.default}
+Default type: ${typeof module.default}
+Default name: ${module.default?.name || 'undefined'}
+Is function: ${typeof module.default === 'function'}</pre>
+                `;
+            } catch (error) {
+                console.error('Error importing react-color Chrome:', error);
+                document.getElementById('output').innerHTML += `<p>Error: ${error.message}</p>`;
+            }
+        };
+    </script>
+</body>
+</html>

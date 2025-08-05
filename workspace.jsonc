@@ -1,0 +1,63 @@
+/**
+ * this is the main configuration file of your bit workspace.
+ * for full documentation, please see: https://bit.dev/reference/workspace/workspace-json
+ */
+{
+  "$schema": "https://static.bit.dev/teambit/schemas/schema.json",
+  /**
+   * main configuration of the Bit workspace.
+   */
+  "teambit.workspace/workspace": {
+    /**
+     * the name of the component workspace. used for development purposes.
+     */
+    "name": "vibeboard",
+    /**
+     * set the icon to be shown on the Bit server.
+     */
+    "icon": "https://static.bit.dev/bit-logo.svg",
+    /**
+     * default directory to place a component during `bit create` and `bit fork`.
+     * the following placeholders are available:
+     * name - component name
+     * scope - component scope
+     * namespace - component namespace (if any)
+     */
+    "defaultDirectory": "apps/frontend/{scope}/{name}",
+    /**
+     * default scope for all components in workspace.
+     */
+    "defaultScope": "zabaca.zabaca",
+    /**
+     * scope configuration
+     */
+    "resolveAspectsFromNodeModules": true,
+    "resolveEnvsFromRoots": true
+  },
+  /**
+   * workspace variants allow you to have different configuration for different components in the workspace.
+   */
+  "teambit.workspace/variants": {
+    /**
+     * configuration for components in the bit-components directory
+     */
+    "apps/frontend/bit-components": {
+      /**
+       * default scope for components
+       */
+      "defaultScope": "zabaca.zabaca",
+      /**
+       * env to use for these components
+       */
+      "teambit.react/react": {}
+    }
+  },
+  /**
+   * configure aspects that are used in the workspace
+   */
+  "teambit.generator/generator": {
+    "envs": [
+      "teambit.react/react"
+    ]
+  }
+}

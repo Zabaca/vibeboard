@@ -64,15 +64,14 @@ The frontend will be available at http://localhost:5173
 
 ### Environment Setup
 
-1. **Copy environment example files**:
+1. **Copy the environment example file**:
    ```bash
    cp .env.example .env
-   cp apps/frontend/.env.example apps/frontend/.env
    ```
 
-2. **Configure your Cerebras API key** in `apps/frontend/.env`:
+2. **Configure your environment variables** in `.env`:
    ```bash
-   # Edit the file and add your API key
+   # Edit .env and add your Cerebras API key
    VITE_CEREBRAS_API_KEY=your-actual-api-key
    ```
 

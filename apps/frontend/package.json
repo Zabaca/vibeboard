@@ -13,7 +13,6 @@
   },
   "dependencies": {
     "@babel/standalone": "^7.28.2",
-    "@excalidraw/excalidraw": "^0.18.0",
     "@xyflow/react": "^12.8.2",
     "axios": "^1.11.0",
     "react": "^19.1.0",

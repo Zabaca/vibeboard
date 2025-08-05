@@ -53,6 +53,8 @@ export default defineConfig({
     },
   },
   build: {
+    // Output to frontend dist directory
+    outDir: './dist',
     // Ensure shims are copied to dist
     rollupOptions: {
       input: {

@@ -357,3 +357,403 @@ When contributing to Vibeboard:
 4. Test with ESMTestComponent first
 5. Ensure pnpm build passes
 6. Follow ESM-first principles
+7. Follow the coding standards below
+
+## Coding Standards
+
+### 🚫 ANTI-`any` RULE 🚫
+**NEVER use `any` type. Always use explicit types.**
+
+Quick substitutions:
+- `any` → specific interface/type
+- `any[]` → `T[]` or `unknown[]` 
+- `any` for JSON → `unknown` + type guards
+- `any` for external APIs → define response schema
+- `any` for temporary typing → `TODO:` comment with proper type
+
+### 🚫 ANTI-`as` CASTING RULE 🚫
+**AVOID using `as` type assertions. Use proper typing instead.**
+
+Better alternatives:
+- Type guards or type predicates
+- Proper generic types
+- Validate and narrow types
+- Redesign the code structure
+
+```typescript
+// ❌ BAD: Using as casting
+const data = response as UserData;
+
+// ✅ GOOD: Type guards
+if (isUserData(response)) {
+  const data = response; // properly typed
+}
+
+// ✅ GOOD: Proper validation
+const userSchema = z.object({
+  id: z.string(),
+  name: z.string()
+});
+const data = userSchema.parse(response);
+```
+
+### TypeScript Rules for AI-Generated Components
+
+#### Rule 1: No Complex Control Flow
+**Use early returns and guard clauses. Avoid nested ternaries.**
+
+```typescript
+// ❌ Bad
+const Component = () => {
+  return user ? (user.active ? (user.permissions.length > 0 ? <Dashboard /> : <NoAccess />) : <Inactive />) : <Login />;
+};
+
+// ✅ Good
+const Component = () => {
+  if (!user) return <Login />;
+  if (!user.active) return <Inactive />;
+  if (user.permissions.length === 0) return <NoAccess />;
+  return <Dashboard />;
+};
+```
+
+#### Rule 2: Explicit Component Props
+**Always define explicit prop interfaces. Never use `any` for props.**
+
+```typescript
+// ❌ Bad
+function Button(props: any) {
+  return <button>{props.label}</button>;
+}
+
+// ✅ Good
+interface ButtonProps {
+  label: string;
+  onClick?: () => void;
+  variant?: 'primary' | 'secondary';
+  disabled?: boolean;
+}
+
+function Button({ label, onClick, variant = 'primary', disabled = false }: ButtonProps) {
+  return (
+    <button 
+      onClick={onClick} 
+      disabled={disabled}
+      className={`btn-${variant}`}
+    >
+      {label}
+    </button>
+  );
+}
+```
+
+#### Rule 3: Use Functional Components with Hooks
+**Prefer functional components. Class components only when absolutely necessary.**
+
+```typescript
+// ✅ Good - Functional component with hooks
+const Timer: React.FC = () => {
+  const [seconds, setSeconds] = useState(0);
+  
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSeconds(s => s + 1);
+    }, 1000);
+    
+    return () => clearInterval(interval);
+  }, []);
+  
+  return <div>Seconds: {seconds}</div>;
+};
+```
+
+#### Rule 4: Validate All External Data
+**Use Zod schemas for API responses, form data, and URL imports.**
+
+```typescript
+// Component data validation
+const componentSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  code: z.string(),
+  source: z.enum(['ai-generated', 'library', 'url-import'])
+});
+
+// API response validation
+const cerebrasResponseSchema = z.object({
+  choices: z.array(z.object({
+    message: z.object({
+      content: z.string()
+    })
+  }))
+});
+
+// Always validate before use
+const validateComponent = (data: unknown) => {
+  return componentSchema.parse(data);
+};
+```
+
+#### Rule 5: Small, Focused Components
+**Components should do one thing well and fit in ~50 lines.**
+
+```typescript
+// ✅ Good - Single responsibility
+const ComponentCard: React.FC<ComponentCardProps> = ({ component, onEdit, onDelete }) => {
+  return (
+    <div className="component-card">
+      <h3>{component.name}</h3>
+      <p>{component.description}</p>
+      <div className="actions">
+        <button onClick={() => onEdit(component.id)}>Edit</button>
+        <button onClick={() => onDelete(component.id)}>Delete</button>
+      </div>
+    </div>
+  );
+};
+
+// Separate concerns into different components
+const ComponentList: React.FC<ComponentListProps> = ({ components }) => {
+  return (
+    <div className="component-list">
+      {components.map(component => (
+        <ComponentCard key={component.id} component={component} />
+      ))}
+    </div>
+  );
+};
+```
+
+#### Rule 6: Explicit Error Handling
+**Handle errors gracefully with proper types.**
+
+```typescript
+// Define error types
+interface ComponentError {
+  code: 'PARSE_ERROR' | 'COMPILE_ERROR' | 'RUNTIME_ERROR';
+  message: string;
+  details?: unknown;
+}
+
+// Error boundary for components
+const ComponentErrorBoundary: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [error, setError] = useState<ComponentError | null>(null);
+  
+  if (error) {
+    return (
+      <div className="error-display">
+        <h3>Component Error: {error.code}</h3>
+        <p>{error.message}</p>
+        <button onClick={() => setError(null)}>Retry</button>
+      </div>
+    );
+  }
+  
+  return <ErrorBoundary onError={setError}>{children}</ErrorBoundary>;
+};
+```
+
+#### Rule 7: Type-Safe Event Handlers
+**Use proper typing for all event handlers.**
+
+```typescript
+// ❌ Bad
+const handleClick = (e: any) => {
+  console.log(e.target.value);
+};
+
+// ✅ Good
+const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+  e.preventDefault();
+  // Handle click
+};
+
+const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const value = e.target.value;
+  // Handle change
+};
+
+const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  e.preventDefault();
+  // Handle form submission
+};
+```
+
+#### Rule 8: Avoid Deep Prop Drilling
+**Use composition and context wisely.**
+
+```typescript
+// ❌ Bad - Deep prop drilling
+<App user={user} theme={theme}>
+  <Layout user={user} theme={theme}>
+    <Header user={user} theme={theme}>
+      <UserMenu user={user} theme={theme} />
+    </Header>
+  </Layout>
+</App>
+
+// ✅ Good - Use context for cross-cutting concerns
+const UserContext = createContext<User | null>(null);
+const ThemeContext = createContext<Theme>('light');
+
+// Compose with providers
+<UserContext.Provider value={user}>
+  <ThemeContext.Provider value={theme}>
+    <App />
+  </ThemeContext.Provider>
+</UserContext.Provider>
+```
+
+#### Rule 9: ESM-First Component Structure
+**All components must be proper ES modules.**
+
+```typescript
+// ✅ Good - ESM component structure
+import React, { useState, useEffect } from 'react';
+
+interface MyComponentProps {
+  title: string;
+  onUpdate?: (value: string) => void;
+}
+
+export const MyComponent: React.FC<MyComponentProps> = ({ title, onUpdate }) => {
+  const [value, setValue] = useState('');
+  
+  useEffect(() => {
+    onUpdate?.(value);
+  }, [value, onUpdate]);
+  
+  return (
+    <div>
+      <h2>{title}</h2>
+      <input value={value} onChange={(e) => setValue(e.target.value)} />
+    </div>
+  );
+};
+
+export default MyComponent;
+```
+
+#### Rule 10: Consistent State Management
+**Use appropriate state management for component complexity.**
+
+```typescript
+// Local state for simple components
+const SimpleCounter: React.FC = () => {
+  const [count, setCount] = useState(0);
+  return <button onClick={() => setCount(c => c + 1)}>{count}</button>;
+};
+
+// useReducer for complex state logic
+interface State {
+  components: ComponentNode[];
+  selectedId: string | null;
+  isLoading: boolean;
+}
+
+type Action = 
+  | { type: 'ADD_COMPONENT'; payload: ComponentNode }
+  | { type: 'SELECT_COMPONENT'; payload: string }
+  | { type: 'SET_LOADING'; payload: boolean };
+
+const reducer = (state: State, action: Action): State => {
+  switch (action.type) {
+    case 'ADD_COMPONENT':
+      return { ...state, components: [...state.components, action.payload] };
+    case 'SELECT_COMPONENT':
+      return { ...state, selectedId: action.payload };
+    case 'SET_LOADING':
+      return { ...state, isLoading: action.payload };
+    default:
+      return state;
+  }
+};
+```
+
+### Frontend-Specific Guidelines
+
+#### CSS and Styling
+- Use CSS modules or inline styles for component-specific styling
+- Keep global styles minimal
+- Use CSS variables for theming
+
+```typescript
+// CSS modules approach
+import styles from './Component.module.css';
+
+const Component: React.FC = () => {
+  return <div className={styles.container}>Content</div>;
+};
+
+// Inline styles with proper typing
+const buttonStyle: React.CSSProperties = {
+  padding: '8px 16px',
+  backgroundColor: '#007bff',
+  color: 'white',
+  border: 'none',
+  borderRadius: '4px'
+};
+```
+
+#### Performance Considerations
+- Use React.memo for expensive components
+- Implement proper key props for lists
+- Lazy load heavy components
+
+```typescript
+// Memoize expensive components
+const ExpensiveComponent = React.memo(({ data }: Props) => {
+  // Complex rendering logic
+  return <div>{/* ... */}</div>;
+});
+
+// Lazy loading
+const HeavyComponent = React.lazy(() => import('./HeavyComponent'));
+
+// Use with Suspense
+<Suspense fallback={<Loading />}>
+  <HeavyComponent />
+</Suspense>
+```
+
+### Code Quality Tools
+
+#### ESLint Configuration
+The project uses ESLint with React-specific rules:
+- `eslint-plugin-react-hooks` for hooks rules
+- `eslint-plugin-react-refresh` for HMR compatibility
+
+#### Type Checking
+- Run `pnpm typecheck` before committing
+- Fix all TypeScript errors
+- No `@ts-ignore` without justification
+
+#### Build Validation
+- Ensure `pnpm build` passes
+- Check bundle size impacts
+- Verify no console errors in production build
+
+### Testing Guidelines
+
+When tests are implemented:
+1. Test component behavior, not implementation
+2. Use React Testing Library
+3. Focus on user interactions
+4. Mock external dependencies properly
+5. Test error states and edge cases
+
+```typescript
+// Example test structure (future)
+import { render, screen, fireEvent } from '@testing-library/react';
+import { Button } from './Button';
+
+describe('Button', () => {
+  it('should call onClick when clicked', () => {
+    const handleClick = vi.fn();
+    render(<Button label="Click me" onClick={handleClick} />);
+    
+    fireEvent.click(screen.getByText('Click me'));
+    expect(handleClick).toHaveBeenCalledTimes(1);
+  });
+});
+```

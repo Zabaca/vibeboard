@@ -64,11 +64,29 @@ The frontend will be available at http://localhost:5173
 
 ### Environment Setup
 
-Create a `.env.local` file in the frontend app for your Cerebras API key (optional - will prompt if not set):
+1. **Copy environment example files**:
+   ```bash
+   cp .env.example .env
+   cp apps/frontend/.env.example apps/frontend/.env
+   ```
 
-```bash
-echo "VITE_CEREBRAS_API_KEY=your-api-key-here" > apps/frontend/.env.local
-```
+2. **Configure your Cerebras API key** in `apps/frontend/.env`:
+   ```bash
+   # Edit the file and add your API key
+   VITE_CEREBRAS_API_KEY=your-actual-api-key
+   ```
+
+3. **Load environment with direnv** (recommended):
+   ```bash
+   # Install direnv if not already installed
+   # macOS: brew install direnv
+   # Ubuntu: apt install direnv
+   
+   # Allow direnv in this directory
+   direnv allow
+   ```
+
+   The environment will automatically load when you enter the directory.
 
 ### Build
 

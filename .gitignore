@@ -31,6 +31,9 @@ dist-ssr
 .env
 .env.local
 .env.*.local
+# Keep example files
+!.env.example
+!**/.env.example
 
 # Bit artifacts
 .bit/

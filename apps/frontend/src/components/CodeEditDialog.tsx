@@ -49,16 +49,14 @@ const CodeEditDialog: React.FC<CodeEditDialogProps> = ({
     getNodeCode
   });
   
-  // Debug production performance
+  // Debug performance
   useEffect(() => {
-    if (process.env.NODE_ENV !== 'production') {
-      console.log('[CodeEditDialog] Render triggered', {
-        isOpen,
-        codeLength: code.length,
-        nodeId,
-        timestamp: performance.now()
-      });
-    }
+    console.log('[CodeEditDialog] Render triggered', {
+      isOpen,
+      codeLength: code.length,
+      nodeId,
+      timestamp: performance.now()
+    });
   }, [isOpen, code.length, nodeId]);
 
   // Memoize the node code to prevent expensive recalculations
@@ -113,14 +111,6 @@ const CodeEditDialog: React.FC<CodeEditDialogProps> = ({
     setIsResizing(false);
   };
 
-  // Memoize the code editor to prevent re-renders
-  const memoizedCodeEditor = useMemo(() => (
-    <CodeEditorOptimized
-      value={editedCode}
-      onChange={setEditedCode}
-      placeholder="// Enter your component code here..."
-    />
-  ), [editedCode]);
 
   useEffect(() => {
     if (isResizing) {

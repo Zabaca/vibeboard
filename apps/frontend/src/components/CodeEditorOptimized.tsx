@@ -103,7 +103,7 @@ const CodeEditorOptimized: React.FC<CodeEditorProps> = ({
   // Track the actual text value separately from highlighted content
   const [text, setText] = useState(value);
   const [highlightedCode, setHighlightedCode] = useState('');
-  const debounceTimerRef = useRef<number>();
+  const debounceTimerRef = useRef<number | undefined>(undefined);
   
   // Update text when value prop changes
   useEffect(() => {

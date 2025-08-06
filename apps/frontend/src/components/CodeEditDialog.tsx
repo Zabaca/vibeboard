@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import CodeEditor from './CodeEditor.tsx';
+import CodeEditSection from './CodeEditSection.tsx';
 // import { PerformanceDebugger } from '../utils/performance-debug.ts';
 import { useWhyDidYouUpdate } from '../hooks/useWhyDidYouUpdate.ts';
 import { codeEditDialogStyles } from './CodeEditDialog.styles.ts';
@@ -269,11 +270,13 @@ const CodeEditDialog: React.FC<CodeEditDialogProps> = ({
               borderRadius: '8px',
               overflow: 'hidden',
             }}>
-              <CodeEditor
-                value={editedCode}
-                onChange={setEditedCode}
-                placeholder="// Enter your component code here..."
-              />
+              {useMemo(() => (
+                <CodeEditor
+                  value={editedCode}
+                  onChange={setEditedCode}
+                  placeholder="// Enter your component code here..."
+                />
+              ), [editedCode, setEditedCode])}
             </div>
           </div>
 

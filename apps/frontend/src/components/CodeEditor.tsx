@@ -153,4 +153,4 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   );
 };
 
-export default CodeEditor;
+export default React.memo(CodeEditor);

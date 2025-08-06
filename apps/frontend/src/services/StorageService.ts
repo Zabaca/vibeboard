@@ -15,6 +15,10 @@ import type {
   ExportedNode, 
   StorageStats 
 } from '../types/component.types.ts';
+import type { 
+  NativeComponentNode, 
+  isNativeComponentNode 
+} from '../types/native-component.types.ts';
 import type { Node, Edge } from '@xyflow/react';
 
 interface StorageVersionInfo {
@@ -33,7 +37,7 @@ interface CompressedData {
 
 export class StorageService {
   private static instance: StorageService;
-  private readonly STORAGE_VERSION = '1.0.0';
+  private readonly STORAGE_VERSION = '1.1.0'; // Updated to support native components
   private readonly APP_VERSION = '1.0.0';
   private readonly COMPILER_VERSION = '1.0.0';
   
@@ -238,12 +242,15 @@ export class StorageService {
         try {
           const validatedData = this.validateAndEnhanceNodeData(exportedNode.data);
           
-          // Validate compiled code if present
-          if (validatedData.compiledCode) {
-            const isValidCompiled = this.validateCompiledCode(validatedData.compiledCode);
-            if (!isValidCompiled) {
-              console.warn(`⚠️ Invalid compiled code for node ${validatedData.id}, will recompile on demand`);
-              validatedData.compiledCode = undefined;
+          // Skip compiled code validation for native components
+          if (!('componentType' in validatedData && validatedData.componentType === 'native')) {
+            // Validate compiled code if present for regular components
+            if (validatedData.compiledCode) {
+              const isValidCompiled = this.validateCompiledCode(validatedData.compiledCode);
+              if (!isValidCompiled) {
+                console.warn(`⚠️ Invalid compiled code for node ${validatedData.id}, will recompile on demand`);
+                validatedData.compiledCode = undefined;
+              }
             }
           }
 
@@ -335,7 +342,13 @@ export class StorageService {
   /**
    * Enhanced node data with compiled code preservation
    */
-  private enhanceNodeData(nodeData: any): UnifiedComponentNode {
+  private enhanceNodeData(nodeData: any): UnifiedComponentNode | NativeComponentNode {
+    // Check if it's a native component
+    if (nodeData.componentType === 'native' && nodeData.nativeType && nodeData.state) {
+      // It's already a NativeComponentNode, return as is
+      return nodeData as NativeComponentNode;
+    }
+
     // If it's already a UnifiedComponentNode, return as is
     if (nodeData.originalCode !== undefined) {
       return nodeData as UnifiedComponentNode;
@@ -363,10 +376,22 @@ export class StorageService {
   /**
    * Validate and enhance imported node data
    */
-  private validateAndEnhanceNodeData(nodeData: any): UnifiedComponentNode {
+  private validateAndEnhanceNodeData(nodeData: any): UnifiedComponentNode | NativeComponentNode {
     const enhanced = this.enhanceNodeData(nodeData);
 
-    // Validate required fields
+    // For native components, validate state instead of code
+    if ('componentType' in enhanced && enhanced.componentType === 'native') {
+      const nativeNode = enhanced as NativeComponentNode;
+      if (!nativeNode.state) {
+        throw new Error(`Native node ${nativeNode.id} missing required state`);
+      }
+      if (!nativeNode.nativeType) {
+        throw new Error(`Native node ${nativeNode.id} missing required nativeType`);
+      }
+      return nativeNode;
+    }
+
+    // For regular components, validate required fields
     if (!enhanced.originalCode) {
       throw new Error(`Node ${enhanced.id} missing required originalCode`);
     }
@@ -539,7 +564,7 @@ export class StorageService {
    */
   private isVersionCompatible(version: string): boolean {
     // Simple version compatibility check
-    const supportedVersions = ['1.0.0', '2.0', this.STORAGE_VERSION];
+    const supportedVersions = ['1.0.0', '1.1.0', '2.0', this.STORAGE_VERSION];
     return supportedVersions.includes(version);
   }
 
@@ -617,6 +642,15 @@ export class StorageService {
             },
           },
         })),
+      };
+    }
+
+    // Handle v1.0.0 format - no native components
+    if (version === '1.0.0') {
+      return {
+        ...canvasData,
+        version: this.STORAGE_VERSION,
+        // Nodes remain the same, native components didn't exist in 1.0.0
       };
     }
 

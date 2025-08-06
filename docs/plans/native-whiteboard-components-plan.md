@@ -66,10 +66,10 @@ The Vibeboard canvas currently only supports ESM modules that are imported/gener
 - [x] Sub-goal 5.4: Implement keyboard shortcuts for quick creation
 
 ### Parent Goal 6: Integrate State Management
-- [ ] Sub-goal 6.1: Update `StorageService` to handle native component state
-- [ ] Sub-goal 6.2: Implement state serialization/deserialization
-- [ ] Sub-goal 6.3: Add migration support for existing saved canvases
-- [ ] Sub-goal 6.4: Ensure state persistence across refreshes
+- [x] Sub-goal 6.1: Update `StorageService` to handle native component state
+- [x] Sub-goal 6.2: Implement state serialization/deserialization
+- [x] Sub-goal 6.3: Add migration support for existing saved canvases
+- [x] Sub-goal 6.4: Ensure state persistence across refreshes
 
 ### Parent Goal 7: Update React Flow Integration
 - [ ] Sub-goal 7.1: Register new node types in `nodeTypes` mapping
@@ -202,3 +202,4 @@ interface NativeComponentNode extends UnifiedComponentNode {
 ### Modified  
 - `/apps/frontend/src/types/component.types.ts` - Added 'native' to ComponentSource type union
 - `/apps/frontend/src/components/ReactFlowCanvas.tsx` - Integrated native components and toolbar
+- `/apps/frontend/src/services/StorageService.ts` - Added support for native component state serialization, validation, and migration

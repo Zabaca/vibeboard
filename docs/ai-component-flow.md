@@ -1,117 +1,111 @@
 # AI Component Processing Flow
 
 ## Overview
-This diagram shows how AI-generated components are processed and where the import resolution issue occurs.
+This diagram shows how AI-generated components are processed through the pipeline and how import resolution works.
 
 ## Simplified Flow Diagram
 
 ```mermaid
 graph TB
-    AI["AI Code<br/>import from framer-motion"] --> Pipeline["ComponentPipeline<br/>Processes JSX to JS"]
+    %% Entry Points
+    GenBtn["🎨 Generate Component Button<br/>(User clicks)"] --> AI["AI Code<br/>import { motion } from 'framer-motion'"]
+    LibBtn["📚 Component Library Button<br/>(User clicks)"] --> LibComp["Pre-built Component<br/>with CDN URL"]
+    URLBtn["🔗 Import from URL Button<br/>(User enters CDN URL)"] --> URLComp["CDN URL Import<br/>e.g. https://esm.sh/my-component"]
+    TestBtn["🧪 ESM Test Component<br/>(Development testing)"] --> TestComp["Test imports<br/>from CDN directly"]
     
-    Pipeline --> ESM["esmExecutor<br/>Resolves imports"]
+    %% AI Flow
+    AI --> Pipeline["ComponentPipeline<br/>Processes JSX to JS"]
+    Pipeline --> ESM["esmExecutor.resolveImports()<br/>Rewrites bare imports to URLs"]
+    ESM --> Rewritten["Code with full URLs<br/>'https://esm.sh/framer-motion?external=react,react-dom'"]
+    Rewritten --> Blob["Creates Blob URL<br/>with rewritten code"]
+    Blob --> Import["import(blobURL)<br/>Executes the module"]
+    Import --> Success["Component Renders<br/>Single React instance"]
     
-    ESM --> Blob["Creates Blob URL<br/>Import maps dont work"]
+    %% CDN Direct Import Flow (Simplified)
+    LibComp --> Direct["Direct Import<br/>No processing needed"]
+    URLComp --> Direct
+    TestComp --> Direct
+    Direct --> Success
     
-    Blob --> Error["Error: Duplicate React<br/>framer-motion has own React"]
+    %% Supporting elements
+    ESM -.-> Solution["All imports rewritten to<br/>esm.sh URLs with ?external=react,react-dom"]
+    Map["Import Map<br/>in index.html"] -.->|Not used| Blob
+    Map -->|Works for| Direct
     
-    ESM -.-> Problem["Hardcoded:<br/>framer-motion@11<br/>Missing: ?external=react"]
-    
-    CDN["CDN URL<br/>esm.sh/...?external=react"] --> Direct["Direct Import<br/>Import maps work"]
-    
-    Direct --> Success["Works!<br/>Single React instance"]
-    
-    Map["Import Map<br/>Defined in index.html"] -.->|Ignored| Blob
-    Map -->|Works| Direct
-    
-    classDef problem fill:#ff6b6b,stroke:#c92a2a,stroke-width:3px,color:#fff
+    classDef entry fill:#fab005,stroke:#f08c00,stroke-width:3px
     classDef success fill:#51cf66,stroke:#2f9e44,stroke-width:2px
     classDef normal fill:#4c6ef5,stroke:#364fc7,stroke-width:2px,color:#fff
+    classDef solution fill:#868e96,stroke:#495057,stroke-width:1px
     
-    class Error,Problem,Blob problem
+    class GenBtn,LibBtn,URLBtn,TestBtn entry
     class Success,Direct success
-    class Pipeline,ESM normal
-```
-
-## Detailed Flow Diagram
-
-```mermaid
-graph TB
-    AI[AI Generates Code<br/>with bare imports<br/>'import { motion } from framer-motion'] --> RFC[ReactFlowCanvas<br/>handleGenerateComponent]
-    
-    RFC --> CP[ComponentPipeline<br/>processAIComponent]
-    
-    CP --> PC[processComponent<br/>- Validates code exists<br/>- Detects format JSX/ESM]
-    
-    PC --> PESM[processESMComponent]
-    
-    PESM --> IF[ImportFixer<br/>- Adds missing React imports<br/>- Fixes useState, useEffect, etc.]
-    
-    IF --> JSX{Has JSX?}
-    
-    JSX -->|Yes| TRANS[ESMJsxTranspiler<br/>- Babel transpilation<br/>- JSX → JavaScript]
-    JSX -->|No| VALID
-    
-    TRANS --> VALID[Validation Step<br/>esmExecutor.executeModule]
-    
-    VALID --> RESOLVE[resolveImports<br/>- Resolves bare imports<br/>- Hardcoded CDN mappings]
-    
-    RESOLVE --> BLOB[createModuleUrl<br/>Creates blob URL]
-    
-    BLOB --> IMPORT[import blob URL]
-    
-    RESOLVE -.->|PROBLEM HERE| HARD[Hardcoded Mappings<br/>framer-motion: esm.sh/framer-motion@11<br/>❌ Missing ?external=react,react-dom]
-    
-    IMPORT --> ACL[AsyncComponentLoader<br/>Receives compiled component]
-    
-    ACL --> RENDER[Render Component]
-    
-    URL[Direct CDN URL<br/>with ?external=react] --> ACL2[AsyncComponentLoader<br/>moduleUrl path]
-    
-    ACL2 --> DIRECT[Direct import<br/>✅ Import maps work!]
-    
-    DIRECT --> RENDER
-    
-    MAP[Import Map in index.html<br/>framer-motion: esm.sh/...?external=react,react-dom] -.->|❌ Ignored in blob context| BLOB
-    MAP -->|✅ Works for direct imports| DIRECT
-    
-    classDef problem fill:#ff6b6b,stroke:#c92a2a,stroke-width:3px,color:#fff
-    classDef success fill:#51cf66,stroke:#2f9e44,stroke-width:2px
-    classDef process fill:#4c6ef5,stroke:#364fc7,stroke-width:2px,color:#fff
-    classDef data fill:#fab005,stroke:#f08c00,stroke-width:2px
-    
-    class HARD,BLOB problem
-    class DIRECT,MAP success
-    class CP,PESM,VALID,RESOLVE process
-    class AI,RFC data
+    class Pipeline,ESM,Rewritten,Blob,Import normal
+    class Solution,Map solution
 ```
 
 ## Key Points
 
-### The Problem
-1. AI generates code with standard imports: `import { motion } from 'framer-motion'`
-2. Code is processed through ComponentPipeline (JSX → JS transpilation)
-3. esmExecutor resolves imports using hardcoded mappings
-4. Hardcoded mapping for framer-motion is missing `?external=react,react-dom`
-5. Creates blob URL where import maps don't work
-6. Result: Duplicate React instance error
+### How It Works
+1. **AI generates code** with bare module imports: `import { motion } from 'framer-motion'`
+2. **ComponentPipeline** processes the code:
+   - ImportFixer adds missing React imports
+   - ESMJsxTranspiler converts JSX to JavaScript
+   - Passes to esmExecutor for validation
+3. **esmExecutor.resolveImports()** rewrites ALL bare imports to full URLs:
+   - `'framer-motion'` → `'https://esm.sh/framer-motion?external=react,react-dom'`
+   - `'react'` → `'http://localhost:5173/shims/react.js'` (special shim)
+   - `'lodash'` → `'https://esm.sh/lodash?external=react,react-dom'`
+4. **Blob URL** is created with the rewritten code (all imports are now full URLs)
+5. **import(blobURL)** executes the module
+6. **Component renders** successfully
 
-### Why Import Maps Fail
-- Blob URLs create an isolated module context
-- Browser doesn't apply import maps to `blob:` URLs
-- All imports must be resolved before creating the blob
+### Import Resolution Strategy
+- esmExecutor rewrites ALL bare imports to full CDN URLs
+- All non-React packages get `?external=react,react-dom` parameter (ESM.sh ignores it)
+- React/React-DOM imports are rewritten to local shims that export window.React
+- Import maps are NOT used in blob URL context (browser doesn't apply them)
+- The rewriting happens BEFORE the blob URL is created
 
-### The Solution
-Update the hardcoded mapping in `esmExecutor.ts` line 222:
-```javascript
-// From:
-'framer-motion': 'https://esm.sh/framer-motion@11',
+### Entry Points in the App
 
-// To:
-'framer-motion': 'https://esm.sh/framer-motion@11.0.0?external=react,react-dom',
-```
+#### 1. Generate Component Button (AI Flow)
+- **Location**: Main toolbar in ReactFlowCanvas
+- **Flow**: User enters prompt → Cerebras AI generates code → Full pipeline processing → Blob URL
+- **Example**: "Create a login form with animations"
 
-### Alternative Approaches
-1. **Direct CDN imports**: Skip blob URLs entirely
-2. **Script injection**: Use script tags instead of blob URLs
-3. **Dynamic import map reading**: Read from actual import map instead of hardcoding
+#### 2. Component Library Button (Direct CDN)
+- **Location**: Library icon in toolbar
+- **Flow**: Select pre-built component → Direct import from CDN → No processing needed
+- **Components**: Animated Button, Profile Card, Counter, etc.
+
+#### 3. Import from URL (CDN Only)
+- **Location**: URL icon in toolbar
+- **Flow**: Direct import from CDN - no processing needed
+- **Supported CDNs**: esm.sh, unpkg.com, jsdelivr.net, skypack.dev
+- **Example**: `https://esm.sh/@vibeboard/button?external=react,react-dom`
+- **Note**: URL must include `?external=react,react-dom` to prevent React conflicts
+
+#### 4. ESM Test Component (Direct CDN)
+- **Location**: Test view in the app
+- **Flow**: Direct imports from CDN using import maps
+- **Purpose**: Testing CDN imports without blob URLs
+
+### Two Loading Paths
+
+#### Path 1: Blob URL (AI-Generated Code)
+- Used for: AI-generated code only
+- Process: Full pipeline → Import rewriting → Blob URL
+- Import maps: NOT used (imports already rewritten)
+
+#### Path 2: Direct Import (CDN URLs)
+- Used for: Pre-built components, all URL imports
+- Process: Direct `import(url)` - no processing
+- Import maps: Work normally for app code
+- Requirement: URL must be from approved CDN (esm.sh, unpkg, jsdelivr, skypack)
+
+### Recent Improvements
+1. **Simplified import resolution**: All packages use `?external=react,react-dom` by default
+2. **Better edit experience**: Split Save Code and Regenerate actions
+3. **Live syntax highlighting**: Using react-simple-code-editor with Prism.js
+4. **Fixed regeneration flow**: Properly handles prompt-based AI generation
+5. **Simplified URL imports**: Only CDN URLs supported - no complex fallback logic

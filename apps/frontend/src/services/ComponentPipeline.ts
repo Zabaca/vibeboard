@@ -322,7 +322,7 @@ export class ComponentPipeline {
   }
 
   /**
-   * Import and process a component from URL
+   * Import a component from CDN URL
    */
   async processURLComponent(
     url: string,
@@ -332,189 +332,108 @@ export class ComponentPipeline {
     const startTime = performance.now();
     
     try {
-      // Check if this is a CDN URL that can be imported directly
+      // Validate it's a CDN URL
       const isCDNUrl = url.startsWith('https://esm.sh/') || 
                       url.startsWith('https://cdn.jsdelivr.net/') ||
-                      url.startsWith('https://unpkg.com/');
+                      url.startsWith('https://unpkg.com/') ||
+                      url.startsWith('https://cdn.skypack.dev/');
       
-      if (isCDNUrl && url.includes('?external=react')) {
-        // DIRECT CDN IMPORT - Same logic as AsyncComponentLoader
-        if (pipelineOptions.debug) {
-          console.log('🚀 ComponentPipeline: Direct CDN import (no fetch+blob):', url);
-        }
-        
-        try {
-          // Direct ES module import - import maps work normally
-          const module = await import(/* @vite-ignore */ url);
-          
-          // Extract component using enhanced logic
-          let component = null;
-          
-          if (pipelineOptions.debug) {
-            console.log('🔍 Analyzing CDN module exports:', Object.keys(module));
-            console.log('🔍 Module.default type:', typeof module.default);
-            console.log('🔍 Module.default:', module.default);
-          }
-          
-          // 1. Check for default export (most common)
-          if (module.default && typeof module.default === 'function') {
-            component = module.default;
-          } 
-          // 2. Check for named 'Component' export
-          else if (module.Component && typeof module.Component === 'function') {
-            component = module.Component;
-          } 
-          // 3. Check for any capitalized function export (React component naming convention)
-          else {
-            for (const key in module) {
-              if (typeof module[key] === 'function' && 
-                  key !== '__esModule' && 
-                  /^[A-Z]/.test(key)) {
-                component = module[key];
-                if (pipelineOptions.debug) {
-                  console.log(`🎯 Found component via capitalized export: ${key}`);
-                }
-                break;
-              }
-            }
-          }
-          
-          // 4. If still no component, check if default export might be an object with a component
-          if (!component && module.default && typeof module.default === 'object') {
-            for (const key in module.default) {
-              if (typeof module.default[key] === 'function' && /^[A-Z]/.test(key)) {
-                component = module.default[key];
-                if (pipelineOptions.debug) {
-                  console.log(`🎯 Found component in default object: ${key}`);
-                }
-                break;
-              }
-            }
-          }
-          
-          if (!component) {
-            throw new Error('No valid React component found in CDN module');
-          }
-          
-          // Create UnifiedComponentNode for direct import
-          const unifiedComponent: UnifiedComponentNode = {
-            id: this.generateId(),
-            originalCode: '', // No source code for direct imports
-            compiledCode: '', // Component is already compiled
-            source: 'url-import',
-            format: 'esm',
-            sourceUrl: url,
-            compiledAt: Date.now(),
-            compilerVersion: this.compilerVersion,
-            description: `Direct CDN import from ${url}`,
-          };
-          
-          if (pipelineOptions.debug) {
-            console.log('✅ ComponentPipeline: Direct CDN import successful!');
-          }
-          
-          return {
-            success: true,
-            component: unifiedComponent,
-            processingTime: performance.now() - startTime,
-          };
-        } catch (directImportError) {
-          if (pipelineOptions.debug) {
-            console.log('❌ ComponentPipeline: Direct CDN import failed');
-            console.error('Direct import error:', directImportError);
-          }
-          // For CDN URLs, direct import failure means the URL/component is invalid
-          // No need to fall back to blob method for CDN URLs
-          return {
-            success: false,
-            error: `Direct CDN import failed: ${directImportError instanceof Error ? directImportError.message : String(directImportError)}`,
-            processingTime: performance.now() - startTime,
-          };
-        }
-      }
-      
-      // TRADITIONAL FETCH + BLOB METHOD (fallback for non-CDN URLs or failed direct imports)
-      if (pipelineOptions.debug) {
-        console.log('📦 ComponentPipeline: Using URLImportService (fetch+blob method):', url);
-      }
-      
-      // Import component from URL
-      const importResult = await this.urlImportService.importFromURL(url, urlOptions);
-      
-      if (!importResult.success) {
-        // Clear cache on import failure
-        this.urlImportService.removeFromCache(url);
+      if (!isCDNUrl) {
         return {
           success: false,
-          error: importResult.error,
+          error: 'Please provide a valid CDN URL (esm.sh, unpkg, jsdelivr, or skypack)',
           processingTime: performance.now() - startTime,
         };
       }
 
-      // Process the imported component
-      const component = importResult.component!;
-      
-      // Extract temp code and etag from import result (passed via closure, not metadata)
-      let tempCode = component.originalCode;
-      let tempEtag: string | undefined;
-      
-      // The URLImportService passes these values in a way that doesn't pollute the metadata
-      // We'll get them from the import result directly
-      if ('tempCode' in importResult && typeof importResult.tempCode === 'string') {
-        tempCode = importResult.tempCode;
-      }
-      if ('tempEtag' in importResult && typeof importResult.tempEtag === 'string') {
-        tempEtag = importResult.tempEtag;
+      // Ensure the URL has ?external=react,react-dom for React components
+      if (!url.includes('?external=react')) {
+        console.warn('⚠️  CDN URL should include ?external=react,react-dom to prevent React conflicts');
       }
       
-      let result: PipelineResult;
+      if (pipelineOptions.debug) {
+        console.log('🚀 ComponentPipeline: Direct CDN import:', url);
+      }
       
-      // For ESM modules that are already compiled, skip transpilation
-      if (component.format === 'esm' && this.isCompiledESM(component.originalCode || '')) {
-        if (pipelineOptions.debug) {
-          console.log('✅ ESM module detected, using directly without transpilation');
+      // Direct ES module import - no blob URLs, no processing
+      const module = await import(/* @vite-ignore */ url);
+      
+      // Extract component from module
+      let component = null;
+      
+      if (pipelineOptions.debug) {
+        console.log('🔍 Analyzing CDN module exports:', Object.keys(module));
+      }
+      
+      // 1. Check for default export (most common)
+      if (module.default && typeof module.default === 'function') {
+        component = module.default;
+      } 
+      // 2. Check for named 'Component' export
+      else if (module.Component && typeof module.Component === 'function') {
+        component = module.Component;
+      } 
+      // 3. Check for any capitalized function export (React component naming convention)
+      else {
+        for (const key in module) {
+          if (typeof module[key] === 'function' && 
+              key !== '__esModule' && 
+              /^[A-Z]/.test(key)) {
+            component = module[key];
+            if (pipelineOptions.debug) {
+              console.log(`🎯 Found component via capitalized export: ${key}`);
+            }
+            break;
+          }
         }
-        
-        // Set compiledCode to originalCode for ESM modules
-        component.compiledCode = component.originalCode;
-        component.compiledHash = this.hashCode(component.originalCode || '');
-        component.compiledAt = Date.now();
-        component.compilerVersion = this.compilerVersion;
-        
-        result = {
-          success: true,
-          component: component as UnifiedComponentNode,
-          processingTime: performance.now() - startTime,
-        };
-      } else {
-        // Process through standard pipeline for JSX/TSX
-        // Always transpile URL imports to ensure they work correctly
-        result = await this.processComponent(component, {
-          ...pipelineOptions,
-          useCache: true,
-          forceRecompile: true, // Force transpilation for URL imports
-        });
       }
       
-      // Only cache if processing was successful
-      if (result.success && tempCode) {
-        this.urlImportService.cacheSuccessfulImport(url, tempCode, tempEtag);
-      } else if (!result.success) {
-        // Clear cache on processing failure
-        this.urlImportService.removeFromCache(url);
+      // 4. If still no component, check if default export might be an object with a component
+      if (!component && module.default && typeof module.default === 'object') {
+        for (const key in module.default) {
+          if (typeof module.default[key] === 'function' && /^[A-Z]/.test(key)) {
+            component = module.default[key];
+            if (pipelineOptions.debug) {
+              console.log(`🎯 Found component in default object: ${key}`);
+            }
+            break;
+          }
+        }
       }
       
-      return result;
+      if (!component) {
+        throw new Error('No valid React component found in module. Make sure the URL exports a React component.');
+      }
+      
+      // Create UnifiedComponentNode for direct import
+      const unifiedComponent: UnifiedComponentNode = {
+        id: this.generateId(),
+        originalCode: '', // No source code for CDN imports
+        compiledCode: '', // Component is already compiled
+        source: 'url-import',
+        format: 'esm',
+        sourceUrl: url,
+        compiledAt: Date.now(),
+        compilerVersion: this.compilerVersion,
+        description: `CDN import from ${url}`,
+      };
+      
+      if (pipelineOptions.debug) {
+        console.log('✅ ComponentPipeline: CDN import successful!');
+      }
+      
+      return {
+        success: true,
+        component: unifiedComponent,
+        processingTime: performance.now() - startTime,
+      };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      console.error('URL component processing error:', errorMessage);
-      
-      // Clear cache on any error
-      this.urlImportService.removeFromCache(url);
+      console.error('CDN import error:', errorMessage);
       
       return {
         success: false,
-        error: errorMessage,
+        error: `CDN import failed: ${errorMessage}`,
         processingTime: performance.now() - startTime,
       };
     }

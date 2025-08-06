@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import CodeEditor from './CodeEditor.tsx';
+// import { PerformanceDebugger } from '../utils/performance-debug.ts';
+import { useWhyDidYouUpdate } from '../hooks/useWhyDidYouUpdate.ts';
+import { codeEditDialogStyles } from './CodeEditDialog.styles.ts';
 
 interface CodeEditDialogProps {
   isOpen: boolean;
@@ -32,6 +35,31 @@ const CodeEditDialog: React.FC<CodeEditDialogProps> = ({
   const [leftWidth, setLeftWidth] = useState(50); // percentage for columns
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+  
+  // Debug why component is re-rendering
+  useWhyDidYouUpdate('CodeEditDialog', {
+    isOpen,
+    code,
+    prompt,
+    nodeId,
+    onSave,
+    onRegenerate,
+    onCancel,
+    isGenerating,
+    getNodeCode
+  });
+  
+  // Debug production performance
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
+      console.log('[CodeEditDialog] Render triggered', {
+        isOpen,
+        codeLength: code.length,
+        nodeId,
+        timestamp: performance.now()
+      });
+    }
+  }, [isOpen, code.length, nodeId]);
 
   // Memoize the node code to prevent expensive recalculations
   const nodeCode = useMemo(() => {
@@ -345,22 +373,9 @@ const CodeEditDialog: React.FC<CodeEditDialogProps> = ({
               <textarea
                 value={refinementPrompt}
                 onChange={(e) => setRefinementPrompt(e.target.value)}
-                style={{
-                  flex: 1,
-                  width: '100%',
-                  padding: '16px',
-                  borderRadius: '8px',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  backgroundColor: '#0d0d0d',
-                  color: '#e5e5e5',
-                  fontSize: '14px',
-                  fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                  resize: 'none',
-                  outline: 'none',
-                  transition: 'border-color 0.2s',
-                }}
+                style={codeEditDialogStyles.textarea}
                 onFocus={(e) => {
-                  e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.5)';
+                  Object.assign(e.currentTarget.style, codeEditDialogStyles.textareaFocused);
                 }}
                 onBlur={(e) => {
                   e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';

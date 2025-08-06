@@ -373,6 +373,12 @@ const ReactFlowCanvas: React.FC = () => {
     posthogService.trackComponentInteraction('edit', nodeId);
   }, [setNodes, presentationMode, handleDeleteComponent, getViewportCenter]);
 
+  // Memoized function to get node code - prevents re-renders of CodeEditDialog
+  const getNodeCode = useCallback((nodeId: string) => {
+    const node = nodes.find(n => n.id === nodeId);
+    return node?.data?.code || node?.data?.originalCode || '';
+  }, [nodes]);
+
   // Handle right-click on nodes to show context menu
   const handleNodeContextMenu = useCallback((event: React.MouseEvent, node: Node) => {
     event.preventDefault();
@@ -1342,10 +1348,7 @@ const ReactFlowCanvas: React.FC = () => {
         onRegenerate={handleRegenerateWithPrompt}
         onCancel={handleCancelEdit}
         isGenerating={isGenerating}
-        getNodeCode={(nodeId) => {
-          const node = nodes.find(n => n.id === nodeId);
-          return node?.data?.code || node?.data?.originalCode || '';
-        }}
+        getNodeCode={getNodeCode}
       />
 
       {/* Component Library Dialog */}

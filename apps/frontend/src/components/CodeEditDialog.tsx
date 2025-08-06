@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import CodeEditor from './CodeEditor.tsx';
 
 interface CodeEditDialogProps {
@@ -25,6 +25,7 @@ const CodeEditDialog: React.FC<CodeEditDialogProps> = ({
   getNodeCode,
 }) => {
   const [refinementPrompt, setRefinementPrompt] = useState('');
+  const [debouncedRefinementPrompt, setDebouncedRefinementPrompt] = useState('');
   const [editedCode, setEditedCode] = useState(code);
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
   const [isResizing, setIsResizing] = useState(false);
@@ -32,19 +33,31 @@ const CodeEditDialog: React.FC<CodeEditDialogProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
+  // Memoize the node code to prevent expensive recalculations
+  const nodeCode = useMemo(() => {
+    if (nodeId && getNodeCode && isOpen) {
+      return getNodeCode(nodeId);
+    }
+    return code;
+  }, [nodeId, getNodeCode, isOpen, code]);
+
   useEffect(() => {
     // Reset refinement prompt when dialog opens
     setRefinementPrompt('');
-    // If we have a nodeId and getNodeCode function, fetch the code
-    if (nodeId && getNodeCode && isOpen) {
-      const nodeCode = getNodeCode(nodeId);
-      setEditedCode(nodeCode);
-    } else {
-      setEditedCode(code);
-    }
-  }, [code, nodeId, getNodeCode, isOpen]);
+    setDebouncedRefinementPrompt('');
+    // Set the code from memoized value
+    setEditedCode(nodeCode);
+  }, [nodeCode, isOpen]);
 
-  const handleCopyCode = async () => {
+  // Debounce refinement prompt to prevent excessive re-renders
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedRefinementPrompt(refinementPrompt);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [refinementPrompt]);
+
+  const handleCopyCode = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(editedCode);
       setCopyFeedback('Copied!');
@@ -53,9 +66,9 @@ const CodeEditDialog: React.FC<CodeEditDialogProps> = ({
       setCopyFeedback('Failed');
       setTimeout(() => setCopyFeedback(null), 2000);
     }
-  };
+  }, [editedCode]);
 
-  const handleMouseMove = (e: MouseEvent) => {
+  const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!isResizing || !contentRef.current) return;
     
     const content = contentRef.current;
@@ -66,7 +79,7 @@ const CodeEditDialog: React.FC<CodeEditDialogProps> = ({
     // Limit the resize between 30% and 70%
     const newWidth = Math.min(Math.max(percentage, 30), 70);
     setLeftWidth(newWidth);
-  };
+  }, [isResizing]);
 
   const handleMouseUp = () => {
     setIsResizing(false);
@@ -355,8 +368,8 @@ const CodeEditDialog: React.FC<CodeEditDialogProps> = ({
                 placeholder="Describe what changes you want to make to the component..."
               />
               <button
-                onClick={() => onRegenerate(refinementPrompt, editedCode)}
-                disabled={isGenerating || !refinementPrompt.trim()}
+                onClick={() => onRegenerate(debouncedRefinementPrompt, editedCode)}
+                disabled={isGenerating || !debouncedRefinementPrompt.trim()}
                 style={{
                   marginTop: '16px',
                   padding: '12px 24px',
@@ -374,7 +387,7 @@ const CodeEditDialog: React.FC<CodeEditDialogProps> = ({
                   transition: 'all 0.2s ease',
                 }}
                 onMouseEnter={(e) => {
-                  if (!isGenerating && refinementPrompt.trim()) {
+                  if (!isGenerating && debouncedRefinementPrompt.trim()) {
                     e.currentTarget.style.backgroundColor = '#5558e3';
                     e.currentTarget.style.transform = 'translateY(-1px)';
                     e.currentTarget.style.boxShadow = '0 4px 12px rgba(99, 102, 241, 0.4)';
@@ -492,4 +505,14 @@ const CodeEditDialog: React.FC<CodeEditDialogProps> = ({
   );
 };
 
-export default CodeEditDialog;
+export default React.memo(CodeEditDialog, (prevProps, nextProps) => {
+  // Only re-render if these specific props change
+  return (
+    prevProps.isOpen === nextProps.isOpen &&
+    prevProps.code === nextProps.code &&
+    prevProps.prompt === nextProps.prompt &&
+    prevProps.nodeId === nextProps.nodeId &&
+    prevProps.isGenerating === nextProps.isGenerating &&
+    prevProps.getNodeCode === nextProps.getNodeCode
+  );
+});

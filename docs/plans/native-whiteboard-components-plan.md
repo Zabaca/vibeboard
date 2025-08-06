@@ -36,34 +36,34 @@ The Vibeboard canvas currently only supports ESM modules that are imported/gener
 ## Goals
 
 ### Parent Goal 1: Define Component Architecture and State Interface
-- [ ] Sub-goal 1.1: Create new component type enum `NativeComponentType = 'shape' | 'text' | 'sticky'`
-- [ ] Sub-goal 1.2: Define `ComponentState` interface for storing component-specific state
-- [ ] Sub-goal 1.3: Extend `UnifiedComponentNode` to support native components
-- [ ] Sub-goal 1.4: Create `NativeComponentNode` interface extending `UnifiedComponentNode`
+- [x] Sub-goal 1.1: Create new component type enum `NativeComponentType = 'shape' | 'text' | 'sticky'`
+- [x] Sub-goal 1.2: Define `ComponentState` interface for storing component-specific state
+- [x] Sub-goal 1.3: Extend `UnifiedComponentNode` to support native components
+- [x] Sub-goal 1.4: Create `NativeComponentNode` interface extending `UnifiedComponentNode`
 
 ### Parent Goal 2: Implement Native Shape Components
-- [ ] Sub-goal 2.1: Create `ShapeNode` component with rectangle, triangle, square support
-- [ ] Sub-goal 2.2: Implement editable text within shapes
-- [ ] Sub-goal 2.3: Add shape customization (color, border, fill)
-- [ ] Sub-goal 2.4: Implement resize handles for shapes
+- [x] Sub-goal 2.1: Create `ShapeNode` component with rectangle, triangle, square support
+- [x] Sub-goal 2.2: Implement editable text within shapes
+- [x] Sub-goal 2.3: Add shape customization (color, border, fill)
+- [x] Sub-goal 2.4: Implement resize handles for shapes
 
 ### Parent Goal 3: Implement Text Component
-- [ ] Sub-goal 3.1: Create `TextNode` component with transparent background
-- [ ] Sub-goal 3.2: Implement text size adjustment UI
-- [ ] Sub-goal 3.3: Add font family and style options
-- [ ] Sub-goal 3.4: Implement inline text editing
+- [x] Sub-goal 3.1: Create `TextNode` component with transparent background
+- [x] Sub-goal 3.2: Implement text size adjustment UI
+- [x] Sub-goal 3.3: Add font family and style options
+- [x] Sub-goal 3.4: Implement inline text editing
 
 ### Parent Goal 4: Implement Sticky Note Component
-- [ ] Sub-goal 4.1: Create `StickyNote` component with note-like appearance
-- [ ] Sub-goal 4.2: Implement text editing within sticky notes
-- [ ] Sub-goal 4.3: Add color variations (yellow, pink, blue, green)
-- [ ] Sub-goal 4.4: Add auto-resize based on content
+- [x] Sub-goal 4.1: Create `StickyNote` component with note-like appearance
+- [x] Sub-goal 4.2: Implement text editing within sticky notes
+- [x] Sub-goal 4.3: Add color variations (yellow, pink, blue, green)
+- [x] Sub-goal 4.4: Add auto-resize based on content
 
 ### Parent Goal 5: Create Native Components Toolbar
-- [ ] Sub-goal 5.1: Design toolbar UI with shape, text, and sticky buttons
-- [ ] Sub-goal 5.2: Implement toolbar as permanent panel on canvas
-- [ ] Sub-goal 5.3: Add drag-to-create functionality
-- [ ] Sub-goal 5.4: Implement keyboard shortcuts for quick creation
+- [x] Sub-goal 5.1: Design toolbar UI with shape, text, and sticky buttons
+- [x] Sub-goal 5.2: Implement toolbar as permanent panel on canvas
+- [x] Sub-goal 5.3: Add drag-to-create functionality
+- [x] Sub-goal 5.4: Implement keyboard shortcuts for quick creation
 
 ### Parent Goal 6: Integrate State Management
 - [ ] Sub-goal 6.1: Update `StorageService` to handle native component state
@@ -187,3 +187,18 @@ interface NativeComponentNode extends UnifiedComponentNode {
 3. Begin with Parent Goal 1 (Architecture)
 4. Implement components incrementally
 5. Integrate and test thoroughly
+
+## Relevant Files
+
+### Created
+- `/apps/frontend/src/types/native-component.types.ts` - Native component type definitions and interfaces
+- `/apps/frontend/src/components/native/ShapeNode.tsx` - Shape component with rectangle, triangle, square support
+- `/apps/frontend/src/components/native/ShapeCustomizer.tsx` - Shape customization panel for colors and styling
+- `/apps/frontend/src/components/native/TextNode.tsx` - Text component with transparent background and inline editing
+- `/apps/frontend/src/components/native/TextCustomizer.tsx` - Text formatting panel with font, size, and style options
+- `/apps/frontend/src/components/native/StickyNote.tsx` - Sticky note component with color variations and auto-resize
+- `/apps/frontend/src/components/native/NativeComponentsToolbar.tsx` - Toolbar for creating native components
+
+### Modified  
+- `/apps/frontend/src/types/component.types.ts` - Added 'native' to ComponentSource type union
+- `/apps/frontend/src/components/ReactFlowCanvas.tsx` - Integrated native components and toolbar

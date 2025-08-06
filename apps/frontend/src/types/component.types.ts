@@ -6,7 +6,7 @@
 /**
  * Component source types
  */
-export type ComponentSource = 'ai-generated' | 'library' | 'url-import' | 'user-upload';
+export type ComponentSource = 'ai-generated' | 'library' | 'url-import' | 'user-upload' | 'native';
 
 /**
  * Component format types
@@ -35,6 +35,7 @@ export interface UnifiedComponentNode {
 
   /**
    * Original source code (JSX/TSX/ESM)
+   * Empty string for native components
    */
   originalCode: string;
 

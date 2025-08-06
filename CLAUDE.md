@@ -168,8 +168,8 @@ graph TB
     TestComp --> Direct
     Direct --> Success
     
-    classDef entry fill:#fab005,stroke:#f08c00,stroke-width:3px
-    classDef success fill:#51cf66,stroke:#2f9e44,stroke-width:2px
+    classDef entry fill:#600005,stroke:#f08c00,stroke-width:3px
+    classDef success fill:#51cf66,stroke:#2f9e44,stroke-width:2px,color:#000
     classDef normal fill:#4c6ef5,stroke:#364fc7,stroke-width:2px,color:#fff
     
     class GenBtn,LibBtn,URLBtn,TestBtn entry

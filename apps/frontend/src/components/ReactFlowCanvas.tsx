@@ -27,11 +27,20 @@ import { getCompiledComponent } from '../data/compiledComponents.generated.ts';
 import { storageService } from '../services/StorageService.ts';
 import { posthogService } from '../services/posthog.ts';
 import type { UnifiedComponentNode } from '../types/component.types.ts';
+import type { NativeComponentType, NativeComponentNode, ComponentState } from '../types/native-component.types.ts';
+import { defaultComponentStates } from '../types/native-component.types.ts';
+import ShapeNode from './native/ShapeNode.tsx';
+import TextNode from './native/TextNode.tsx';
+import StickyNote from './native/StickyNote.tsx';
+import NativeComponentsToolbar from './native/NativeComponentsToolbar.tsx';
 
 // Define nodeTypes outside of component to prevent re-renders
-const nodeTypes: Record<string, React.ComponentType<any>> = {
+const nodeTypes = {
   aiComponent: ComponentNode,
-};
+  shape: ShapeNode,
+  text: TextNode,
+  sticky: StickyNote,
+} as const;
 
 const ReactFlowCanvas: React.FC = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<ComponentNodeData>>([]);
@@ -95,22 +104,6 @@ const ReactFlowCanvas: React.FC = () => {
     // Fallback to default position
     return { x: 250, y: 250 };
   }, []);
-
-  // Add keyboard shortcut for URL import (only in development)
-  useEffect(() => {
-    if (!isDevelopment) return;
-    
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Ctrl+Shift+I (or Cmd+Shift+I on Mac) for Import from URL
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'I') {
-        e.preventDefault();
-        setShowURLImport(true);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isDevelopment]);
 
   // Handle compilation completion from GeneratedApp components
   const handleCompilationComplete = useCallback((nodeId: string, compiledCode: string, hash: string) => {
@@ -326,6 +319,114 @@ const ReactFlowCanvas: React.FC = () => {
   const handleCancelEdit = useCallback(() => {
     setEditDialog({ isOpen: false, nodeId: '', prompt: '', code: '' });
   }, []);
+
+  // Handle native component creation
+  const handleCreateNativeComponent = useCallback((type: NativeComponentType, subType?: string) => {
+    const nodeId = `${type}-${Date.now()}`;
+    const viewportCenter = getViewportCenter();
+    
+    // Create the native component state based on type
+    const defaultState = { ...defaultComponentStates[type] };
+    if (type === 'shape' && subType) {
+      defaultState.shapeType = subType as 'rectangle' | 'triangle' | 'square';
+    }
+    
+    // Create native component node data
+    const nativeNodeData: NativeComponentNode = {
+      id: nodeId,
+      componentType: 'native',
+      nativeType: type,
+      state: defaultState,
+      source: 'native',
+      originalCode: '',
+      compiledCode: undefined,
+      description: `${type.charAt(0).toUpperCase() + type.slice(1)} component`,
+    };
+    
+    // Create the node with handler functions
+    const newNode: Node = {
+      id: nodeId,
+      type,
+      position: viewportCenter,
+      width: type === 'sticky' ? 200 : 150,
+      height: type === 'sticky' ? 200 : 150,
+      style: {
+        width: type === 'sticky' ? 200 : 150,
+        height: type === 'sticky' ? 200 : 150,
+      },
+      data: {
+        ...nativeNodeData,
+        presentationMode,
+        onDelete: handleDeleteComponent,
+        onUpdateState: (nodeId: string, newState: ComponentState) => {
+          setNodes((nds) =>
+            nds.map((node) => {
+              if (node.id === nodeId && node.data) {
+                return {
+                  ...node,
+                  data: {
+                    ...node.data,
+                    state: newState,
+                  },
+                };
+              }
+              return node;
+            })
+          );
+        },
+      },
+    };
+    
+    setNodes((nds) => [...nds, newNode]);
+    posthogService.trackComponentInteraction('create_native', nodeId, { type, subType });
+  }, [setNodes, presentationMode, handleDeleteComponent, getViewportCenter]);
+
+  // Add keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check if user is typing in an input field
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true') {
+        return;
+      }
+      
+      // URL import shortcut (only in development)
+      if (isDevelopment && (e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'I') {
+        e.preventDefault();
+        setShowURLImport(true);
+        return;
+      }
+      
+      // Native component shortcuts (single key press)
+      if (!e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey) {
+        switch (e.key.toLowerCase()) {
+          case 't':
+            e.preventDefault();
+            handleCreateNativeComponent('text');
+            break;
+          case 's':
+            e.preventDefault();
+            handleCreateNativeComponent('sticky');
+            break;
+          case 'r':
+            e.preventDefault();
+            handleCreateNativeComponent('shape', 'rectangle');
+            break;
+          case 'q':
+            e.preventDefault();
+            handleCreateNativeComponent('shape', 'square');
+            break;
+          case 'g':
+            e.preventDefault();
+            handleCreateNativeComponent('shape', 'triangle');
+            break;
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isDevelopment, handleCreateNativeComponent]);
 
   // Export canvas to JSON file
   const handleExportCanvas = useCallback(async () => {
@@ -1130,6 +1231,12 @@ const ReactFlowCanvas: React.FC = () => {
           </div>
         </Panel>
       </ReactFlow>
+
+      {/* Native Components Toolbar - Outside ReactFlow for fixed positioning */}
+      <NativeComponentsToolbar 
+        onCreateComponent={handleCreateNativeComponent}
+        isCreating={isGenerating}
+      />
 
       {showGenerationDialog && (
         <GenerationDialog

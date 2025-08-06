@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import CodeEditor from './CodeEditor.tsx';
-import CodeEditSection from './CodeEditSection.tsx';
 // import { PerformanceDebugger } from '../utils/performance-debug.ts';
 import { useWhyDidYouUpdate } from '../hooks/useWhyDidYouUpdate.ts';
 import { codeEditDialogStyles } from './CodeEditDialog.styles.ts';
@@ -38,6 +37,7 @@ const CodeEditDialog: React.FC<CodeEditDialogProps> = ({
   const contentRef = useRef<HTMLDivElement>(null);
   
   // Debug why component is re-rendering
+  // Note: Always call the hook, but it will only log in development
   useWhyDidYouUpdate('CodeEditDialog', {
     isOpen,
     code,
@@ -113,6 +113,15 @@ const CodeEditDialog: React.FC<CodeEditDialogProps> = ({
   const handleMouseUp = () => {
     setIsResizing(false);
   };
+
+  // Memoize the code editor to prevent re-renders
+  const memoizedCodeEditor = useMemo(() => (
+    <CodeEditor
+      value={editedCode}
+      onChange={setEditedCode}
+      placeholder="// Enter your component code here..."
+    />
+  ), [editedCode, setEditedCode]);
 
   useEffect(() => {
     if (isResizing) {
@@ -270,13 +279,7 @@ const CodeEditDialog: React.FC<CodeEditDialogProps> = ({
               borderRadius: '8px',
               overflow: 'hidden',
             }}>
-              {useMemo(() => (
-                <CodeEditor
-                  value={editedCode}
-                  onChange={setEditedCode}
-                  placeholder="// Enter your component code here..."
-                />
-              ), [editedCode, setEditedCode])}
+              {memoizedCodeEditor}
             </div>
           </div>
 

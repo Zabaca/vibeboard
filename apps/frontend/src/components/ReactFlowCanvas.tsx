@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   ReactFlow,
   useNodesState,
@@ -8,9 +8,11 @@ import {
   Controls,
   MiniMap,
   Panel,
+  useReactFlow,
   type Node,
   type Edge,
   type Connection,
+  type ReactFlowInstance,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
@@ -47,6 +49,7 @@ const ReactFlowCanvas: React.FC = () => {
   });
   const [showLibrary, setShowLibrary] = useState(false);
   const [showURLImport, setShowURLImport] = useState(false);
+  const reactFlowInstance = useRef<ReactFlowInstance | null>(null);
   const [cerebrasService] = useState(() => {
     // In production (Netlify), we don't need API key (handled server-side)
     // In development, get from env or localStorage
@@ -71,6 +74,23 @@ const ReactFlowCanvas: React.FC = () => {
 
   // Initialize the component pipeline for processing components
   const [componentPipeline] = useState(() => new ComponentPipeline());
+
+  // Helper function to get the center of the current viewport
+  const getViewportCenter = useCallback(() => {
+    if (reactFlowInstance.current) {
+      const { x, y, zoom } = reactFlowInstance.current.getViewport();
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      
+      // Calculate the center position in flow coordinates
+      const centerX = (-x + viewportWidth / 2) / zoom;
+      const centerY = (-y + viewportHeight / 2) / zoom;
+      
+      return { x: centerX - 200, y: centerY - 200 }; // Offset by half the default node size
+    }
+    // Fallback to default position
+    return { x: 250, y: 250 };
+  }, []);
 
   // Add keyboard shortcut for URL import
   useEffect(() => {
@@ -126,13 +146,14 @@ const ReactFlowCanvas: React.FC = () => {
   const handleDuplicateComponent = useCallback((nodeData: ComponentNodeData) => {
     // Create a new node with the same data but new ID and position
     const newNodeId = `node-${Date.now()}`;
+    const viewportCenter = getViewportCenter();
     const newNode: Node<ComponentNodeData> = {
       id: newNodeId,
       type: 'aiComponent',
-      // Offset position by 50px to avoid overlap
+      // Place at viewport center with small random offset to avoid exact overlap
       position: { 
-        x: 350 + Math.random() * 100, 
-        y: 350 + Math.random() * 100 
+        x: viewportCenter.x + Math.random() * 50 - 25, 
+        y: viewportCenter.y + Math.random() * 50 - 25
       },
       style: {
         width: 400,
@@ -150,7 +171,7 @@ const ReactFlowCanvas: React.FC = () => {
     };
 
     setNodes((nds) => [...nds, newNode]);
-  }, [setNodes, presentationMode, handleDeleteComponent, handleRegenerateComponent, handleCompilationComplete]);
+  }, [setNodes, presentationMode, handleDeleteComponent, handleRegenerateComponent, handleCompilationComplete, getViewportCenter]);
 
   // Save manually edited code
   const handleSaveCode = useCallback(async (newCode: string) => {
@@ -466,12 +487,13 @@ const ReactFlowCanvas: React.FC = () => {
       onCompilationComplete: handleCompilationComplete,
     };
 
+    const viewportCenter = getViewportCenter();
     const newNode: Node<ComponentNodeData> = {
       id: nodeId,
       type: 'aiComponent',
       position: { 
-        x: 250 + Math.random() * 100, 
-        y: 250 + Math.random() * 100 
+        x: viewportCenter.x + Math.random() * 50 - 25, 
+        y: viewportCenter.y + Math.random() * 50 - 25
       },
       // Add style for proper sizing - this fixes draggability
       style: {
@@ -485,7 +507,7 @@ const ReactFlowCanvas: React.FC = () => {
     
     // Show success message
     console.log(`✅ Imported component from URL: ${component.sourceUrl}`);
-  }, [presentationMode, handleDeleteComponent, handleRegenerateComponent, handleCompilationComplete, setNodes]);
+  }, [presentationMode, handleDeleteComponent, handleRegenerateComponent, handleCompilationComplete, setNodes, getViewportCenter]);
 
   const handleAddPrebuiltComponent = useCallback(async (component: PrebuiltComponent) => {
     // Check for pre-compiled version first
@@ -539,12 +561,13 @@ const ReactFlowCanvas: React.FC = () => {
     }
     
     // Create a new node with the processed component
+    const viewportCenter = getViewportCenter();
     const newNode: Node<ComponentNodeData> = {
       id: nodeData.id,
       type: 'aiComponent',
       position: { 
-        x: 250 + Math.random() * 100, // Add some randomness to prevent overlap
-        y: 250 + Math.random() * 100 
+        x: viewportCenter.x + Math.random() * 50 - 25,
+        y: viewportCenter.y + Math.random() * 50 - 25
       },
       style: {
         width: 400,
@@ -554,7 +577,7 @@ const ReactFlowCanvas: React.FC = () => {
     };
 
     setNodes((nds) => [...nds, newNode]);
-  }, [setNodes, presentationMode, handleDeleteComponent, handleRegenerateComponent, componentPipeline, setGenerationError]);
+  }, [setNodes, presentationMode, handleDeleteComponent, handleRegenerateComponent, componentPipeline, setGenerationError, getViewportCenter]);
 
   const handleGenerateComponent = useCallback(async (prompt: string) => {
     setCurrentPrompt(prompt);
@@ -589,10 +612,11 @@ const ReactFlowCanvas: React.FC = () => {
       
       // Create a new node with the processed component
       const nodeId = `node-${Date.now()}`;
+      const viewportCenter = getViewportCenter();
       const newNode: Node<ComponentNodeData> = {
         id: nodeId,
         type: 'aiComponent',
-        position: { x: 250, y: 250 },
+        position: viewportCenter,
         // Good default size, but user can resize freely
         style: {
           width: 400,
@@ -619,7 +643,7 @@ const ReactFlowCanvas: React.FC = () => {
     } finally {
       setIsGenerating(false);
     }
-  }, [cerebrasService, setNodes, presentationMode, handleDeleteComponent, handleRegenerateComponent, componentPipeline]);
+  }, [cerebrasService, setNodes, presentationMode, handleDeleteComponent, handleRegenerateComponent, componentPipeline, getViewportCenter]);
 
   return (
     <div className="h-screen w-screen relative" style={{ width: '100vw', height: '100vh', background: '#f8f9fa' }}>
@@ -632,6 +656,7 @@ const ReactFlowCanvas: React.FC = () => {
         nodeTypes={nodeTypes}
         fitView
         defaultViewport={{ x: 0, y: 0, zoom: 1 }}
+        onInit={(instance) => { reactFlowInstance.current = instance; }}
       >
         <Background color="#aaa" gap={16} />
         {!presentationMode && <Controls />}

@@ -22,6 +22,8 @@ const CodeEditorCodeMirror: React.FC<CodeEditorCodeMirrorProps> = ({
   placeholder = '// Enter your component code here...',
   readOnly = false,
 }) => {
+  // Note: placeholder is currently not used due to CodeMirror setup
+  void placeholder; // Suppress unused variable warning
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const onChangeRef = useRef(onChange);

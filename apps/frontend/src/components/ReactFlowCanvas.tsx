@@ -21,6 +21,7 @@ import GenerationDialog from './GenerationDialog.tsx';
 import CodeEditDialog from './CodeEditDialog.tsx';
 import ComponentLibrary from './ComponentLibrary.tsx';
 import { ImportFromURLDialog } from './ImportFromURLDialog.tsx';
+import ImportComponentDialog from './ImportComponentDialog.tsx';
 import { type PrebuiltComponent } from '../data/prebuiltComponents.ts';
 import { ComponentPipeline } from '../services/ComponentPipeline.ts';
 import { getCompiledComponent } from '../data/compiledComponents.generated.ts';
@@ -36,10 +37,14 @@ import NativeComponentsToolbar from './native/NativeComponentsToolbar.tsx';
 import NativeComponentContextMenu from './native/NativeComponentContextMenu.tsx';
 
 // Define nodeTypes outside of component to prevent re-renders
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const nodeTypes = {
   aiComponent: ComponentNode,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   shape: ShapeNode as React.ComponentType<any>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   text: TextNode as React.ComponentType<any>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   sticky: StickyNote as React.ComponentType<any>,
 };
 
@@ -48,6 +53,7 @@ const ReactFlowCanvas: React.FC = () => {
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [showGenerationDialog, setShowGenerationDialog] = useState(false);
+  const [showImportDialog, setShowImportDialog] = useState(false);
   const [currentPrompt, setCurrentPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [presentationMode, setPresentationMode] = useState(false);
@@ -477,6 +483,13 @@ const ReactFlowCanvas: React.FC = () => {
         return;
       }
       
+      // Import component shortcut (Ctrl+Shift+P)
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'P') {
+        e.preventDefault();
+        setShowImportDialog(true);
+        return;
+      }
+      
       // Native component shortcuts (single key press)
       if (!e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey) {
         switch (e.key.toLowerCase()) {
@@ -892,6 +905,87 @@ const ReactFlowCanvas: React.FC = () => {
     }
   }, [cerebrasService, setNodes, presentationMode, handleDeleteComponent, handleRegenerateComponent, componentPipeline, getViewportCenter]);
 
+  const handleImportComponent = useCallback(async (code: string, description?: string) => {
+    setGenerationError(null);
+    setIsGenerating(true);
+    setShowImportDialog(false);
+
+    const startTime = performance.now();
+
+    try {
+      // Process the imported component through the same pipeline as AI-generated components
+      const pipelineResult = await componentPipeline.processComponent(
+        {
+          originalCode: code,
+          description: description || 'Imported component',
+          source: 'ai-generated', // Use ai-generated to ensure same processing path
+          format: 'jsx', // Will be auto-detected by the pipeline
+        },
+        {
+          useCache: true,
+          validateOutput: true,
+          debug: false,
+        }
+      );
+      
+      if (!pipelineResult.success || !pipelineResult.component) {
+        throw new Error(pipelineResult.error || 'Failed to process imported component');
+      }
+      
+      const processedComponent = pipelineResult.component;
+      
+      // Create a new node with the processed component
+      const nodeId = `node-${Date.now()}`;
+      const viewportCenter = getViewportCenter();
+      const newNode: Node<ComponentNodeData> = {
+        id: nodeId,
+        type: 'aiComponent',
+        position: viewportCenter,
+        width: 400,
+        height: 400,
+        style: {
+          width: 400,
+          height: 400,
+        },
+        data: {
+          ...processedComponent,
+          id: nodeId,
+          // Use compiled code if available, otherwise original
+          code: processedComponent.compiledCode || processedComponent.originalCode,
+          prompt: description || 'Imported component',
+          generationTime: 0, // No generation time for imports
+          presentationMode,
+          onDelete: handleDeleteComponent,
+          onRegenerate: handleRegenerateComponent,
+          onCompilationComplete: handleCompilationComplete,
+        },
+      };
+
+      setNodes((nds) => [...nds, newNode]);
+      
+      // Track successful import
+      const processingTime = performance.now() - startTime;
+      posthogService.trackComponentGeneration(
+        description || 'Imported component', 
+        true, 
+        processingTime
+      );
+    } catch (error) {
+      console.error('Failed to import component:', error);
+      setGenerationError(error instanceof Error ? error.message : 'Failed to import component');
+      posthogService.trackError('component_import_failed', { 
+        description: description || 'Imported component',
+        error: error instanceof Error ? error.message : String(error) 
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [setNodes, presentationMode, handleDeleteComponent, handleRegenerateComponent, componentPipeline, getViewportCenter]);
+
+  const handleImportClick = useCallback(() => {
+    setShowImportDialog(true);
+  }, []);
+
   return (
     <div className="h-screen w-screen relative" style={{ width: '100vw', height: '100vh', background: '#f8f9fa' }}>
       <ReactFlow
@@ -998,6 +1092,42 @@ const ReactFlowCanvas: React.FC = () => {
                 >
                   <span>📚</span>
                   Library
+                </button>
+                
+                <button
+                  onClick={handleImportClick}
+                  disabled={isGenerating}
+                  style={{
+                    backgroundColor: isGenerating ? 'rgba(255,255,255,0.2)' : 'white',
+                    color: isGenerating ? 'white' : '#6366f1',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '10px 20px',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    cursor: isGenerating ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    transition: 'all 0.2s ease',
+                    boxShadow: isGenerating ? 'none' : '0 4px 12px rgba(0,0,0,0.1)',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isGenerating) {
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                      e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.15)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isGenerating) {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+                    }
+                  }}
+                  title="Import component from code (Ctrl+Shift+P)"
+                >
+                  <span>📥</span>
+                  Import Code
                 </button>
                 
                 {isDevelopment && (
@@ -1366,6 +1496,14 @@ const ReactFlowCanvas: React.FC = () => {
           onImport={handleAddURLComponent}
         />
       )}
+
+      {/* Import Component Dialog */}
+      <ImportComponentDialog
+        isOpen={showImportDialog}
+        onImport={handleImportComponent}
+        onCancel={() => setShowImportDialog(false)}
+        isProcessing={isGenerating}
+      />
 
       {/* Global Loading Overlay */}
       {isGenerating && !showGenerationDialog && !editDialog.isOpen && (

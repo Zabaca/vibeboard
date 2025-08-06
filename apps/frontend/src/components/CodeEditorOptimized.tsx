@@ -134,7 +134,7 @@ const CodeEditorOptimized: React.FC<CodeEditorProps> = ({
           language
         );
         setHighlightedCode(highlighted);
-      }, 300);
+      }, 10);
     }
     
     return () => {

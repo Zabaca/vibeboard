@@ -261,7 +261,17 @@ export class ComponentPipeline {
    * Process a pre-built library component
    */
   async processLibraryComponent(
-    component: any,
+    component: {
+      id?: string;
+      name?: string;
+      description?: string;
+      code: string;
+      category?: string;
+      tags?: string[];
+      author?: string;
+      version?: string;
+      thumbnail?: string;
+    },
     options: PipelineOptions = {}
   ): Promise<PipelineResult> {
     // Convert legacy library component to unified format
@@ -372,11 +382,12 @@ export class ComponentPipeline {
       } 
       // 3. Check for any capitalized function export (React component naming convention)
       else {
-        for (const key in module) {
-          if (typeof module[key] === 'function' && 
+        const moduleRecord = module as Record<string, unknown>;
+        for (const key in moduleRecord) {
+          if (typeof moduleRecord[key] === 'function' && 
               key !== '__esModule' && 
               /^[A-Z]/.test(key)) {
-            component = module[key];
+            component = moduleRecord[key] as React.ComponentType;
             if (pipelineOptions.debug) {
               console.log(`🎯 Found component via capitalized export: ${key}`);
             }
@@ -387,9 +398,10 @@ export class ComponentPipeline {
       
       // 4. If still no component, check if default export might be an object with a component
       if (!component && module.default && typeof module.default === 'object') {
-        for (const key in module.default) {
-          if (typeof module.default[key] === 'function' && /^[A-Z]/.test(key)) {
-            component = module.default[key];
+        const defaultObj = module.default as Record<string, unknown>;
+        for (const key in defaultObj) {
+          if (typeof defaultObj[key] === 'function' && /^[A-Z]/.test(key)) {
+            component = defaultObj[key] as React.ComponentType;
             if (pipelineOptions.debug) {
               console.log(`🎯 Found component in default object: ${key}`);
             }
@@ -555,14 +567,14 @@ export class ComponentPipeline {
         if (data.version === this.compilerVersion) {
           // Don't restore blob URLs as they won't be valid
           // ESM modules will be regenerated on demand
-          const entries = data.entries.filter(([_key, entry]: [string, CacheEntry]) => {
+          const entries = (data.entries as [string, CacheEntry][]).filter(([_key, entry]: [string, CacheEntry]) => {
             // Skip entries with blob URLs as they're no longer valid
             if (entry.component.moduleUrl && entry.component.moduleUrl.startsWith('blob:')) {
               return false;
             }
             return true;
           });
-          this.cache = new Map(entries);
+          this.cache = new Map<string, CacheEntry>(entries);
         }
       }
     } catch (error) {
@@ -628,8 +640,22 @@ export class ComponentPipeline {
   /**
    * Get performance statistics
    */
-  getPerformanceStats(): Record<string, any> {
-    const stats: Record<string, any> = {};
+  getPerformanceStats(): Record<string, {
+    count: number;
+    sum: number;
+    average: number;
+    median: number;
+    min: number;
+    max: number;
+  } | number | string> {
+    const stats: Record<string, {
+      count: number;
+      sum: number;
+      average: number;
+      median: number;
+      min: number;
+      max: number;
+    } | number | string> = {};
     
     for (const [name, values] of this.performanceMetrics.entries()) {
       if (values.length === 0) continue;
@@ -695,7 +721,11 @@ export class ComponentPipeline {
       if (compiledComponents && compiledComponents.length > 0) {
         // Warm cache with compiled components in background
         setTimeout(() => {
-          this.warmCache(compiledComponents.map((comp: any) => ({
+          this.warmCache(compiledComponents.map((comp: {
+            id?: string;
+            originalCode: string;
+            compiledCode?: string;
+          }) => ({
             id: comp.id,
             originalCode: comp.originalCode,
             compiledCode: comp.compiledCode,

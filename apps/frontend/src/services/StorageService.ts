@@ -9,6 +9,7 @@
  * - Fallback to IndexedDB for large canvases
  */
 
+import { z } from 'zod';
 import type { 
   UnifiedComponentNode, 
   ExportedCanvas, 
@@ -19,6 +20,73 @@ import type {
   NativeComponentNode
 } from '../types/native-component.types.ts';
 import type { Node, Edge } from '@xyflow/react';
+
+// Zod schemas for validation
+const storageVersionInfoSchema = z.object({
+  version: z.string(),
+  appVersion: z.string(),
+  compilerVersion: z.string(),
+  migratedAt: z.number().optional(),
+});
+
+const compressedDataSchema = z.object({
+  compressed: z.boolean(),
+  data: z.string(),
+  originalSize: z.number(),
+  compressedSize: z.number(),
+});
+
+const positionSchema = z.object({
+  x: z.number(),
+  y: z.number(),
+});
+
+const edgeSchema = z.object({
+  id: z.string(),
+  source: z.string(),
+  target: z.string(),
+  type: z.string().optional(),
+  sourceHandle: z.string().optional(),
+  targetHandle: z.string().optional(),
+  data: z.unknown().optional(),
+});
+
+const exportedNodeSchema = z.object({
+  id: z.string(),
+  type: z.string(),
+  position: positionSchema,
+  data: z.unknown(), // Will be validated separately based on component type
+  width: z.number().optional(),
+  height: z.number().optional(),
+});
+
+const exportedCanvasSchema = z.object({
+  version: z.string(),
+  exportedAt: z.number(),
+  nodes: z.array(exportedNodeSchema),
+  edges: z.array(edgeSchema),
+  metadata: z.object({
+    appVersion: z.string(),
+    compilerVersion: z.string(),
+    nodeCount: z.number(),
+  }).optional(),
+});
+
+const storageDataSchema = z.object({
+  version: z.string(),
+  timestamp: z.number(),
+  nodeCount: z.number().optional(),
+  nodes: z.array(exportedNodeSchema).optional(),
+  edges: z.array(edgeSchema).optional(),
+});
+
+const storageStatsSchema = z.object({
+  nodeCount: z.number().optional(),
+  compiledCount: z.number().optional(),
+  cacheHitRate: z.number().optional(),
+  lastCleanup: z.number().optional(),
+  totalSize: z.number().optional(),
+});
 
 interface StorageVersionInfo {
   version: string;
@@ -127,12 +195,12 @@ export class StorageService {
     try {
       const stored = await this.loadFromStorage(this.NODES_KEY);
       
-      if (!stored || !stored.nodes) {
+      if (!stored || !(stored as any).nodes) {
         return [];
       }
 
       // Convert back to React Flow format
-      const nodes: Node[] = stored.nodes.map((exportedNode: ExportedNode) => ({
+      const nodes: Node[] = (stored as any).nodes.map((exportedNode: ExportedNode) => ({
         id: exportedNode.id,
         type: exportedNode.type || 'aiComponent',
         position: exportedNode.position,
@@ -173,7 +241,7 @@ export class StorageService {
   async loadEdges(): Promise<Edge[]> {
     try {
       const stored = await this.loadFromStorage(this.EDGES_KEY);
-      return stored?.edges || [];
+      return (stored as any)?.edges || [];
     } catch (error) {
       console.error('Failed to load edges:', error);
       return [];
@@ -197,7 +265,7 @@ export class StorageService {
       version: this.STORAGE_VERSION,
       exportedAt: Date.now(),
       nodes: exportedNodes,
-      edges: edges, // Include edges in export
+      edges: edges as Edge[], // Include edges in export
       metadata: {
         appVersion: this.APP_VERSION,
         compilerVersion: this.COMPILER_VERSION,
@@ -213,19 +281,11 @@ export class StorageService {
    */
   async importCanvas(canvasData: unknown): Promise<{ nodes: Node[]; edges: Edge[] }> {
     try {
-      // Validate basic format
-      if (!canvasData || typeof canvasData !== 'object') {
-        throw new Error('Invalid canvas format: expected object');
-      }
-
-      const canvas = canvasData as Record<string, unknown>;
+      // Validate canvas data with Zod
+      const canvas = exportedCanvasSchema.parse(canvasData);
       
-      if (!canvas.nodes || !Array.isArray(canvas.nodes)) {
-        throw new Error('Invalid canvas format: missing nodes array');
-      }
-
       // Validate version compatibility
-      if (canvas.version && !this.isVersionCompatible(String(canvas.version))) {
+      if (!this.isVersionCompatible(canvas.version)) {
         console.warn(`⚠️ Importing canvas from version ${canvas.version}, current version is ${this.STORAGE_VERSION}`);
       }
 
@@ -233,22 +293,17 @@ export class StorageService {
       let processedCanvas = canvas;
       if (canvas.version !== this.STORAGE_VERSION) {
         console.log(`🔄 Migrating imported canvas from version ${canvas.version} to ${this.STORAGE_VERSION}`);
-        processedCanvas = this.migrateCanvasData(canvas) as Record<string, unknown>;
+        const migrated = this.migrateCanvasData(canvas);
+        processedCanvas = exportedCanvasSchema.parse(migrated);
       }
 
       // Validate and convert nodes
       const nodes: Node[] = [];
       const invalidNodes: unknown[] = [];
 
-      const nodesArray = processedCanvas.nodes as unknown[];
-      for (const exportedNode of nodesArray) {
+      for (const exportedNode of processedCanvas.nodes) {
         try {
-          if (!exportedNode || typeof exportedNode !== 'object') {
-            throw new Error('Invalid node format');
-          }
-          
-          const node = exportedNode as Record<string, unknown>;
-          const validatedData = this.validateAndEnhanceNodeData(node.data);
+          const validatedData = this.validateAndEnhanceNodeData(exportedNode.data);
           
           // Skip compiled code validation for native components
           if (!('componentType' in validatedData && validatedData.componentType === 'native')) {
@@ -263,15 +318,15 @@ export class StorageService {
           }
 
           nodes.push({
-            id: String(node.id),
-            type: String(node.type || 'aiComponent'),
-            position: (node.position as { x: number; y: number }) || { x: 0, y: 0 },
-            data: validatedData as UnifiedComponentNode | NativeComponentNode,
-            width: node.width as number | undefined,
-            height: node.height as number | undefined,
+            id: exportedNode.id,
+            type: exportedNode.type || 'aiComponent',
+            position: exportedNode.position,
+            data: validatedData as unknown as Record<string, unknown>,
+            width: exportedNode.width,
+            height: exportedNode.height,
           });
         } catch (nodeError) {
-          console.error(`Failed to import node ${node.id}:`, nodeError);
+          console.error(`Failed to import node ${exportedNode.id}:`, nodeError);
           invalidNodes.push(exportedNode);
         }
       }
@@ -281,11 +336,15 @@ export class StorageService {
       }
 
       // Validate edges
-      const edges: Edge[] = this.validateEdges(canvasData.edges || [], nodes);
+      const edges: Edge[] = this.validateEdges(processedCanvas.edges || [], nodes);
 
       console.log(`✅ Imported ${nodes.length} nodes and ${edges.length} edges (${invalidNodes.length} invalid nodes skipped)`);
       return { nodes, edges };
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        console.error('Canvas validation failed:', error.issues);
+        throw new Error(`Invalid canvas format: ${error.issues.map(e => e.message).join(', ')}`);
+      }
       console.error('Failed to import canvas:', error);
       throw error;
     }
@@ -360,12 +419,12 @@ export class StorageService {
     // Check if it's a native component
     if (data.componentType === 'native' && data.nativeType && data.state) {
       // It's already a NativeComponentNode, return as is
-      return data as NativeComponentNode;
+      return data as unknown as NativeComponentNode;
     }
 
     // If it's already a UnifiedComponentNode, return as is
     if (data.originalCode !== undefined) {
-      return data as UnifiedComponentNode;
+      return data as unknown as UnifiedComponentNode;
     }
 
     // Convert legacy ComponentNodeData to UnifiedComponentNode
@@ -449,23 +508,36 @@ export class StorageService {
   }
 
   /**
-   * Load data from storage with decompression
+   * Load data from storage with decompression and validation
    */
   private async loadFromStorage(key: string): Promise<unknown> {
     try {
       const stored = localStorage.getItem(key);
       if (!stored) return null;
 
-      const payload = JSON.parse(stored);
+      const rawPayload = JSON.parse(stored);
       
       // Handle compressed data
-      if (payload.compressed) {
-        return JSON.parse(await this.decompressData(payload));
+      if (rawPayload.compressed) {
+        const payload = compressedDataSchema.parse(rawPayload);
+        const decompressed = await this.decompressData(payload);
+        return JSON.parse(decompressed);
       }
 
       // Handle both new format and legacy direct data
-      return payload.data ? JSON.parse(payload.data) : payload;
+      const data = rawPayload.data ? JSON.parse(rawPayload.data) : rawPayload;
+      
+      // Validate storage data structure for nodes/edges
+      if (key === this.NODES_KEY || key === this.EDGES_KEY) {
+        return storageDataSchema.parse(data);
+      }
+      
+      return data;
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        console.error(`Storage validation failed for ${key}:`, error.issues);
+        return null;
+      }
       console.error(`Failed to load from storage (${key}):`, error);
       return null;
     }
@@ -521,8 +593,13 @@ export class StorageService {
   private getVersionInfo(): StorageVersionInfo | null {
     try {
       const stored = localStorage.getItem(this.VERSION_KEY);
-      return stored ? JSON.parse(stored) : null;
+      if (!stored) return null;
+      const parsed = JSON.parse(stored);
+      return storageVersionInfoSchema.parse(parsed);
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        console.error('Version info validation failed:', error.issues);
+      }
       return null;
     }
   }
@@ -778,8 +855,13 @@ export class StorageService {
   private loadStorageStats(): Partial<StorageStats> {
     try {
       const stored = localStorage.getItem(this.STATS_KEY);
-      return stored ? JSON.parse(stored) : {};
+      if (!stored) return {};
+      const parsed = JSON.parse(stored);
+      return storageStatsSchema.parse(parsed);
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        console.error('Storage stats validation failed:', error.issues);
+      }
       return {};
     }
   }

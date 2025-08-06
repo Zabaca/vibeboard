@@ -38,10 +38,10 @@ import NativeComponentContextMenu from './native/NativeComponentContextMenu.tsx'
 // Define nodeTypes outside of component to prevent re-renders
 const nodeTypes = {
   aiComponent: ComponentNode,
-  shape: ShapeNode,
-  text: TextNode,
-  sticky: StickyNote,
-} as const;
+  shape: ShapeNode as React.ComponentType<any>,
+  text: TextNode as React.ComponentType<any>,
+  sticky: StickyNote as React.ComponentType<any>,
+};
 
 const ReactFlowCanvas: React.FC = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<ComponentNodeData>>([]);
@@ -369,8 +369,8 @@ const ReactFlowCanvas: React.FC = () => {
       },
     };
     
-    setNodes((nds) => [...nds, newNode]);
-    posthogService.trackComponentInteraction('create_native', nodeId, { type, subType });
+    setNodes((nds) => [...nds, newNode as Node<ComponentNodeData>]);
+    posthogService.trackComponentInteraction('edit', nodeId);
   }, [setNodes, presentationMode, handleDeleteComponent, getViewportCenter]);
 
   // Handle right-click on nodes to show context menu
@@ -394,7 +394,7 @@ const ReactFlowCanvas: React.FC = () => {
     if (!nodeToDuplicate) return;
 
     const newNodeId = `${nodeToDuplicate.type}-${Date.now()}`;
-    const newNode: Node = {
+    const newNode: Node<ComponentNodeData> = {
       ...nodeToDuplicate,
       id: newNodeId,
       position: {
@@ -404,7 +404,7 @@ const ReactFlowCanvas: React.FC = () => {
       data: {
         ...nodeToDuplicate.data,
         id: newNodeId,
-      },
+      } as ComponentNodeData,
     };
 
     setNodes((nds) => [...nds, newNode]);

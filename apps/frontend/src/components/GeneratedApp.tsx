@@ -31,7 +31,11 @@ class ErrorBoundary extends React.Component<
   },
   ErrorBoundaryState
 > {
-  constructor(props: any) {
+  constructor(props: {
+    children: React.ReactNode;
+    code: string;
+    onError?: (error: ErrorInfo) => void;
+  }) {
     super(props);
     this.state = { hasError: false, error: null };
   }
@@ -326,10 +330,10 @@ const GeneratedApp = ({ code, component, presentationMode = false, onCompilation
           };
           setError(errorInfo);
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         const errorInfo: ErrorInfo = {
-          message: err.message || 'Unknown error',
-          stack: err.stack,
+          message: err instanceof Error ? err.message : 'Unknown error',
+          stack: err instanceof Error ? err.stack : undefined,
           code: code || component?.originalCode,
         };
         setError(errorInfo);

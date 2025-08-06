@@ -38,7 +38,12 @@ class ComponentErrorBoundary extends React.Component<
   },
   { hasError: boolean; error: Error | null }
 > {
-  constructor(props: any) {
+  constructor(props: {
+    children: React.ReactNode;
+    onError?: (error: Error) => void;
+    fallback?: React.ComponentType<{ error: Error; retry: () => void }>;
+    retry: () => void;
+  }) {
     super(props);
     this.state = { hasError: false, error: null };
   }
@@ -164,11 +169,12 @@ export const AsyncComponentLoader: React.FC<AsyncComponentLoaderProps> = ({
             } 
             // 3. Check for any capitalized function export (React component naming convention)
             else {
-              for (const key in module) {
-                if (typeof module[key] === 'function' && 
+              const moduleRecord = module as Record<string, unknown>;
+              for (const key in moduleRecord) {
+                if (typeof moduleRecord[key] === 'function' && 
                     key !== '__esModule' && 
                     /^[A-Z]/.test(key)) {
-                  component = module[key];
+                  component = moduleRecord[key] as React.ComponentType;
                   if (debug) {
                     console.log(`🎯 Found component via capitalized export: ${key}`);
                   }
@@ -179,9 +185,10 @@ export const AsyncComponentLoader: React.FC<AsyncComponentLoaderProps> = ({
             
             // 4. If still no component, check if default export might be an object with a component
             if (!component && module.default && typeof module.default === 'object') {
-              for (const key in module.default) {
-                if (typeof module.default[key] === 'function' && /^[A-Z]/.test(key)) {
-                  component = module.default[key];
+              const defaultObj = module.default as Record<string, unknown>;
+              for (const key in defaultObj) {
+                if (typeof defaultObj[key] === 'function' && /^[A-Z]/.test(key)) {
+                  component = defaultObj[key] as React.ComponentType;
                   if (debug) {
                     console.log(`🎯 Found component in default object: ${key}`);
                   }
@@ -375,7 +382,7 @@ export const AsyncComponentLoader: React.FC<AsyncComponentLoaderProps> = ({
 
 // Lazy loading wrapper for components
 export const LazyComponent: React.FC<{
-  importFn: () => Promise<any>;
+  importFn: () => Promise<{ default: React.ComponentType }>;
   fallback?: React.ReactNode;
 }> = ({ importFn, fallback = <DefaultLoadingComponent /> }) => {
   const Component = React.lazy(importFn);

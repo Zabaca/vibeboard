@@ -6,7 +6,8 @@ interface CodeEditDialogProps {
   code: string;
   prompt: string;
   nodeId?: string;
-  onConfirm: (newPrompt: string, newCode: string) => void;
+  onSave: (newCode: string) => void;
+  onRegenerate: (newPrompt: string) => void;
   onCancel: () => void;
   isGenerating?: boolean;
   getNodeCode?: (nodeId: string) => string;
@@ -17,7 +18,8 @@ const CodeEditDialog: React.FC<CodeEditDialogProps> = ({
   code,
   prompt,
   nodeId,
-  onConfirm,
+  onSave,
+  onRegenerate,
   onCancel,
   isGenerating = false,
   getNodeCode,
@@ -341,8 +343,43 @@ const CodeEditDialog: React.FC<CodeEditDialogProps> = ({
             Cancel
           </button>
           <button
-            onClick={() => onConfirm(editedPrompt, editedCode)}
-            disabled={isGenerating || (!editedPrompt.trim() && !editedCode.trim())}
+            onClick={() => onSave(editedCode)}
+            disabled={isGenerating || !editedCode.trim()}
+            style={{
+              padding: '12px 24px',
+              borderRadius: '8px',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              backgroundColor: 'transparent',
+              color: '#e5e5e5',
+              fontSize: '14px',
+              fontWeight: '500',
+              cursor: isGenerating || !editedCode.trim() ? 'not-allowed' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={(e) => {
+              if (!isGenerating && editedCode.trim()) {
+                e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
+                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+            }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+              <polyline points="17 21 17 13 7 13 7 21" />
+              <polyline points="7 3 7 8 15 8" />
+            </svg>
+            Save Code
+          </button>
+          <button
+            onClick={() => onRegenerate(editedPrompt)}
+            disabled={isGenerating || !editedPrompt.trim()}
             style={{
               padding: '12px 24px',
               borderRadius: '8px',
@@ -351,7 +388,7 @@ const CodeEditDialog: React.FC<CodeEditDialogProps> = ({
               color: 'white',
               fontSize: '14px',
               fontWeight: '500',
-              cursor: isGenerating || (!editedPrompt.trim() && !editedCode.trim()) ? 'not-allowed' : 'pointer',
+              cursor: isGenerating || !editedPrompt.trim() ? 'not-allowed' : 'pointer',
               display: 'flex',
               alignItems: 'center',
               gap: '8px',

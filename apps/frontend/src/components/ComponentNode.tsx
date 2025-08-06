@@ -13,7 +13,7 @@ interface ComponentNodeData extends UnifiedComponentNode {
   // UI-specific fields
   presentationMode?: boolean;
   onDelete?: (appId: string) => void;
-  onRegenerate?: (appId: string, prompt: string) => void;
+  onRegenerate?: (appId: string, prompt: string, currentCode?: string) => void;
   onDuplicate?: (nodeData: ComponentNodeData) => void;
   onCompilationComplete?: (nodeId: string, compiledCode: string, hash: string) => void;
   
@@ -289,7 +289,7 @@ const ComponentNode = ({ id, data, selected = false }: ComponentNodeProps) => {
               className="nodrag"
               onClick={(e) => {
                 e.stopPropagation();
-                onRegenerate(id, prompt || '');
+                onRegenerate(id, prompt || '', code || originalCode);
               }}
               style={{
                 background: 'transparent',

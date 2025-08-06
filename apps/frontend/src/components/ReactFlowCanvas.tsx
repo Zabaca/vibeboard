@@ -113,14 +113,12 @@ const ReactFlowCanvas: React.FC = () => {
   }, [setNodes]);
 
   // Open the edit dialog when edit button is clicked
-  const handleRegenerateComponent = useCallback((nodeId: string, prompt: string) => {
-    // We'll get the code when the dialog opens, not here
-    // This avoids the circular dependency
+  const handleRegenerateComponent = useCallback((nodeId: string, prompt: string, currentCode?: string) => {
     setEditDialog({
       isOpen: true,
       nodeId,
       prompt,
-      code: '', // Will be populated when dialog opens
+      code: currentCode || '', // Store the current code for comparison
     });
   }, []);
 
@@ -154,48 +152,95 @@ const ReactFlowCanvas: React.FC = () => {
     setNodes((nds) => [...nds, newNode]);
   }, [setNodes, presentationMode, handleDeleteComponent, handleRegenerateComponent, handleCompilationComplete]);
 
-  // Actually regenerate the component with the edited prompt and code
-  const handleConfirmRegenerate = useCallback(async (newPrompt: string, newCode: string) => {
+  // Save manually edited code
+  const handleSaveCode = useCallback(async (newCode: string) => {
     const { nodeId } = editDialog;
     setIsGenerating(true);
     setGenerationError(null);
     
     try {
-      // If code was edited directly, use it. Otherwise regenerate with AI
-      let codeToProcess = newCode;
-      let generationTime = 0;
-      
-      if (newCode !== editDialog.code) {
-        // User edited the code manually
-        console.log('Using manually edited code');
-      } else if (newPrompt !== editDialog.prompt) {
-        // User changed the prompt, regenerate with AI
-        const result = await cerebrasService.generateComponent(newPrompt);
-        
-        if (!result.success || !result.code) {
-          throw new Error(result.error || 'Failed to regenerate component');
-        }
-        
-        codeToProcess = result.code;
-        generationTime = result.generationTime || 0;
-      } else {
-        // No changes made
-        setEditDialog({ isOpen: false, nodeId: '', prompt: '', code: '' });
-        setIsGenerating(false);
-        return;
-      }
-      
-      // Process the component through the pipeline
-      // Note: forceRecompile ensures we don't use cached compiled code from the old version
-      const pipelineResult = await componentPipeline.processAIComponent(
-        codeToProcess,
-        newPrompt,
-        generationTime,
+      // Process the manually edited code through the pipeline
+      const pipelineResult = await componentPipeline.processComponent(
+        {
+          originalCode: newCode,
+          source: 'ai-generated',
+        },
         {
           useCache: true,
           validateOutput: true,
-          forceRecompile: true, // Force recompilation for regenerated components - clears stale cache
-          debug: false, // Disable debug mode to reduce CPU usage
+          forceRecompile: true,
+          debug: false,
+        }
+      );
+      
+      if (!pipelineResult.success || !pipelineResult.component) {
+        throw new Error(pipelineResult.error || 'Failed to process edited code');
+      }
+      
+      const processedComponent = pipelineResult.component;
+      
+      // Update node with the new code
+      setNodes((nds) =>
+        nds.map((node) => {
+          if (node.id === nodeId) {
+            const updatedData: ComponentNodeData = {
+              ...processedComponent,
+              id: nodeId,
+              // Keep the callback functions and prompt from the existing node
+              presentationMode,
+              onDelete: node.data.onDelete,
+              onRegenerate: node.data.onRegenerate,
+              onDuplicate: node.data.onDuplicate,
+              onCompilationComplete: node.data.onCompilationComplete,
+              // Legacy compatibility fields
+              code: processedComponent.compiledCode || processedComponent.originalCode,
+              prompt: node.data.prompt || editDialog.prompt,
+              generationTime: node.data.generationTime || 0,
+            };
+            return {
+              ...node,
+              data: updatedData,
+            };
+          }
+          return node;
+        })
+      );
+      
+      // Close dialog and reset state
+      setEditDialog({ isOpen: false, nodeId: '', prompt: '', code: '' });
+      console.log('✅ Component code saved successfully');
+    } catch (error) {
+      console.error('Failed to save component code:', error);
+      setGenerationError(error instanceof Error ? error.message : 'Failed to save component code');
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [editDialog, setNodes, componentPipeline, presentationMode]);
+
+  // Regenerate component with new prompt
+  const handleRegenerateWithPrompt = useCallback(async (newPrompt: string) => {
+    const { nodeId } = editDialog;
+    setIsGenerating(true);
+    setGenerationError(null);
+    
+    try {
+      // Generate new component with AI
+      const result = await cerebrasService.generateComponent(newPrompt);
+      
+      if (!result.success || !result.code) {
+        throw new Error(result.error || 'Failed to generate component');
+      }
+      
+      // Process the AI-generated component through the pipeline
+      const pipelineResult = await componentPipeline.processAIComponent(
+        result.code,
+        newPrompt,
+        result.generationTime || 0,
+        {
+          useCache: true,
+          validateOutput: true,
+          forceRecompile: true,
+          debug: false,
         }
       );
       
@@ -205,8 +250,7 @@ const ReactFlowCanvas: React.FC = () => {
       
       const processedComponent = pipelineResult.component;
       
-      // Update node with the new regenerated component data
-      // The pipeline has already processed and compiled the new code
+      // Update node with the new regenerated component
       setNodes((nds) =>
         nds.map((node) => {
           if (node.id === nodeId) {
@@ -220,10 +264,9 @@ const ReactFlowCanvas: React.FC = () => {
               onDuplicate: node.data.onDuplicate,
               onCompilationComplete: node.data.onCompilationComplete,
               // Legacy compatibility fields
-              // Use the freshly compiled code from the pipeline (forceRecompile=true ensures it's new)
               code: processedComponent.compiledCode || processedComponent.originalCode,
               prompt: newPrompt,
-              generationTime: generationTime,
+              generationTime: result.generationTime || 0,
             };
             return {
               ...node,
@@ -234,16 +277,16 @@ const ReactFlowCanvas: React.FC = () => {
         })
       );
       
-      // Close the dialog on success
+      // Close dialog and reset state
       setEditDialog({ isOpen: false, nodeId: '', prompt: '', code: '' });
+      console.log('✅ Component regenerated successfully with AI');
     } catch (error) {
       console.error('Failed to regenerate component:', error);
       setGenerationError(error instanceof Error ? error.message : 'Failed to regenerate component');
-      // Don't close dialog on error so user can try again
     } finally {
       setIsGenerating(false);
     }
-  }, [cerebrasService, setNodes, presentationMode, editDialog, componentPipeline]);
+  }, [editDialog, cerebrasService, setNodes, componentPipeline, presentationMode]);
 
   const handleCancelEdit = useCallback(() => {
     setEditDialog({ isOpen: false, nodeId: '', prompt: '', code: '' });
@@ -1015,7 +1058,8 @@ const ReactFlowCanvas: React.FC = () => {
         code={editDialog.code}
         prompt={editDialog.prompt}
         nodeId={editDialog.nodeId}
-        onConfirm={handleConfirmRegenerate}
+        onSave={handleSaveCode}
+        onRegenerate={handleRegenerateWithPrompt}
         onCancel={handleCancelEdit}
         isGenerating={isGenerating}
         getNodeCode={(nodeId) => {

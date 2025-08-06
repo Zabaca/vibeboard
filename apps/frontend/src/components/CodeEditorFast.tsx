@@ -48,6 +48,8 @@ const editorStyles = `
     position: absolute;
     top: 0;
     left: 0;
+    width: 100%;
+    height: 100%;
     padding: 16px;
     margin: 0;
     border: none;
@@ -58,9 +60,16 @@ const editorStyles = `
     line-height: 1.5;
     white-space: pre;
     overflow-wrap: normal;
-    overflow: hidden;
+    overflow: auto;
     pointer-events: none;
     z-index: 1;
+    /* Hide scrollbar on highlights since textarea handles scrolling */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  
+  .code-editor-fast-highlights::-webkit-scrollbar {
+    display: none;
   }
   
   .code-editor-fast-highlights code {

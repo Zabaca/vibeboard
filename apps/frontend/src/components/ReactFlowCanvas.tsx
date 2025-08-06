@@ -25,6 +25,7 @@ import { type PrebuiltComponent } from '../data/prebuiltComponents.ts';
 import { ComponentPipeline } from '../services/ComponentPipeline.ts';
 import { getCompiledComponent } from '../data/compiledComponents.generated.ts';
 import { storageService } from '../services/StorageService.ts';
+import { posthogService } from '../services/posthog.ts';
 import type { UnifiedComponentNode } from '../types/component.types.ts';
 
 // Define nodeTypes outside of component to prevent re-renders
@@ -135,6 +136,7 @@ const ReactFlowCanvas: React.FC = () => {
   // Define handlers first before using them in useEffect
   const handleDeleteComponent = useCallback((nodeId: string) => {
     setNodes((nds) => nds.filter((node) => node.id !== nodeId));
+    posthogService.trackComponentInteraction('delete', nodeId);
   }, [setNodes]);
 
   // Open the edit dialog when edit button is clicked
@@ -145,6 +147,7 @@ const ReactFlowCanvas: React.FC = () => {
       prompt,
       code: currentCode || '', // Store the current code for comparison
     });
+    posthogService.trackComponentInteraction('edit', nodeId);
   }, []);
 
   // Duplicate a component node
@@ -178,6 +181,7 @@ const ReactFlowCanvas: React.FC = () => {
     };
 
     setNodes((nds) => [...nds, newNode]);
+    posthogService.trackComponentInteraction('duplicate', nodeData.id);
   }, [setNodes, presentationMode, handleDeleteComponent, handleRegenerateComponent, handleCompilationComplete, getViewportCenter]);
 
   // Save manually edited code
@@ -338,9 +342,13 @@ const ReactFlowCanvas: React.FC = () => {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
       console.log('✅ Canvas exported successfully');
+      posthogService.trackCanvasAction('export');
     } catch (error) {
       console.error('Failed to export canvas:', error);
       setGenerationError(error instanceof Error ? error.message : 'Failed to export canvas');
+      posthogService.trackError('canvas_export_failed', { 
+        error: error instanceof Error ? error.message : String(error) 
+      });
     }
   }, [nodes, edges]);
 
@@ -387,9 +395,13 @@ const ReactFlowCanvas: React.FC = () => {
         await storageService.saveEdges(importedEdges);
         
         console.log(`✅ Imported ${restoredNodes.length} nodes and ${importedEdges.length} edges`);
+        posthogService.trackCanvasAction('import');
       } catch (error) {
         console.error('Failed to import canvas:', error);
         setGenerationError(error instanceof Error ? error.message : 'Failed to import canvas file');
+        posthogService.trackError('canvas_import_failed', { 
+          error: error instanceof Error ? error.message : String(error) 
+        });
       }
     };
     reader.readAsText(file);
@@ -615,10 +627,13 @@ const ReactFlowCanvas: React.FC = () => {
     setIsGenerating(true);
     setShowGenerationDialog(false);
 
+    const startTime = performance.now();
+
     try {
       const result = await cerebrasService.generateComponent(prompt);
       
       if (!result.success || !result.code) {
+        posthogService.trackComponentGeneration(prompt, false);
         throw new Error(result.error || 'Failed to generate component');
       }
       
@@ -669,9 +684,17 @@ const ReactFlowCanvas: React.FC = () => {
       };
 
       setNodes((nds) => [...nds, newNode]);
+      
+      // Track successful generation
+      const generationTime = performance.now() - startTime;
+      posthogService.trackComponentGeneration(prompt, true, generationTime);
     } catch (error) {
       console.error('Failed to generate component:', error);
       setGenerationError(error instanceof Error ? error.message : 'Failed to generate component');
+      posthogService.trackError('component_generation_failed', { 
+        prompt, 
+        error: error instanceof Error ? error.message : String(error) 
+      });
     } finally {
       setIsGenerating(false);
     }
@@ -877,7 +900,12 @@ const ReactFlowCanvas: React.FC = () => {
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <button
-                  onClick={() => setPresentationMode(!presentationMode)}
+                  onClick={() => {
+                    setPresentationMode(!presentationMode);
+                    if (!presentationMode) {
+                      posthogService.trackCanvasAction('present');
+                    }
+                  }}
                   style={{
                     background: presentationMode ? 'white' : 'rgba(255,255,255,0.2)',
                     color: presentationMode ? '#6366f1' : 'white',

@@ -74,7 +74,6 @@ Unified processing system for all component sources:
 - **Library**: Pre-built code → Compilation cache → Direct execution
 - **URL import**: Fetch → Format detection → Processing → Caching
 - **Pre-compiled**: Skip transpilation for performance
-- **Bit.dev**: (Future) Published components with versioning
 
 ## Development Setup
 
@@ -147,6 +146,38 @@ Pre-built Component → Check Compiled Cache
 Add to Canvas
 ```
 
+```mermaid
+graph TB
+    %% Entry Points
+    GenBtn["🎨 Generate Component Button<br/>(User clicks)"] --> AI["AI Code<br/>import { motion } from 'framer-motion'"]
+    LibBtn["📚 Component Library Button<br/>(User clicks)"] --> LibComp["Pre-built Component<br/>with CDN URL"]
+    URLBtn["🔗 Import from URL Button<br/>(User enters CDN URL)"] --> URLComp["CDN URL Import<br/>e.g. https://esm.sh/my-component"]
+    TestBtn["🧪 ESM Test Component<br/>(Development testing)"] --> TestComp["Test imports<br/>from CDN directly"]
+    
+    %% AI Flow
+    AI --> Pipeline["ComponentPipeline<br/>Processes JSX to JS"]
+    Pipeline --> ESM["esmExecutor.resolveImports()<br/>Rewrites bare imports to URLs"]
+    ESM --> Rewritten["Code with full URLs<br/>'https://esm.sh/framer-motion?external=react,react-dom'"]
+    Rewritten --> Blob["Creates Blob URL<br/>with rewritten code"]
+    Blob --> Import["import(blobURL)<br/>Executes the module"]
+    Import --> Success["Component Renders<br/>Single React instance"]
+    
+    %% CDN Direct Import Flow (Simplified)
+    LibComp --> Direct["Direct Import<br/>No processing needed"]
+    URLComp --> Direct
+    TestComp --> Direct
+    Direct --> Success
+    
+    classDef entry fill:#fab005,stroke:#f08c00,stroke-width:3px
+    classDef success fill:#51cf66,stroke:#2f9e44,stroke-width:2px
+    classDef normal fill:#4c6ef5,stroke:#364fc7,stroke-width:2px,color:#fff
+    
+    class GenBtn,LibBtn,URLBtn,TestBtn entry
+    class Success,Direct success
+    class Pipeline,ESM,Rewritten,Blob,Import normal
+```
+
+
 ## Key Components
 
 ### Frontend Components (`apps/frontend/src/components/`)
@@ -199,13 +230,6 @@ Module execution engine that:
 - Manages dynamic imports
 - Handles module cleanup
 - Provides execution context
-
-#### importFixer.ts
-Automatic import management:
-- Detects missing React hooks
-- Adds required imports
-- Maintains code structure
-- Handles edge cases
 
 ## Component Data Structure
 

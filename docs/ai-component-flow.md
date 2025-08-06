@@ -27,20 +27,13 @@ graph TB
     TestComp --> Direct
     Direct --> Success
     
-    %% Supporting elements
-    ESM -.-> Solution["All imports rewritten to<br/>esm.sh URLs with ?external=react,react-dom"]
-    Map["Import Map<br/>in index.html"] -.->|Not used| Blob
-    Map -->|Works for| Direct
-    
     classDef entry fill:#fab005,stroke:#f08c00,stroke-width:3px
     classDef success fill:#51cf66,stroke:#2f9e44,stroke-width:2px
     classDef normal fill:#4c6ef5,stroke:#364fc7,stroke-width:2px,color:#fff
-    classDef solution fill:#868e96,stroke:#495057,stroke-width:1px
     
     class GenBtn,LibBtn,URLBtn,TestBtn entry
     class Success,Direct success
     class Pipeline,ESM,Rewritten,Blob,Import normal
-    class Solution,Map solution
 ```
 
 ## Key Points

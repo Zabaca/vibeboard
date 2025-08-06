@@ -1,29 +1,26 @@
 import React, { useEffect, useRef } from 'react';
-import { EditorView, keymap, lineNumbers, highlightActiveLineGutter, highlightSpecialChars, drawSelection, dropCursor, rectangularSelection, crosshairCursor, highlightActiveLine } from '@codemirror/view';
+import { EditorView, keymap } from '@codemirror/view';
 import { EditorState } from '@codemirror/state';
 import { javascript } from '@codemirror/lang-javascript';
 import { oneDark } from '@codemirror/theme-one-dark';
-import { defaultKeymap, indentWithTab, history, historyKeymap } from '@codemirror/commands';
-import { searchKeymap, highlightSelectionMatches } from '@codemirror/search';
-import { autocompletion, completionKeymap, closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete';
-import { lintKeymap } from '@codemirror/lint';
-import { foldGutter, indentOnInput, syntaxHighlighting, defaultHighlightStyle, bracketMatching, foldKeymap } from '@codemirror/language';
+import { defaultKeymap } from '@codemirror/commands';
 
-interface CodeEditorCodeMirrorProps {
+interface CodeEditorSimpleProps {
   value: string;
   onChange?: (value: string) => void;
   placeholder?: string;
   readOnly?: boolean;
 }
 
-const CodeEditorCodeMirror: React.FC<CodeEditorCodeMirrorProps> = ({ 
+const CodeEditorSimple: React.FC<CodeEditorSimpleProps> = ({ 
   value, 
   onChange,
   placeholder = '// Enter your component code here...',
   readOnly = false,
 }) => {
-  // Note: placeholder is currently not used due to CodeMirror setup
-  void placeholder; // Suppress unused variable warning
+  // Note: placeholder is currently not used
+  void placeholder;
+  
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const onChangeRef = useRef(onChange);
@@ -36,52 +33,28 @@ const CodeEditorCodeMirror: React.FC<CodeEditorCodeMirrorProps> = ({
   useEffect(() => {
     if (!containerRef.current) return;
     
-    // Create the editor state
+    // Create the editor state with minimal extensions
     const startState = EditorState.create({
       doc: value || '',
       extensions: [
-        // Basic editor features
-        lineNumbers(),
-        highlightActiveLineGutter(),
-        highlightSpecialChars(),
-        history(),
-        foldGutter(),
-        drawSelection(),
-        dropCursor(),
-        EditorState.allowMultipleSelections.of(true),
-        indentOnInput(),
-        syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
-        bracketMatching(),
-        closeBrackets(),
-        autocompletion(),
-        rectangularSelection(),
-        crosshairCursor(),
-        highlightActiveLine(),
-        highlightSelectionMatches(),
-        
         // Language support
         javascript({ jsx: true }),
         
         // Theme
         oneDark,
         
-        // Keymaps
-        keymap.of([
-          ...closeBracketsKeymap,
-          ...defaultKeymap,
-          ...searchKeymap,
-          ...historyKeymap,
-          ...foldKeymap,
-          ...completionKeymap,
-          ...lintKeymap,
-          indentWithTab,
-        ]),
-        EditorView.updateListener.of((update) => {
+        // Basic keymap
+        keymap.of(defaultKeymap),
+        
+        // Update listener
+        EditorView.updateListener.of((update: any) => {
           if (update.docChanged && onChangeRef.current) {
             const newValue = update.state.doc.toString();
             onChangeRef.current(newValue);
           }
         }),
+        
+        // Theme overrides
         EditorView.theme({
           '&': {
             height: '100%',
@@ -94,10 +67,6 @@ const CodeEditorCodeMirror: React.FC<CodeEditorCodeMirrorProps> = ({
           '.cm-focused .cm-cursor': {
             borderLeftColor: '#d4d4d4',
           },
-          '.cm-placeholder': {
-            color: '#666',
-            fontStyle: 'italic',
-          },
           '&.cm-editor': {
             borderRadius: '8px',
           },
@@ -108,6 +77,8 @@ const CodeEditorCodeMirror: React.FC<CodeEditorCodeMirrorProps> = ({
             fontFamily: 'Consolas, Monaco, "Courier New", monospace',
           },
         }),
+        
+        // Read-only state
         EditorState.readOnly.of(readOnly),
         EditorView.editable.of(!readOnly),
       ],
@@ -126,9 +97,9 @@ const CodeEditorCodeMirror: React.FC<CodeEditorCodeMirrorProps> = ({
       view.destroy();
       viewRef.current = null;
     };
-  }, [readOnly]); // Only recreate on readOnly change
+  }, [readOnly]);
   
-  // Update content when value prop changes (but not from our own changes)
+  // Update content when value prop changes
   useEffect(() => {
     if (viewRef.current) {
       const currentValue = viewRef.current.state.doc.toString();
@@ -158,4 +129,4 @@ const CodeEditorCodeMirror: React.FC<CodeEditorCodeMirrorProps> = ({
   );
 };
 
-export default React.memo(CodeEditorCodeMirror);
+export default React.memo(CodeEditorSimple);

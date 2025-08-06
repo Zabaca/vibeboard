@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import CodeEditorCodeMirror from './CodeEditorCodeMirror.tsx';
+import CodeEditorSimple from './CodeEditorSimple.tsx';
 import { useWhyDidYouUpdate } from '../hooks/useWhyDidYouUpdate.ts';
 import { codeEditDialogStyles } from './CodeEditDialog.styles.ts';
 
@@ -268,7 +268,7 @@ const CodeEditDialog: React.FC<CodeEditDialogProps> = ({
               borderRadius: '8px',
               overflow: 'hidden',
             }}>
-              <CodeEditorCodeMirror
+              <CodeEditorSimple
                 value={editedCode}
                 onChange={setEditedCode}
                 placeholder="// Enter your component code here..."

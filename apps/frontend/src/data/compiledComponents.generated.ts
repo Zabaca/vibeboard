@@ -2,9 +2,9 @@
  * AUTO-GENERATED FILE - DO NOT EDIT
  * 
  * This file contains pre-compiled library components for optimal performance.
- * Generated: 2025-08-06T09:33:31.890Z
+ * Generated: 2025-08-06T09:37:37.994Z
  * Components: 9
- * Compilation time: 44ms
+ * Compilation time: 46ms
  * 
  * To regenerate: npm run compile:components
  */
@@ -17,7 +17,7 @@ export interface CompiledComponent extends UnifiedComponentNode {
 }
 
 export const COMPILER_VERSION = '1.0.0';
-export const BUILD_TIME = 1754472811891;
+export const BUILD_TIME = 1754473057994;
 export const COMPONENT_COUNT = 9;
 
 /**
@@ -33,7 +33,7 @@ export const compiledComponents: CompiledComponent[] = [
     "compiledCode": "import React, { useState } from 'react';\nexport default function AnimatedButton() {\n  const [clicked, setClicked] = useState(false);\n  const [hovered, setHovered] = useState(false);\n  const handleClick = () => {\n    setClicked(true);\n    setTimeout(() => setClicked(false), 600);\n  };\n  return /*#__PURE__*/React.createElement(\"div\", {\n    style: {\n      display: 'flex',\n      justifyContent: 'center',\n      alignItems: 'center',\n      height: '100%',\n      backgroundColor: '#f3f4f6'\n    }\n  }, /*#__PURE__*/React.createElement(\"button\", {\n    onClick: handleClick,\n    onMouseEnter: () => setHovered(true),\n    onMouseLeave: () => setHovered(false),\n    style: {\n      padding: '12px 24px',\n      fontSize: '16px',\n      fontWeight: '600',\n      color: 'white',\n      backgroundColor: hovered ? '#4f46e5' : '#6366f1',\n      border: 'none',\n      borderRadius: '8px',\n      cursor: 'pointer',\n      transform: clicked ? 'scale(0.95)' : hovered ? 'scale(1.05)' : 'scale(1)',\n      transition: 'all 0.2s ease',\n      boxShadow: hovered ? '0 10px 25px rgba(99, 102, 241, 0.3)' : '0 4px 6px rgba(0, 0, 0, 0.1)'\n    }\n  }, clicked ? '✨ Clicked!' : 'Click Me'));\n}",
     "originalHash": "547e04",
     "compiledHash": "cbix6n",
-    "compiledAt": 1754472811857,
+    "compiledAt": 1754473057960,
     "source": "library",
     "format": "jsx",
     "compilerVersion": "1.0.0",
@@ -45,7 +45,7 @@ export const compiledComponents: CompiledComponent[] = [
         "interactive"
       ]
     },
-    "buildTime": 1754472811857,
+    "buildTime": 1754473057960,
     "buildVersion": "1.0.0"
   },
   {
@@ -56,7 +56,7 @@ export const compiledComponents: CompiledComponent[] = [
     "compiledCode": "import React, { useState } from 'react';\nexport default function ProfileCard() {\n  const [following, setFollowing] = useState(false);\n  return /*#__PURE__*/React.createElement(\"div\", {\n    style: {\n      display: 'flex',\n      justifyContent: 'center',\n      alignItems: 'center',\n      height: '100%',\n      backgroundColor: '#f9fafb'\n    }\n  }, /*#__PURE__*/React.createElement(\"div\", {\n    style: {\n      backgroundColor: 'white',\n      borderRadius: '16px',\n      padding: '24px',\n      boxShadow: '0 10px 25px rgba(0, 0, 0, 0.08)',\n      width: '280px',\n      textAlign: 'center'\n    }\n  }, /*#__PURE__*/React.createElement(\"div\", {\n    style: {\n      width: '80px',\n      height: '80px',\n      borderRadius: '50%',\n      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',\n      margin: '0 auto 16px',\n      display: 'flex',\n      alignItems: 'center',\n      justifyContent: 'center',\n      fontSize: '32px',\n      color: 'white'\n    }\n  }, \"\\uD83D\\uDC64\"), /*#__PURE__*/React.createElement(\"h3\", {\n    style: {\n      margin: '0 0 4px',\n      color: '#111827'\n    }\n  }, \"Sarah Johnson\"), /*#__PURE__*/React.createElement(\"p\", {\n    style: {\n      margin: '0 0 16px',\n      color: '#6b7280',\n      fontSize: '14px'\n    }\n  }, \"@sarahj \\u2022 Product Designer\"), /*#__PURE__*/React.createElement(\"div\", {\n    style: {\n      display: 'flex',\n      justifyContent: 'space-around',\n      paddingTop: '16px',\n      borderTop: '1px solid #e5e7eb',\n      marginBottom: '16px'\n    }\n  }, /*#__PURE__*/React.createElement(\"div\", null, /*#__PURE__*/React.createElement(\"div\", {\n    style: {\n      fontSize: '20px',\n      fontWeight: 'bold',\n      color: '#111827'\n    }\n  }, \"152\"), /*#__PURE__*/React.createElement(\"div\", {\n    style: {\n      fontSize: '12px',\n      color: '#6b7280'\n    }\n  }, \"Posts\")), /*#__PURE__*/React.createElement(\"div\", null, /*#__PURE__*/React.createElement(\"div\", {\n    style: {\n      fontSize: '20px',\n      fontWeight: 'bold',\n      color: '#111827'\n    }\n  }, \"2.1k\"), /*#__PURE__*/React.createElement(\"div\", {\n    style: {\n      fontSize: '12px',\n      color: '#6b7280'\n    }\n  }, \"Followers\")), /*#__PURE__*/React.createElement(\"div\", null, /*#__PURE__*/React.createElement(\"div\", {\n    style: {\n      fontSize: '20px',\n      fontWeight: 'bold',\n      color: '#111827'\n    }\n  }, \"428\"), /*#__PURE__*/React.createElement(\"div\", {\n    style: {\n      fontSize: '12px',\n      color: '#6b7280'\n    }\n  }, \"Following\"))), /*#__PURE__*/React.createElement(\"button\", {\n    onClick: () => setFollowing(!following),\n    style: {\n      width: '100%',\n      padding: '10px',\n      backgroundColor: following ? 'white' : '#6366f1',\n      color: following ? '#6366f1' : 'white',\n      border: following ? '2px solid #6366f1' : 'none',\n      borderRadius: '8px',\n      fontWeight: '600',\n      cursor: 'pointer',\n      transition: 'all 0.2s ease'\n    }\n  }, following ? 'Following' : 'Follow')));\n}",
     "originalHash": "8b07bq",
     "compiledHash": "ym6ukg",
-    "compiledAt": 1754472811863,
+    "compiledAt": 1754473057966,
     "source": "library",
     "format": "jsx",
     "compilerVersion": "1.0.0",
@@ -68,7 +68,7 @@ export const compiledComponents: CompiledComponent[] = [
         "user"
       ]
     },
-    "buildTime": 1754472811863,
+    "buildTime": 1754473057966,
     "buildVersion": "1.0.0"
   },
   {
@@ -79,7 +79,7 @@ export const compiledComponents: CompiledComponent[] = [
     "compiledCode": "import React, { useState } from 'react';\nexport default function SimpleCounter() {\n  const [count, setCount] = useState(0);\n  return /*#__PURE__*/React.createElement(\"div\", {\n    style: {\n      display: 'flex',\n      flexDirection: 'column',\n      justifyContent: 'center',\n      alignItems: 'center',\n      height: '100%',\n      backgroundColor: '#f8fafc',\n      fontFamily: 'system-ui, sans-serif'\n    }\n  }, /*#__PURE__*/React.createElement(\"h2\", {\n    style: {\n      color: '#1e293b',\n      marginBottom: '20px'\n    }\n  }, \"Counter\"), /*#__PURE__*/React.createElement(\"div\", {\n    style: {\n      fontSize: '48px',\n      fontWeight: 'bold',\n      color: '#3b82f6',\n      margin: '20px 0',\n      padding: '20px',\n      backgroundColor: 'white',\n      borderRadius: '12px',\n      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',\n      minWidth: '120px',\n      textAlign: 'center'\n    }\n  }, count), /*#__PURE__*/React.createElement(\"div\", {\n    style: {\n      display: 'flex',\n      gap: '12px'\n    }\n  }, /*#__PURE__*/React.createElement(\"button\", {\n    onClick: () => setCount(count - 1),\n    style: {\n      padding: '12px 20px',\n      fontSize: '18px',\n      fontWeight: '600',\n      backgroundColor: '#ef4444',\n      color: 'white',\n      border: 'none',\n      borderRadius: '8px',\n      cursor: 'pointer',\n      transition: 'all 0.2s ease'\n    }\n  }, \"-\"), /*#__PURE__*/React.createElement(\"button\", {\n    onClick: () => setCount(0),\n    style: {\n      padding: '12px 20px',\n      fontSize: '14px',\n      fontWeight: '600',\n      backgroundColor: '#6b7280',\n      color: 'white',\n      border: 'none',\n      borderRadius: '8px',\n      cursor: 'pointer',\n      transition: 'all 0.2s ease'\n    }\n  }, \"Reset\"), /*#__PURE__*/React.createElement(\"button\", {\n    onClick: () => setCount(count + 1),\n    style: {\n      padding: '12px 20px',\n      fontSize: '18px',\n      fontWeight: '600',\n      backgroundColor: '#10b981',\n      color: 'white',\n      border: 'none',\n      borderRadius: '8px',\n      cursor: 'pointer',\n      transition: 'all 0.2s ease'\n    }\n  }, \"+\")));\n}",
     "originalHash": "sr67qh",
     "compiledHash": "i1b1ox",
-    "compiledAt": 1754472811867,
+    "compiledAt": 1754473057970,
     "source": "library",
     "format": "jsx",
     "compilerVersion": "1.0.0",
@@ -91,7 +91,7 @@ export const compiledComponents: CompiledComponent[] = [
         "interactive"
       ]
     },
-    "buildTime": 1754472811867,
+    "buildTime": 1754473057970,
     "buildVersion": "1.0.0"
   },
   {
@@ -102,7 +102,7 @@ export const compiledComponents: CompiledComponent[] = [
     "compiledCode": "import React, { useState, useEffect } from 'react';\nexport default function CountdownTimer() {\n  const [seconds, setSeconds] = useState(60);\n  const [isActive, setIsActive] = useState(false);\n  const [initialTime, setInitialTime] = useState(60);\n  useEffect(() => {\n    let interval = null;\n    if (isActive && seconds > 0) {\n      interval = setInterval(() => {\n        setSeconds(seconds => seconds - 1);\n      }, 1000);\n    } else if (seconds === 0) {\n      setIsActive(false);\n    }\n    return () => clearInterval(interval);\n  }, [isActive, seconds]);\n  const toggle = () => setIsActive(!isActive);\n  const reset = () => {\n    setSeconds(initialTime);\n    setIsActive(false);\n  };\n  const formatTime = time => {\n    const minutes = Math.floor(time / 60);\n    const secs = time % 60;\n    return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;\n  };\n  return /*#__PURE__*/React.createElement(\"div\", {\n    style: {\n      display: 'flex',\n      flexDirection: 'column',\n      justifyContent: 'center',\n      alignItems: 'center',\n      height: '100%',\n      backgroundColor: '#1f2937',\n      color: 'white',\n      fontFamily: 'monospace'\n    }\n  }, /*#__PURE__*/React.createElement(\"h2\", {\n    style: {\n      color: '#f3f4f6',\n      marginBottom: '20px'\n    }\n  }, \"Countdown Timer\"), /*#__PURE__*/React.createElement(\"div\", {\n    style: {\n      fontSize: '64px',\n      fontWeight: 'bold',\n      color: seconds <= 10 ? '#ef4444' : '#10b981',\n      margin: '20px 0',\n      padding: '30px',\n      backgroundColor: 'rgba(255, 255, 255, 0.1)',\n      borderRadius: '16px',\n      backdropFilter: 'blur(10px)',\n      minWidth: '200px',\n      textAlign: 'center'\n    }\n  }, formatTime(seconds)), /*#__PURE__*/React.createElement(\"div\", {\n    style: {\n      display: 'flex',\n      gap: '12px',\n      marginBottom: '20px'\n    }\n  }, /*#__PURE__*/React.createElement(\"button\", {\n    onClick: toggle,\n    style: {\n      padding: '12px 24px',\n      fontSize: '16px',\n      fontWeight: '600',\n      backgroundColor: isActive ? '#f59e0b' : '#10b981',\n      color: 'white',\n      border: 'none',\n      borderRadius: '8px',\n      cursor: 'pointer',\n      transition: 'all 0.2s ease'\n    }\n  }, isActive ? 'Pause' : 'Start'), /*#__PURE__*/React.createElement(\"button\", {\n    onClick: reset,\n    style: {\n      padding: '12px 24px',\n      fontSize: '16px',\n      fontWeight: '600',\n      backgroundColor: '#6b7280',\n      color: 'white',\n      border: 'none',\n      borderRadius: '8px',\n      cursor: 'pointer',\n      transition: 'all 0.2s ease'\n    }\n  }, \"Reset\")), /*#__PURE__*/React.createElement(\"input\", {\n    type: \"range\",\n    min: \"10\",\n    max: \"300\",\n    value: initialTime,\n    onChange: e => {\n      const newTime = parseInt(e.target.value);\n      setInitialTime(newTime);\n      if (!isActive) setSeconds(newTime);\n    },\n    style: {\n      width: '200px',\n      accentColor: '#10b981'\n    }\n  }), /*#__PURE__*/React.createElement(\"p\", {\n    style: {\n      marginTop: '10px',\n      fontSize: '14px',\n      opacity: 0.7\n    }\n  }, \"Set timer: \", formatTime(initialTime)));\n}",
     "originalHash": "2anlj3",
     "compiledHash": "tmm170",
-    "compiledAt": 1754472811872,
+    "compiledAt": 1754473057975,
     "source": "library",
     "format": "jsx",
     "compilerVersion": "1.0.0",
@@ -114,7 +114,7 @@ export const compiledComponents: CompiledComponent[] = [
         "time"
       ]
     },
-    "buildTime": 1754472811872,
+    "buildTime": 1754473057975,
     "buildVersion": "1.0.0"
   },
   {
@@ -125,7 +125,7 @@ export const compiledComponents: CompiledComponent[] = [
     "compiledCode": "import React, { useState } from 'react';\nexport default function ContactForm() {\n  const [formData, setFormData] = useState({\n    name: '',\n    email: '',\n    message: ''\n  });\n  const [submitted, setSubmitted] = useState(false);\n  const handleSubmit = e => {\n    e.preventDefault();\n    setSubmitted(true);\n    setTimeout(() => setSubmitted(false), 3000);\n  };\n  const handleChange = e => {\n    setFormData({\n      ...formData,\n      [e.target.name]: e.target.value\n    });\n  };\n  if (submitted) {\n    return /*#__PURE__*/React.createElement(\"div\", {\n      style: {\n        display: 'flex',\n        justifyContent: 'center',\n        alignItems: 'center',\n        height: '100%',\n        backgroundColor: '#f0fdf4'\n      }\n    }, /*#__PURE__*/React.createElement(\"div\", {\n      style: {\n        textAlign: 'center',\n        padding: '40px',\n        backgroundColor: 'white',\n        borderRadius: '12px',\n        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'\n      }\n    }, /*#__PURE__*/React.createElement(\"div\", {\n      style: {\n        fontSize: '48px',\n        marginBottom: '16px'\n      }\n    }, \"\\u2705\"), /*#__PURE__*/React.createElement(\"h3\", {\n      style: {\n        color: '#16a34a',\n        marginBottom: '8px'\n      }\n    }, \"Message Sent!\"), /*#__PURE__*/React.createElement(\"p\", {\n      style: {\n        color: '#6b7280'\n      }\n    }, \"Thank you for contacting us.\")));\n  }\n  return /*#__PURE__*/React.createElement(\"div\", {\n    style: {\n      display: 'flex',\n      justifyContent: 'center',\n      alignItems: 'center',\n      height: '100%',\n      backgroundColor: '#f8fafc',\n      padding: '20px'\n    }\n  }, /*#__PURE__*/React.createElement(\"form\", {\n    onSubmit: handleSubmit,\n    style: {\n      backgroundColor: 'white',\n      padding: '32px',\n      borderRadius: '12px',\n      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',\n      width: '100%',\n      maxWidth: '400px'\n    }\n  }, /*#__PURE__*/React.createElement(\"h2\", {\n    style: {\n      marginBottom: '24px',\n      color: '#1e293b',\n      textAlign: 'center'\n    }\n  }, \"Contact Us\"), /*#__PURE__*/React.createElement(\"div\", {\n    style: {\n      marginBottom: '16px'\n    }\n  }, /*#__PURE__*/React.createElement(\"label\", {\n    style: {\n      display: 'block',\n      marginBottom: '4px',\n      color: '#374151',\n      fontSize: '14px',\n      fontWeight: '600'\n    }\n  }, \"Name\"), /*#__PURE__*/React.createElement(\"input\", {\n    type: \"text\",\n    name: \"name\",\n    value: formData.name,\n    onChange: handleChange,\n    required: true,\n    style: {\n      width: '100%',\n      padding: '12px',\n      border: '2px solid #e5e7eb',\n      borderRadius: '8px',\n      fontSize: '16px',\n      transition: 'border-color 0.2s ease'\n    }\n  })), /*#__PURE__*/React.createElement(\"div\", {\n    style: {\n      marginBottom: '16px'\n    }\n  }, /*#__PURE__*/React.createElement(\"label\", {\n    style: {\n      display: 'block',\n      marginBottom: '4px',\n      color: '#374151',\n      fontSize: '14px',\n      fontWeight: '600'\n    }\n  }, \"Email\"), /*#__PURE__*/React.createElement(\"input\", {\n    type: \"email\",\n    name: \"email\",\n    value: formData.email,\n    onChange: handleChange,\n    required: true,\n    style: {\n      width: '100%',\n      padding: '12px',\n      border: '2px solid #e5e7eb',\n      borderRadius: '8px',\n      fontSize: '16px',\n      transition: 'border-color 0.2s ease'\n    }\n  })), /*#__PURE__*/React.createElement(\"div\", {\n    style: {\n      marginBottom: '24px'\n    }\n  }, /*#__PURE__*/React.createElement(\"label\", {\n    style: {\n      display: 'block',\n      marginBottom: '4px',\n      color: '#374151',\n      fontSize: '14px',\n      fontWeight: '600'\n    }\n  }, \"Message\"), /*#__PURE__*/React.createElement(\"textarea\", {\n    name: \"message\",\n    value: formData.message,\n    onChange: handleChange,\n    required: true,\n    rows: 4,\n    style: {\n      width: '100%',\n      padding: '12px',\n      border: '2px solid #e5e7eb',\n      borderRadius: '8px',\n      fontSize: '16px',\n      resize: 'vertical',\n      transition: 'border-color 0.2s ease'\n    }\n  })), /*#__PURE__*/React.createElement(\"button\", {\n    type: \"submit\",\n    style: {\n      width: '100%',\n      padding: '12px',\n      backgroundColor: '#6366f1',\n      color: 'white',\n      border: 'none',\n      borderRadius: '8px',\n      fontSize: '16px',\n      fontWeight: '600',\n      cursor: 'pointer',\n      transition: 'background-color 0.2s ease'\n    }\n  }, \"Send Message\")));\n}",
     "originalHash": "b4gks5",
     "compiledHash": "fmpk0p",
-    "compiledAt": 1754472811877,
+    "compiledAt": 1754473057980,
     "source": "library",
     "format": "jsx",
     "compilerVersion": "1.0.0",
@@ -137,7 +137,7 @@ export const compiledComponents: CompiledComponent[] = [
         "validation"
       ]
     },
-    "buildTime": 1754472811877,
+    "buildTime": 1754473057980,
     "buildVersion": "1.0.0"
   },
   {
@@ -148,7 +148,7 @@ export const compiledComponents: CompiledComponent[] = [
     "compiledCode": "import React, { useState, useEffect } from 'react';\nexport default function BarChart() {\n  const [animated, setAnimated] = useState(false);\n  const data = [{\n    label: 'Jan',\n    value: 65,\n    color: '#3b82f6'\n  }, {\n    label: 'Feb',\n    value: 45,\n    color: '#10b981'\n  }, {\n    label: 'Mar',\n    value: 85,\n    color: '#f59e0b'\n  }, {\n    label: 'Apr',\n    value: 75,\n    color: '#ef4444'\n  }, {\n    label: 'May',\n    value: 95,\n    color: '#8b5cf6'\n  }, {\n    label: 'Jun',\n    value: 55,\n    color: '#06b6d4'\n  }];\n  useEffect(() => {\n    setTimeout(() => setAnimated(true), 300);\n  }, []);\n  const maxValue = Math.max(...data.map(d => d.value));\n  return /*#__PURE__*/React.createElement(\"div\", {\n    style: {\n      display: 'flex',\n      flexDirection: 'column',\n      justifyContent: 'center',\n      alignItems: 'center',\n      height: '100%',\n      backgroundColor: '#f8fafc',\n      padding: '20px',\n      fontFamily: 'system-ui, sans-serif'\n    }\n  }, /*#__PURE__*/React.createElement(\"h2\", {\n    style: {\n      color: '#1e293b',\n      marginBottom: '20px'\n    }\n  }, \"Monthly Sales\"), /*#__PURE__*/React.createElement(\"div\", {\n    style: {\n      display: 'flex',\n      alignItems: 'end',\n      gap: '12px',\n      height: '200px',\n      padding: '20px',\n      backgroundColor: 'white',\n      borderRadius: '12px',\n      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'\n    }\n  }, data.map((item, index) => /*#__PURE__*/React.createElement(\"div\", {\n    key: item.label,\n    style: {\n      display: 'flex',\n      flexDirection: 'column',\n      alignItems: 'center',\n      gap: '8px'\n    }\n  }, /*#__PURE__*/React.createElement(\"div\", {\n    style: {\n      fontSize: '12px',\n      fontWeight: '600',\n      color: '#374151'\n    }\n  }, item.value, \"%\"), /*#__PURE__*/React.createElement(\"div\", {\n    style: {\n      width: '40px',\n      height: animated ? `${item.value / maxValue * 150}px` : '0px',\n      backgroundColor: item.color,\n      borderRadius: '4px 4px 0 0',\n      transition: `height 0.8s ease ${index * 0.1}s`,\n      display: 'flex',\n      alignItems: 'end',\n      justifyContent: 'center'\n    }\n  }), /*#__PURE__*/React.createElement(\"div\", {\n    style: {\n      fontSize: '14px',\n      fontWeight: '600',\n      color: '#6b7280'\n    }\n  }, item.label)))), /*#__PURE__*/React.createElement(\"button\", {\n    onClick: () => {\n      setAnimated(false);\n      setTimeout(() => setAnimated(true), 100);\n    },\n    style: {\n      marginTop: '20px',\n      padding: '8px 16px',\n      backgroundColor: '#6366f1',\n      color: 'white',\n      border: 'none',\n      borderRadius: '6px',\n      cursor: 'pointer',\n      fontSize: '14px',\n      fontWeight: '600'\n    }\n  }, \"Animate Again\"));\n}",
     "originalHash": "w7dbdc",
     "compiledHash": "2spuew",
-    "compiledAt": 1754472811879,
+    "compiledAt": 1754473057983,
     "source": "library",
     "format": "jsx",
     "compilerVersion": "1.0.0",
@@ -161,7 +161,7 @@ export const compiledComponents: CompiledComponent[] = [
         "visualization"
       ]
     },
-    "buildTime": 1754472811879,
+    "buildTime": 1754473057983,
     "buildVersion": "1.0.0"
   },
   {
@@ -172,7 +172,7 @@ export const compiledComponents: CompiledComponent[] = [
     "compiledCode": "import React, { useState } from 'react';\nexport default function SimpleTabs() {\n  const [activeTab, setActiveTab] = useState('home');\n  const tabs = [{\n    id: 'home',\n    label: '🏠 Home',\n    content: 'Welcome to the home page! This is where you\\'ll find the latest updates and news.'\n  }, {\n    id: 'about',\n    label: '👥 About',\n    content: 'Learn more about our company, mission, and the team behind our products.'\n  }, {\n    id: 'services',\n    label: '⚙️ Services',\n    content: 'Explore our range of services including web development, design, and consulting.'\n  }, {\n    id: 'contact',\n    label: '📞 Contact',\n    content: 'Get in touch with us through email, phone, or visit our office location.'\n  }];\n  return /*#__PURE__*/React.createElement(\"div\", {\n    style: {\n      display: 'flex',\n      flexDirection: 'column',\n      height: '100%',\n      backgroundColor: '#f8fafc',\n      fontFamily: 'system-ui, sans-serif'\n    }\n  }, /*#__PURE__*/React.createElement(\"div\", {\n    style: {\n      display: 'flex',\n      borderBottom: '2px solid #e5e7eb',\n      backgroundColor: 'white'\n    }\n  }, tabs.map(tab => /*#__PURE__*/React.createElement(\"button\", {\n    key: tab.id,\n    onClick: () => setActiveTab(tab.id),\n    style: {\n      padding: '16px 24px',\n      border: 'none',\n      backgroundColor: 'transparent',\n      color: activeTab === tab.id ? '#6366f1' : '#6b7280',\n      fontSize: '16px',\n      fontWeight: '600',\n      cursor: 'pointer',\n      borderBottom: activeTab === tab.id ? '3px solid #6366f1' : '3px solid transparent',\n      transition: 'all 0.2s ease'\n    }\n  }, tab.label))), /*#__PURE__*/React.createElement(\"div\", {\n    style: {\n      flex: 1,\n      padding: '32px',\n      backgroundColor: 'white',\n      display: 'flex',\n      alignItems: 'center',\n      justifyContent: 'center'\n    }\n  }, /*#__PURE__*/React.createElement(\"div\", {\n    style: {\n      maxWidth: '600px',\n      textAlign: 'center'\n    }\n  }, /*#__PURE__*/React.createElement(\"h2\", {\n    style: {\n      color: '#1e293b',\n      marginBottom: '16px',\n      fontSize: '24px'\n    }\n  }, tabs.find(tab => tab.id === activeTab)?.label), /*#__PURE__*/React.createElement(\"p\", {\n    style: {\n      color: '#6b7280',\n      fontSize: '16px',\n      lineHeight: '1.6'\n    }\n  }, tabs.find(tab => tab.id === activeTab)?.content))));\n}",
     "originalHash": "3p7igv",
     "compiledHash": "ec8a22",
-    "compiledAt": 1754472811884,
+    "compiledAt": 1754473057988,
     "source": "library",
     "format": "jsx",
     "compilerVersion": "1.0.0",
@@ -184,7 +184,7 @@ export const compiledComponents: CompiledComponent[] = [
         "layout"
       ]
     },
-    "buildTime": 1754472811884,
+    "buildTime": 1754473057988,
     "buildVersion": "1.0.0"
   },
   {
@@ -195,7 +195,7 @@ export const compiledComponents: CompiledComponent[] = [
     "compiledCode": "import React, { useState, useEffect } from 'react';\nexport default function DigitalClock() {\n  const [time, setTime] = useState(new Date());\n  useEffect(() => {\n    const timer = setInterval(() => {\n      setTime(new Date());\n    }, 1000);\n    return () => clearInterval(timer);\n  }, []);\n  const formatTime = date => {\n    return date.toLocaleTimeString('en-US', {\n      hour12: true,\n      hour: '2-digit',\n      minute: '2-digit',\n      second: '2-digit'\n    });\n  };\n  const formatDate = date => {\n    return date.toLocaleDateString('en-US', {\n      weekday: 'long',\n      year: 'numeric',\n      month: 'long',\n      day: 'numeric'\n    });\n  };\n  return /*#__PURE__*/React.createElement(\"div\", {\n    style: {\n      display: 'flex',\n      flexDirection: 'column',\n      justifyContent: 'center',\n      alignItems: 'center',\n      height: '100%',\n      backgroundColor: '#0f172a',\n      color: 'white',\n      fontFamily: 'monospace'\n    }\n  }, /*#__PURE__*/React.createElement(\"div\", {\n    style: {\n      textAlign: 'center',\n      padding: '40px',\n      backgroundColor: 'rgba(255, 255, 255, 0.05)',\n      borderRadius: '20px',\n      backdropFilter: 'blur(10px)',\n      border: '1px solid rgba(255, 255, 255, 0.1)'\n    }\n  }, /*#__PURE__*/React.createElement(\"div\", {\n    style: {\n      fontSize: '48px',\n      fontWeight: 'bold',\n      color: '#00ff88',\n      marginBottom: '16px',\n      textShadow: '0 0 20px rgba(0, 255, 136, 0.3)',\n      letterSpacing: '2px'\n    }\n  }, formatTime(time)), /*#__PURE__*/React.createElement(\"div\", {\n    style: {\n      fontSize: '18px',\n      color: '#94a3b8',\n      marginBottom: '20px',\n      fontFamily: 'system-ui, sans-serif'\n    }\n  }, formatDate(time)), /*#__PURE__*/React.createElement(\"div\", {\n    style: {\n      display: 'flex',\n      justifyContent: 'space-between',\n      gap: '20px',\n      marginTop: '20px',\n      fontSize: '14px',\n      color: '#64748b'\n    }\n  }, /*#__PURE__*/React.createElement(\"div\", null, /*#__PURE__*/React.createElement(\"div\", {\n    style: {\n      color: '#00ff88'\n    }\n  }, \"UTC\"), /*#__PURE__*/React.createElement(\"div\", null, time.toUTCString().slice(-12, -4))), /*#__PURE__*/React.createElement(\"div\", null, /*#__PURE__*/React.createElement(\"div\", {\n    style: {\n      color: '#00ff88'\n    }\n  }, \"UNIX\"), /*#__PURE__*/React.createElement(\"div\", null, Math.floor(time.getTime() / 1000))))));\n}",
     "originalHash": "cypipp",
     "compiledHash": "9czo30",
-    "compiledAt": 1754472811887,
+    "compiledAt": 1754473057990,
     "source": "library",
     "format": "jsx",
     "compilerVersion": "1.0.0",
@@ -208,7 +208,7 @@ export const compiledComponents: CompiledComponent[] = [
         "realtime"
       ]
     },
-    "buildTime": 1754472811887,
+    "buildTime": 1754473057990,
     "buildVersion": "1.0.0"
   },
   {
@@ -219,7 +219,7 @@ export const compiledComponents: CompiledComponent[] = [
     "compiledCode": "import React, { useState } from 'react';\nexport default function TodoList() {\n  const [todos, setTodos] = useState([{\n    id: 1,\n    text: 'Build amazing UI',\n    done: false\n  }, {\n    id: 2,\n    text: 'Learn React hooks',\n    done: true\n  }, {\n    id: 3,\n    text: 'Create ESM components',\n    done: false\n  }]);\n  const [newTodo, setNewTodo] = useState('');\n  const addTodo = () => {\n    if (newTodo.trim()) {\n      setTodos([...todos, {\n        id: Date.now(),\n        text: newTodo.trim(),\n        done: false\n      }]);\n      setNewTodo('');\n    }\n  };\n  const toggleTodo = id => {\n    setTodos(todos.map(todo => todo.id === id ? {\n      ...todo,\n      done: !todo.done\n    } : todo));\n  };\n  const deleteTodo = id => {\n    setTodos(todos.filter(todo => todo.id !== id));\n  };\n  const handleKeyPress = e => {\n    if (e.key === 'Enter') {\n      addTodo();\n    }\n  };\n  const completedCount = todos.filter(todo => todo.done).length;\n  return /*#__PURE__*/React.createElement(\"div\", {\n    style: {\n      display: 'flex',\n      flexDirection: 'column',\n      height: '100%',\n      backgroundColor: '#f1f5f9',\n      fontFamily: 'system-ui, sans-serif'\n    }\n  }, /*#__PURE__*/React.createElement(\"div\", {\n    style: {\n      backgroundColor: 'white',\n      padding: '24px',\n      borderBottom: '1px solid #e2e8f0'\n    }\n  }, /*#__PURE__*/React.createElement(\"h2\", {\n    style: {\n      margin: '0 0 16px 0',\n      color: '#1e293b'\n    }\n  }, \"Todo List\"), /*#__PURE__*/React.createElement(\"div\", {\n    style: {\n      display: 'flex',\n      gap: '8px'\n    }\n  }, /*#__PURE__*/React.createElement(\"input\", {\n    type: \"text\",\n    value: newTodo,\n    onChange: e => setNewTodo(e.target.value),\n    onKeyPress: handleKeyPress,\n    placeholder: \"Add a new task...\",\n    style: {\n      flex: 1,\n      padding: '12px',\n      border: '2px solid #e2e8f0',\n      borderRadius: '8px',\n      fontSize: '16px'\n    }\n  }), /*#__PURE__*/React.createElement(\"button\", {\n    onClick: addTodo,\n    style: {\n      padding: '12px 20px',\n      backgroundColor: '#6366f1',\n      color: 'white',\n      border: 'none',\n      borderRadius: '8px',\n      fontSize: '16px',\n      fontWeight: '600',\n      cursor: 'pointer'\n    }\n  }, \"Add\")), /*#__PURE__*/React.createElement(\"p\", {\n    style: {\n      margin: '12px 0 0 0',\n      fontSize: '14px',\n      color: '#64748b'\n    }\n  }, completedCount, \" of \", todos.length, \" tasks completed\")), /*#__PURE__*/React.createElement(\"div\", {\n    style: {\n      flex: 1,\n      overflow: 'auto',\n      padding: '16px'\n    }\n  }, todos.length === 0 ? /*#__PURE__*/React.createElement(\"div\", {\n    style: {\n      textAlign: 'center',\n      padding: '40px',\n      color: '#64748b'\n    }\n  }, \"No tasks yet. Add one above!\") : todos.map(todo => /*#__PURE__*/React.createElement(\"div\", {\n    key: todo.id,\n    style: {\n      display: 'flex',\n      alignItems: 'center',\n      gap: '12px',\n      padding: '12px',\n      backgroundColor: 'white',\n      borderRadius: '8px',\n      marginBottom: '8px',\n      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'\n    }\n  }, /*#__PURE__*/React.createElement(\"input\", {\n    type: \"checkbox\",\n    checked: todo.done,\n    onChange: () => toggleTodo(todo.id),\n    style: {\n      transform: 'scale(1.2)',\n      accentColor: '#6366f1'\n    }\n  }), /*#__PURE__*/React.createElement(\"span\", {\n    style: {\n      flex: 1,\n      fontSize: '16px',\n      color: todo.done ? '#94a3b8' : '#1e293b',\n      textDecoration: todo.done ? 'line-through' : 'none'\n    }\n  }, todo.text), /*#__PURE__*/React.createElement(\"button\", {\n    onClick: () => deleteTodo(todo.id),\n    style: {\n      padding: '6px 10px',\n      backgroundColor: '#ef4444',\n      color: 'white',\n      border: 'none',\n      borderRadius: '6px',\n      fontSize: '12px',\n      cursor: 'pointer'\n    }\n  }, \"Delete\")))));\n}",
     "originalHash": "pyr7ki",
     "compiledHash": "w3g04l",
-    "compiledAt": 1754472811890,
+    "compiledAt": 1754473057994,
     "source": "library",
     "format": "jsx",
     "compilerVersion": "1.0.0",
@@ -232,7 +232,7 @@ export const compiledComponents: CompiledComponent[] = [
         "productivity"
       ]
     },
-    "buildTime": 1754472811890,
+    "buildTime": 1754473057994,
     "buildVersion": "1.0.0"
   }
 ];
@@ -282,8 +282,8 @@ function hashCode(str: string): string {
  * Build metadata
  */
 export const buildMetadata = {
-  timestamp: '2025-08-06T09:33:31.890Z',
-  compilationTime: 44,
+  timestamp: '2025-08-06T09:37:37.994Z',
+  compilationTime: 46,
   componentCount: 9,
   compilerVersion: COMPILER_VERSION,
   successRate: 100.00

@@ -50,6 +50,10 @@ const ReactFlowCanvas: React.FC = () => {
   const [showLibrary, setShowLibrary] = useState(false);
   const [showURLImport, setShowURLImport] = useState(false);
   const reactFlowInstance = useRef<ReactFlowInstance | null>(null);
+  
+  // Check if we're in development mode
+  const isDevelopment = import.meta.env.DEV;
+  
   const [cerebrasService] = useState(() => {
     // In production (Netlify), we don't need API key (handled server-side)
     // In development, get from env or localStorage
@@ -92,8 +96,10 @@ const ReactFlowCanvas: React.FC = () => {
     return { x: 250, y: 250 };
   }, []);
 
-  // Add keyboard shortcut for URL import
+  // Add keyboard shortcut for URL import (only in development)
   useEffect(() => {
+    if (!isDevelopment) return;
+    
     const handleKeyDown = (e: KeyboardEvent) => {
       // Ctrl+Shift+I (or Cmd+Shift+I on Mac) for Import from URL
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'I') {
@@ -104,7 +110,7 @@ const ReactFlowCanvas: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [isDevelopment]);
 
   // Handle compilation completion from GeneratedApp components
   const handleCompilationComplete = useCallback((nodeId: string, compiledCode: string, hash: string) => {
@@ -776,36 +782,38 @@ const ReactFlowCanvas: React.FC = () => {
                   Library
                 </button>
                 
-                <button
-                  onClick={() => setShowURLImport(true)}
-                  style={{
-                    backgroundColor: 'white',
-                    color: '#6366f1',
-                    border: 'none',
-                    borderRadius: '8px',
-                    padding: '10px 20px',
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    transition: 'all 0.2s ease',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.15)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
-                  }}
-                  title="Import component from URL (Ctrl+Shift+I)"
-                >
-                  <span>🔗</span>
-                  Import URL
-                </button>
+                {isDevelopment && (
+                  <button
+                    onClick={() => setShowURLImport(true)}
+                    style={{
+                      backgroundColor: 'white',
+                      color: '#6366f1',
+                      border: 'none',
+                      borderRadius: '8px',
+                      padding: '10px 20px',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      transition: 'all 0.2s ease',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                      e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.15)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+                    }}
+                    title="Import component from URL (Ctrl+Shift+I)"
+                  >
+                    <span>🔗</span>
+                    Import URL
+                  </button>
+                )}
                 
                 <button
                   onClick={handleGenerateClick}
@@ -1124,12 +1132,14 @@ const ReactFlowCanvas: React.FC = () => {
         onSelectComponent={handleAddPrebuiltComponent}
       />
 
-      {/* Import from URL Dialog */}
-      <ImportFromURLDialog
-        isOpen={showURLImport}
-        onClose={() => setShowURLImport(false)}
-        onImport={handleAddURLComponent}
-      />
+      {/* Import from URL Dialog - Only in development */}
+      {isDevelopment && (
+        <ImportFromURLDialog
+          isOpen={showURLImport}
+          onClose={() => setShowURLImport(false)}
+          onImport={handleAddURLComponent}
+        />
+      )}
 
       {/* Global Loading Overlay */}
       {isGenerating && !showGenerationDialog && !editDialog.isOpen && (

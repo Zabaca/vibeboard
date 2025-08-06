@@ -289,7 +289,7 @@ const ComponentNode = ({ id, data, selected = false }: ComponentNodeProps) => {
               className="nodrag"
               onClick={(e) => {
                 e.stopPropagation();
-                onRegenerate(id, prompt || '', code || originalCode);
+                onRegenerate(id, prompt || '', code || nodeData.originalCode);
               }}
               style={{
                 background: 'transparent',

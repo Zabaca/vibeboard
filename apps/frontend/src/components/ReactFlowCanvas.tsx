@@ -8,7 +8,6 @@ import {
   Controls,
   MiniMap,
   Panel,
-  useReactFlow,
   type Node,
   type Edge,
   type Connection,
@@ -49,7 +48,7 @@ const ReactFlowCanvas: React.FC = () => {
   });
   const [showLibrary, setShowLibrary] = useState(false);
   const [showURLImport, setShowURLImport] = useState(false);
-  const reactFlowInstance = useRef<ReactFlowInstance | null>(null);
+  const reactFlowInstance = useRef<ReactFlowInstance<Node<ComponentNodeData>, Edge> | null>(null);
   
   // Check if we're in development mode
   const isDevelopment = import.meta.env.DEV;

@@ -1,4 +1,3 @@
-import { URLImportService } from './URLImportService.ts';
 import { esmExecutor } from '../utils/esmExecutor.ts';
 import { ESMJsxTranspiler } from '../utils/esmJsxTranspiler.ts';
 import { ImportFixer } from '../utils/importFixer.ts';
@@ -30,14 +29,12 @@ import type {
  */
 export class ComponentPipeline {
   private esmTranspiler: ESMJsxTranspiler;
-  private urlImportService: URLImportService;
   private cache: Map<string, CacheEntry>;
   private compilerVersion: string = '1.0.0';
   private performanceMetrics: Map<string, number[]>;
 
   constructor() {
     this.esmTranspiler = new ESMJsxTranspiler();
-    this.urlImportService = new URLImportService();
     this.cache = new Map();
     this.performanceMetrics = new Map();
     this.loadCacheFromStorage();
@@ -326,7 +323,7 @@ export class ComponentPipeline {
    */
   async processURLComponent(
     url: string,
-    urlOptions: URLImportOptions = {},
+    _urlOptions: URLImportOptions = {},
     pipelineOptions: PipelineOptions = {}
   ): Promise<PipelineResult> {
     const startTime = performance.now();
@@ -438,34 +435,6 @@ export class ComponentPipeline {
       };
     }
   }
-
-  /**
-   * Check if code is already a compiled ESM module
-   */
-  private isCompiledESM(code: string): boolean {
-    // Check for signs that this is already compiled ES module code
-    const compiledPatterns = [
-      /export\s+default\s+function/,
-      /export\s+default\s+class/,
-      /export\s+default\s+{/,
-      /export\s+{[^}]+}/,
-      /import\s+.+\s+from\s+['"]react['"]/,
-    ];
-    
-    const jsxPatterns = [
-      /<[A-Z]\w*/,  // JSX components
-      /<div/,        // JSX elements
-      /<span/,
-      /<button/,
-    ];
-    
-    // If it has export statements but no JSX, it's likely compiled
-    const hasExports = compiledPatterns.some(pattern => pattern.test(code));
-    const hasJSX = jsxPatterns.some(pattern => pattern.test(code));
-    
-    return hasExports && !hasJSX;
-  }
-
 
   /**
    * Detect the format of the code

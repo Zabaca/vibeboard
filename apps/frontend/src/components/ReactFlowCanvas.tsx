@@ -18,7 +18,7 @@ import '@xyflow/react/dist/style.css';
 import CerebrasService from '../services/cerebras.ts';
 import ComponentNode, { type ComponentNodeData } from './ComponentNode.tsx';
 import GenerationDialog from './GenerationDialog.tsx';
-import CodeEditDialog from './CodeEditDialog.tsx';
+import CodeEditDialogOptimized from './CodeEditDialogOptimized.tsx';
 import ComponentLibrary from './ComponentLibrary.tsx';
 import { ImportFromURLDialog } from './ImportFromURLDialog.tsx';
 import ImportComponentDialog from './ImportComponentDialog.tsx';
@@ -1473,7 +1473,7 @@ const ReactFlowCanvas: React.FC = () => {
       )}
 
       {/* Code Edit Dialog for Editing/Regeneration */}
-      <CodeEditDialog
+      <CodeEditDialogOptimized
         isOpen={editDialog.isOpen}
         code={editDialog.code}
         prompt={editDialog.prompt}

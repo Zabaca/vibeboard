@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import CodeEditorOptimized from './CodeEditorOptimized.tsx';
-import { useWhyDidYouUpdate } from '../hooks/useWhyDidYouUpdate.ts';
 import { codeEditDialogStyles } from './CodeEditDialog.styles.ts';
 
-interface CodeEditDialogProps {
+interface CodeEditDialogOptimizedProps {
   isOpen: boolean;
   code: string;
   prompt: string;
@@ -15,7 +14,220 @@ interface CodeEditDialogProps {
   getNodeCode?: (nodeId: string) => string;
 }
 
-const CodeEditDialog: React.FC<CodeEditDialogProps> = ({
+// Isolated component for refinement section to prevent re-renders
+const RefinementSection = React.memo(({ 
+  refinementPrompt, 
+  setRefinementPrompt, 
+  onRegenerate, 
+  editedCode, 
+  isGenerating 
+}: {
+  refinementPrompt: string;
+  setRefinementPrompt: (value: string) => void;
+  onRegenerate: (prompt: string, code: string) => void;
+  editedCode: string;
+  isGenerating: boolean;
+}) => {
+  const [debouncedRefinementPrompt, setDebouncedRefinementPrompt] = useState('');
+  
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedRefinementPrompt(refinementPrompt);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [refinementPrompt]);
+  
+  return (
+    <div style={{ 
+      flex: 1,
+      display: 'flex',
+      flexDirection: 'column',
+    }}>
+      <label style={{
+        display: 'block',
+        marginBottom: '12px',
+        fontSize: '14px',
+        fontWeight: '500',
+        color: '#e5e5e5',
+        textTransform: 'uppercase',
+        letterSpacing: '0.5px',
+      }}>
+        Request Adjustments
+      </label>
+      <textarea
+        value={refinementPrompt}
+        onChange={(e) => setRefinementPrompt(e.target.value)}
+        style={codeEditDialogStyles.textarea}
+        onFocus={(e) => {
+          Object.assign(e.currentTarget.style, codeEditDialogStyles.textareaFocused);
+        }}
+        onBlur={(e) => {
+          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+        }}
+        placeholder="Describe what changes you want to make to the component..."
+      />
+      <button
+        onClick={() => onRegenerate(debouncedRefinementPrompt, editedCode)}
+        disabled={isGenerating || !debouncedRefinementPrompt.trim()}
+        style={{
+          marginTop: '16px',
+          padding: '12px 24px',
+          borderRadius: '8px',
+          border: 'none',
+          backgroundColor: isGenerating ? '#4a4a4a' : '#6366f1',
+          color: 'white',
+          fontSize: '14px',
+          fontWeight: '500',
+          cursor: isGenerating || !refinementPrompt.trim() ? 'not-allowed' : 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '8px',
+          transition: 'all 0.2s ease',
+        }}
+        onMouseEnter={(e) => {
+          if (!isGenerating && debouncedRefinementPrompt.trim()) {
+            e.currentTarget.style.backgroundColor = '#5558e3';
+            e.currentTarget.style.transform = 'translateY(-1px)';
+            e.currentTarget.style.boxShadow = '0 4px 12px rgba(99, 102, 241, 0.4)';
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (!isGenerating) {
+            e.currentTarget.style.backgroundColor = '#6366f1';
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = 'none';
+          }
+        }}
+      >
+        {isGenerating ? (
+          <>
+            <span style={{
+              display: 'inline-block',
+              animation: 'spin 1s linear infinite',
+            }}>⚡</span>
+            Regenerating...
+          </>
+        ) : (
+          <>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M23 4v6h-6" />
+              <path d="M1 20v-6h6" />
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+            </svg>
+            Regenerate
+          </>
+        )}
+      </button>
+    </div>
+  );
+});
+
+RefinementSection.displayName = 'RefinementSection';
+
+// Isolated component for code editor section
+const CodeEditorSection = React.memo(({ 
+  editedCode, 
+  setEditedCode, 
+  leftWidth, 
+  copyFeedback, 
+  handleCopyCode 
+}: {
+  editedCode: string;
+  setEditedCode: (code: string) => void;
+  leftWidth: number;
+  copyFeedback: string | null;
+  handleCopyCode: () => void;
+}) => {
+  return (
+    <div style={{ 
+      width: `${leftWidth}%`,
+      display: 'flex',
+      flexDirection: 'column',
+      paddingRight: '12px',
+    }}>
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '12px',
+      }}>
+        <label style={{
+          fontSize: '14px',
+          fontWeight: '500',
+          color: '#e5e5e5',
+          textTransform: 'uppercase',
+          letterSpacing: '0.5px',
+        }}>
+          Code
+        </label>
+        <button
+          onClick={handleCopyCode}
+          style={{
+            background: copyFeedback ? '#10b981' : '#2a2a2a',
+            color: copyFeedback ? 'white' : '#e5e5e5',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: '6px',
+            padding: '8px 16px',
+            fontSize: '13px',
+            fontWeight: '500',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            transition: 'all 0.2s ease',
+          }}
+          onMouseEnter={(e) => {
+            if (!copyFeedback) {
+              e.currentTarget.style.backgroundColor = '#3a3a3a';
+              e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.3)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!copyFeedback) {
+              e.currentTarget.style.backgroundColor = '#2a2a2a';
+              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+            }
+          }}
+        >
+          {copyFeedback ? (
+            <>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M20 6L9 17l-5-5" />
+              </svg>
+              {copyFeedback}
+            </>
+          ) : (
+            <>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+              </svg>
+              Copy Code
+            </>
+          )}
+        </button>
+      </div>
+      <div style={{
+        flex: 1,
+        minHeight: 0,
+        border: '1px solid rgba(255, 255, 255, 0.1)',
+        borderRadius: '8px',
+        overflow: 'hidden',
+      }}>
+        <CodeEditorOptimized
+          value={editedCode}
+          onChange={setEditedCode}
+          placeholder="// Enter your component code here..."
+        />
+      </div>
+    </div>
+  );
+});
+
+CodeEditorSection.displayName = 'CodeEditorSection';
+
+const CodeEditDialogOptimized: React.FC<CodeEditDialogOptimizedProps> = ({
   isOpen,
   code,
   prompt,
@@ -27,40 +239,13 @@ const CodeEditDialog: React.FC<CodeEditDialogProps> = ({
   getNodeCode,
 }) => {
   const [refinementPrompt, setRefinementPrompt] = useState('');
-  const [debouncedRefinementPrompt, setDebouncedRefinementPrompt] = useState('');
   const [editedCode, setEditedCode] = useState(code);
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
   const [isResizing, setIsResizing] = useState(false);
-  const [leftWidth, setLeftWidth] = useState(50); // percentage for columns
+  const [leftWidth, setLeftWidth] = useState(50);
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   
-  // Debug why component is re-rendering
-  // Note: Always call the hook, but it will only log in development
-  useWhyDidYouUpdate('CodeEditDialog', {
-    isOpen,
-    code,
-    prompt,
-    nodeId,
-    onSave,
-    onRegenerate,
-    onCancel,
-    isGenerating,
-    getNodeCode
-  });
-  
-  // Debug production performance
-  useEffect(() => {
-    if (process.env.NODE_ENV !== 'production') {
-      console.log('[CodeEditDialog] Render triggered', {
-        isOpen,
-        codeLength: code.length,
-        nodeId,
-        timestamp: performance.now()
-      });
-    }
-  }, [isOpen, code.length, nodeId]);
-
   // Memoize the node code to prevent expensive recalculations
   const nodeCode = useMemo(() => {
     if (nodeId && getNodeCode && isOpen) {
@@ -70,20 +255,9 @@ const CodeEditDialog: React.FC<CodeEditDialogProps> = ({
   }, [nodeId, getNodeCode, isOpen, code]);
 
   useEffect(() => {
-    // Reset refinement prompt when dialog opens
     setRefinementPrompt('');
-    setDebouncedRefinementPrompt('');
-    // Set the code from memoized value
     setEditedCode(nodeCode);
   }, [nodeCode, isOpen]);
-
-  // Debounce refinement prompt to prevent excessive re-renders
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedRefinementPrompt(refinementPrompt);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [refinementPrompt]);
 
   const handleCopyCode = useCallback(async () => {
     try {
@@ -104,7 +278,6 @@ const CodeEditDialog: React.FC<CodeEditDialogProps> = ({
     const x = e.clientX - rect.left;
     const percentage = (x / rect.width) * 100;
     
-    // Limit the resize between 30% and 70%
     const newWidth = Math.min(Math.max(percentage, 30), 70);
     setLeftWidth(newWidth);
   }, [isResizing]);
@@ -112,15 +285,6 @@ const CodeEditDialog: React.FC<CodeEditDialogProps> = ({
   const handleMouseUp = () => {
     setIsResizing(false);
   };
-
-  // Memoize the code editor to prevent re-renders
-  const memoizedCodeEditor = useMemo(() => (
-    <CodeEditorOptimized
-      value={editedCode}
-      onChange={setEditedCode}
-      placeholder="// Enter your component code here..."
-    />
-  ), [editedCode]);
 
   useEffect(() => {
     if (isResizing) {
@@ -203,88 +367,13 @@ const CodeEditDialog: React.FC<CodeEditDialogProps> = ({
           }}
         >
           {/* Left Column - Code Editor */}
-          <div style={{ 
-            width: `${leftWidth}%`,
-            display: 'flex',
-            flexDirection: 'column',
-            paddingRight: '12px',
-          }}>
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: '12px',
-            }}>
-              <label style={{
-                fontSize: '14px',
-                fontWeight: '500',
-                color: '#e5e5e5',
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px',
-              }}>
-                Code
-              </label>
-              <button
-                onClick={handleCopyCode}
-                style={{
-                  background: copyFeedback ? '#10b981' : '#2a2a2a',
-                  color: copyFeedback ? 'white' : '#e5e5e5',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  borderRadius: '6px',
-                  padding: '8px 16px',
-                  fontSize: '13px',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  transition: 'all 0.2s ease',
-                }}
-                onMouseEnter={(e) => {
-                  if (!copyFeedback) {
-                    e.currentTarget.style.backgroundColor = '#3a3a3a';
-                    e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.3)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!copyFeedback) {
-                    e.currentTarget.style.backgroundColor = '#2a2a2a';
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-                  }
-                }}
-              >
-                {copyFeedback ? (
-                  <>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M20 6L9 17l-5-5" />
-                    </svg>
-                    {copyFeedback}
-                  </>
-                ) : (
-                  <>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                    </svg>
-                    Copy Code
-                  </>
-                )}
-              </button>
-            </div>
-            <div style={{
-              flex: 1,
-              minHeight: 0,
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              borderRadius: '8px',
-              overflow: 'hidden',
-            }}>
-              <CodeEditorOptimized
-                value={editedCode}
-                onChange={setEditedCode}
-                placeholder="// Enter your component code here..."
-              />
-            </div>
-          </div>
+          <CodeEditorSection
+            editedCode={editedCode}
+            setEditedCode={setEditedCode}
+            leftWidth={leftWidth}
+            copyFeedback={copyFeedback}
+            handleCopyCode={handleCopyCode}
+          />
 
           {/* Resize Handle */}
           <div
@@ -363,88 +452,13 @@ const CodeEditDialog: React.FC<CodeEditDialogProps> = ({
             </div>
 
             {/* Refinement Section */}
-            <div style={{ 
-              flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-            }}>
-              <label style={{
-                display: 'block',
-                marginBottom: '12px',
-                fontSize: '14px',
-                fontWeight: '500',
-                color: '#e5e5e5',
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px',
-              }}>
-                Request Adjustments
-              </label>
-              <textarea
-                value={refinementPrompt}
-                onChange={(e) => setRefinementPrompt(e.target.value)}
-                style={codeEditDialogStyles.textarea}
-                onFocus={(e) => {
-                  Object.assign(e.currentTarget.style, codeEditDialogStyles.textareaFocused);
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-                }}
-                placeholder="Describe what changes you want to make to the component..."
-              />
-              <button
-                onClick={() => onRegenerate(debouncedRefinementPrompt, editedCode)}
-                disabled={isGenerating || !debouncedRefinementPrompt.trim()}
-                style={{
-                  marginTop: '16px',
-                  padding: '12px 24px',
-                  borderRadius: '8px',
-                  border: 'none',
-                  backgroundColor: isGenerating ? '#4a4a4a' : '#6366f1',
-                  color: 'white',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  cursor: isGenerating || !refinementPrompt.trim() ? 'not-allowed' : 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  transition: 'all 0.2s ease',
-                }}
-                onMouseEnter={(e) => {
-                  if (!isGenerating && debouncedRefinementPrompt.trim()) {
-                    e.currentTarget.style.backgroundColor = '#5558e3';
-                    e.currentTarget.style.transform = 'translateY(-1px)';
-                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(99, 102, 241, 0.4)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isGenerating) {
-                    e.currentTarget.style.backgroundColor = '#6366f1';
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = 'none';
-                  }
-                }}
-              >
-                {isGenerating ? (
-                  <>
-                    <span style={{
-                      display: 'inline-block',
-                      animation: 'spin 1s linear infinite',
-                    }}>⚡</span>
-                    Regenerating...
-                  </>
-                ) : (
-                  <>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M23 4v6h-6" />
-                      <path d="M1 20v-6h6" />
-                      <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-                    </svg>
-                    Regenerate
-                  </>
-                )}
-              </button>
-            </div>
+            <RefinementSection
+              refinementPrompt={refinementPrompt}
+              setRefinementPrompt={setRefinementPrompt}
+              onRegenerate={onRegenerate}
+              editedCode={editedCode}
+              isGenerating={isGenerating}
+            />
           </div>
         </div>
 
@@ -529,7 +543,7 @@ const CodeEditDialog: React.FC<CodeEditDialogProps> = ({
   );
 };
 
-export default React.memo(CodeEditDialog, (prevProps, nextProps) => {
+export default React.memo(CodeEditDialogOptimized, (prevProps, nextProps) => {
   // Only re-render if these specific props change
   return (
     prevProps.isOpen === nextProps.isOpen &&

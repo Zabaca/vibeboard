@@ -61,8 +61,10 @@ export default defineConfig({
         main: './index.html',
       },
     },
-    // Don't minify for easier debugging
-    minify: false,
+    // Enable minification for production
+    minify: 'esbuild',
+    // Generate sourcemaps for debugging
+    sourcemap: true,
   },
   // Optimize deps to exclude our shims from pre-bundling
   optimizeDeps: {

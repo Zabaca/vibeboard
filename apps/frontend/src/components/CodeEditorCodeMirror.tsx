@@ -108,8 +108,6 @@ const CodeEditorCodeMirror: React.FC<CodeEditorCodeMirrorProps> = ({
         }),
         EditorState.readOnly.of(readOnly),
         EditorView.editable.of(!readOnly),
-        // Add placeholder
-        EditorView.placeholder(placeholder),
       ],
     });
     
@@ -126,7 +124,7 @@ const CodeEditorCodeMirror: React.FC<CodeEditorCodeMirrorProps> = ({
       view.destroy();
       viewRef.current = null;
     };
-  }, [readOnly, placeholder]); // Only recreate on readOnly or placeholder change
+  }, [readOnly]); // Only recreate on readOnly change
   
   // Update content when value prop changes (but not from our own changes)
   useEffect(() => {

@@ -379,11 +379,15 @@ const ReactFlowCanvas: React.FC = () => {
     posthogService.trackComponentInteraction('edit', nodeId);
   }, [setNodes, presentationMode, handleDeleteComponent, getViewportCenter]);
 
+  // Use ref to prevent getNodeCode from changing on every render
+  const nodesRef = useRef(nodes);
+  nodesRef.current = nodes;
+  
   // Memoized function to get node code - prevents re-renders of CodeEditDialog
   const getNodeCode = useCallback((nodeId: string) => {
-    const node = nodes.find(n => n.id === nodeId);
+    const node = nodesRef.current.find(n => n.id === nodeId);
     return node?.data?.code || node?.data?.originalCode || '';
-  }, [nodes]);
+  }, []); // No dependencies - function reference never changes
 
   // Handle right-click on nodes to show context menu
   const handleNodeContextMenu = useCallback((event: React.MouseEvent, node: Node) => {

@@ -155,6 +155,8 @@ const ReactFlowCanvas: React.FC = () => {
         x: viewportCenter.x + Math.random() * 50 - 25, 
         y: viewportCenter.y + Math.random() * 50 - 25
       },
+      width: 400,
+      height: 400,
       style: {
         width: 400,
         height: 400,
@@ -351,6 +353,14 @@ const ReactFlowCanvas: React.FC = () => {
         // Restore nodes with callbacks 
         const restoredNodes = importedNodes.map((node) => ({
           ...node,
+          // Ensure width/height are set
+          width: node.width || 400,
+          height: node.height || 400,
+          style: {
+            ...node.style,
+            width: node.style?.width || 400,
+            height: node.style?.height || 400,
+          },
           data: {
             ...node.data,
             presentationMode,
@@ -393,6 +403,14 @@ const ReactFlowCanvas: React.FC = () => {
           // Attach callbacks to loaded nodes
           const validNodes = savedNodes.map((node) => ({
             ...node,
+            // Ensure width/height are set
+            width: node.width || 400,
+            height: node.height || 400,
+            style: {
+              ...node.style,
+              width: node.style?.width || 400,
+              height: node.style?.height || 400,
+            },
             data: {
               ...node.data,
               presentationMode,
@@ -495,6 +513,8 @@ const ReactFlowCanvas: React.FC = () => {
         x: viewportCenter.x + Math.random() * 50 - 25, 
         y: viewportCenter.y + Math.random() * 50 - 25
       },
+      width: 400,
+      height: 400,
       // Add style for proper sizing - this fixes draggability
       style: {
         width: 400,
@@ -569,6 +589,8 @@ const ReactFlowCanvas: React.FC = () => {
         x: viewportCenter.x + Math.random() * 50 - 25,
         y: viewportCenter.y + Math.random() * 50 - 25
       },
+      width: 400,
+      height: 400,
       style: {
         width: 400,
         height: 400,
@@ -617,6 +639,8 @@ const ReactFlowCanvas: React.FC = () => {
         id: nodeId,
         type: 'aiComponent',
         position: viewportCenter,
+        width: 400,
+        height: 400,
         // Good default size, but user can resize freely
         style: {
           width: 400,

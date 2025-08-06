@@ -247,14 +247,17 @@ const ReactFlowCanvas: React.FC = () => {
   }, [editDialog, setNodes, componentPipeline, presentationMode]);
 
   // Regenerate component with new prompt
-  const handleRegenerateWithPrompt = useCallback(async (newPrompt: string) => {
-    const { nodeId } = editDialog;
+  const handleRegenerateWithPrompt = useCallback(async (refinementPrompt: string, currentCode: string) => {
+    const { nodeId, prompt: originalPrompt } = editDialog;
     setIsGenerating(true);
     setGenerationError(null);
     
     try {
-      // Generate new component with AI
-      const result = await cerebrasService.generateComponent(newPrompt);
+      // Combine original prompt, current code, and refinement request
+      const combinedPrompt = `Original request: ${originalPrompt}\n\nCurrent code:\n\`\`\`javascript\n${currentCode}\n\`\`\`\n\nRequested adjustments: ${refinementPrompt}`;
+      
+      // Generate new component with AI using the combined context
+      const result = await cerebrasService.generateComponent(combinedPrompt);
       
       if (!result.success || !result.code) {
         throw new Error(result.error || 'Failed to generate component');
@@ -263,7 +266,7 @@ const ReactFlowCanvas: React.FC = () => {
       // Process the AI-generated component through the pipeline
       const pipelineResult = await componentPipeline.processAIComponent(
         result.code,
-        newPrompt,
+        originalPrompt, // Keep the original prompt for the component metadata
         result.generationTime || 0,
         {
           useCache: true,
@@ -294,7 +297,7 @@ const ReactFlowCanvas: React.FC = () => {
               onCompilationComplete: node.data.onCompilationComplete,
               // Legacy compatibility fields
               code: processedComponent.compiledCode || processedComponent.originalCode,
-              prompt: newPrompt,
+              prompt: originalPrompt, // Keep the original prompt
               generationTime: result.generationTime || 0,
             };
             return {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import CodeEditorOptimized from './CodeEditorOptimized.tsx';
+import CodeEditorFast from './CodeEditorFast.tsx';
 import { codeEditDialogStyles } from './CodeEditDialog.styles.ts';
 
 interface CodeEditDialogOptimizedProps {
@@ -215,7 +215,7 @@ const CodeEditorSection = React.memo(({
         borderRadius: '8px',
         overflow: 'hidden',
       }}>
-        <CodeEditorOptimized
+        <CodeEditorFast
           value={editedCode}
           onChange={setEditedCode}
           placeholder="// Enter your component code here..."

@@ -72,10 +72,10 @@ The Vibeboard canvas currently only supports ESM modules that are imported/gener
 - [x] Sub-goal 6.4: Ensure state persistence across refreshes
 
 ### Parent Goal 7: Update React Flow Integration
-- [ ] Sub-goal 7.1: Register new node types in `nodeTypes` mapping
-- [ ] Sub-goal 7.2: Update node creation logic to handle native components
-- [ ] Sub-goal 7.3: Implement custom edge behavior for native components
-- [ ] Sub-goal 7.4: Add component-specific context menus
+- [x] Sub-goal 7.1: Register new node types in `nodeTypes` mapping
+- [x] Sub-goal 7.2: Update node creation logic to handle native components
+- [x] Sub-goal 7.3: Implement custom edge behavior for native components
+- [x] Sub-goal 7.4: Add component-specific context menus
 
 ## Implementation Notes
 
@@ -198,8 +198,9 @@ interface NativeComponentNode extends UnifiedComponentNode {
 - `/apps/frontend/src/components/native/TextCustomizer.tsx` - Text formatting panel with font, size, and style options
 - `/apps/frontend/src/components/native/StickyNote.tsx` - Sticky note component with color variations and auto-resize
 - `/apps/frontend/src/components/native/NativeComponentsToolbar.tsx` - Toolbar for creating native components
+- `/apps/frontend/src/components/native/NativeComponentContextMenu.tsx` - Context menu for native component actions (duplicate, layer management, delete)
 
 ### Modified  
 - `/apps/frontend/src/types/component.types.ts` - Added 'native' to ComponentSource type union
-- `/apps/frontend/src/components/ReactFlowCanvas.tsx` - Integrated native components and toolbar
+- `/apps/frontend/src/components/ReactFlowCanvas.tsx` - Integrated native components, toolbar, and context menus with layer management
 - `/apps/frontend/src/services/StorageService.ts` - Added support for native component state serialization, validation, and migration

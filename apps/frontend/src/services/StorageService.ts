@@ -16,8 +16,7 @@ import type {
   StorageStats 
 } from '../types/component.types.ts';
 import type { 
-  NativeComponentNode, 
-  isNativeComponentNode 
+  NativeComponentNode
 } from '../types/native-component.types.ts';
 import type { Node, Edge } from '@xyflow/react';
 
@@ -212,35 +211,44 @@ export class StorageService {
   /**
    * Import canvas with validation and migration
    */
-  async importCanvas(canvasData: any): Promise<{ nodes: Node[]; edges: Edge[] }> {
+  async importCanvas(canvasData: unknown): Promise<{ nodes: Node[]; edges: Edge[] }> {
     try {
       // Validate basic format
       if (!canvasData || typeof canvasData !== 'object') {
         throw new Error('Invalid canvas format: expected object');
       }
 
-      if (!canvasData.nodes || !Array.isArray(canvasData.nodes)) {
+      const canvas = canvasData as Record<string, unknown>;
+      
+      if (!canvas.nodes || !Array.isArray(canvas.nodes)) {
         throw new Error('Invalid canvas format: missing nodes array');
       }
 
       // Validate version compatibility
-      if (canvasData.version && !this.isVersionCompatible(canvasData.version)) {
-        console.warn(`⚠️ Importing canvas from version ${canvasData.version}, current version is ${this.STORAGE_VERSION}`);
+      if (canvas.version && !this.isVersionCompatible(String(canvas.version))) {
+        console.warn(`⚠️ Importing canvas from version ${canvas.version}, current version is ${this.STORAGE_VERSION}`);
       }
 
       // Handle version differences
-      if (canvasData.version !== this.STORAGE_VERSION) {
-        console.log(`🔄 Migrating imported canvas from version ${canvasData.version} to ${this.STORAGE_VERSION}`);
-        canvasData = this.migrateCanvasData(canvasData);
+      let processedCanvas = canvas;
+      if (canvas.version !== this.STORAGE_VERSION) {
+        console.log(`🔄 Migrating imported canvas from version ${canvas.version} to ${this.STORAGE_VERSION}`);
+        processedCanvas = this.migrateCanvasData(canvas) as Record<string, unknown>;
       }
 
       // Validate and convert nodes
       const nodes: Node[] = [];
-      const invalidNodes: any[] = [];
+      const invalidNodes: unknown[] = [];
 
-      for (const exportedNode of canvasData.nodes) {
+      const nodesArray = processedCanvas.nodes as unknown[];
+      for (const exportedNode of nodesArray) {
         try {
-          const validatedData = this.validateAndEnhanceNodeData(exportedNode.data);
+          if (!exportedNode || typeof exportedNode !== 'object') {
+            throw new Error('Invalid node format');
+          }
+          
+          const node = exportedNode as Record<string, unknown>;
+          const validatedData = this.validateAndEnhanceNodeData(node.data);
           
           // Skip compiled code validation for native components
           if (!('componentType' in validatedData && validatedData.componentType === 'native')) {
@@ -255,15 +263,15 @@ export class StorageService {
           }
 
           nodes.push({
-            id: exportedNode.id,
-            type: exportedNode.type || 'aiComponent',
-            position: exportedNode.position || { x: 0, y: 0 },
-            data: validatedData as any, // Type assertion for React Flow Node compatibility
-            width: exportedNode.width,
-            height: exportedNode.height,
+            id: String(node.id),
+            type: String(node.type || 'aiComponent'),
+            position: (node.position as { x: number; y: number }) || { x: 0, y: 0 },
+            data: validatedData as UnifiedComponentNode | NativeComponentNode,
+            width: node.width as number | undefined,
+            height: node.height as number | undefined,
           });
         } catch (nodeError) {
-          console.error(`Failed to import node ${exportedNode.id}:`, nodeError);
+          console.error(`Failed to import node ${node.id}:`, nodeError);
           invalidNodes.push(exportedNode);
         }
       }
@@ -342,33 +350,39 @@ export class StorageService {
   /**
    * Enhanced node data with compiled code preservation
    */
-  private enhanceNodeData(nodeData: any): UnifiedComponentNode | NativeComponentNode {
+  private enhanceNodeData(nodeData: unknown): UnifiedComponentNode | NativeComponentNode {
+    if (!nodeData || typeof nodeData !== 'object') {
+      throw new Error('Invalid node data');
+    }
+    
+    const data = nodeData as Record<string, unknown>;
+    
     // Check if it's a native component
-    if (nodeData.componentType === 'native' && nodeData.nativeType && nodeData.state) {
+    if (data.componentType === 'native' && data.nativeType && data.state) {
       // It's already a NativeComponentNode, return as is
-      return nodeData as NativeComponentNode;
+      return data as NativeComponentNode;
     }
 
     // If it's already a UnifiedComponentNode, return as is
-    if (nodeData.originalCode !== undefined) {
-      return nodeData as UnifiedComponentNode;
+    if (data.originalCode !== undefined) {
+      return data as UnifiedComponentNode;
     }
 
     // Convert legacy ComponentNodeData to UnifiedComponentNode
     return {
-      id: nodeData.id || `component-${Date.now()}`,
-      originalCode: nodeData.code || '',
-      compiledCode: nodeData.compiledCode,
-      description: nodeData.prompt,
+      id: String(data.id || `component-${Date.now()}`),
+      originalCode: String(data.code || ''),
+      compiledCode: data.compiledCode as string | undefined,
+      description: data.prompt as string | undefined,
       source: 'ai-generated',
       format: 'jsx',
       metadata: {
-        prompt: nodeData.prompt,
-        generationTime: nodeData.generationTime,
+        prompt: data.prompt as string | undefined,
+        generationTime: data.generationTime as number | undefined,
         aiProvider: 'cerebras',
       },
       metrics: {
-        compilationTime: nodeData.compilationTime,
+        compilationTime: data.compilationTime as number | undefined,
       },
     };
   }
@@ -376,7 +390,7 @@ export class StorageService {
   /**
    * Validate and enhance imported node data
    */
-  private validateAndEnhanceNodeData(nodeData: any): UnifiedComponentNode | NativeComponentNode {
+  private validateAndEnhanceNodeData(nodeData: unknown): UnifiedComponentNode | NativeComponentNode {
     const enhanced = this.enhanceNodeData(nodeData);
 
     // For native components, validate state instead of code
@@ -402,7 +416,7 @@ export class StorageService {
   /**
    * Save data to storage with compression if needed
    */
-  private async saveToStorage(key: string, data: any): Promise<boolean> {
+  private async saveToStorage(key: string, data: unknown): Promise<boolean> {
     try {
       const serialized = JSON.stringify(data);
       const payload = serialized.length > this.COMPRESSION_THRESHOLD 
@@ -437,7 +451,7 @@ export class StorageService {
   /**
    * Load data from storage with decompression
    */
-  private async loadFromStorage(key: string): Promise<any> {
+  private async loadFromStorage(key: string): Promise<unknown> {
     try {
       const stored = localStorage.getItem(key);
       if (!stored) return null;
@@ -485,7 +499,7 @@ export class StorageService {
   private simpleCompress(data: string): string {
     try {
       return btoa(unescape(encodeURIComponent(data)));
-    } catch (error) {
+    } catch {
       return data; // Fallback to uncompressed
     }
   }
@@ -496,7 +510,7 @@ export class StorageService {
   private simpleDecompress(data: string): string {
     try {
       return decodeURIComponent(escape(atob(data)));
-    } catch (error) {
+    } catch {
       return data; // Fallback to assume uncompressed
     }
   }
@@ -591,64 +605,86 @@ export class StorageService {
   /**
    * Validate edges array and filter out invalid edges
    */
-  private validateEdges(edges: any[], nodes: Node[]): Edge[] {
+  private validateEdges(edges: unknown, nodes: Node[]): Edge[] {
     if (!Array.isArray(edges)) {
       return [];
     }
 
     const nodeIds = new Set(nodes.map(node => node.id));
     
-    return edges.filter((edge: any) => {
+    return edges.filter((edge: unknown) => {
+      // Type guard to check if edge has required properties
+      if (typeof edge !== 'object' || edge === null) {
+        return false;
+      }
+      
+      const edgeObj = edge as Record<string, unknown>;
+      
       // Validate edge structure
-      if (!edge.id || !edge.source || !edge.target) {
+      if (!edgeObj.id || !edgeObj.source || !edgeObj.target) {
         console.warn('⚠️ Skipping edge with missing required fields:', edge);
         return false;
       }
 
+      const id = String(edgeObj.id);
+      const source = String(edgeObj.source);
+      const target = String(edgeObj.target);
+
       // Validate edge references existing nodes
-      if (!nodeIds.has(edge.source) || !nodeIds.has(edge.target)) {
-        console.warn(`⚠️ Skipping edge ${edge.id} with invalid node references: ${edge.source} -> ${edge.target}`);
+      if (!nodeIds.has(source) || !nodeIds.has(target)) {
+        console.warn(`⚠️ Skipping edge ${id} with invalid node references: ${source} -> ${target}`);
         return false;
       }
 
       return true;
-    });
+    }) as Edge[];
   }
 
   /**
    * Migrate canvas data between versions
    */
-  private migrateCanvasData(canvasData: any): any {
-    const version = canvasData.version;
+  private migrateCanvasData(canvasData: unknown): unknown {
+    if (!canvasData || typeof canvasData !== 'object') {
+      return canvasData;
+    }
+    
+    const canvas = canvasData as Record<string, unknown>;
+    const version = canvas.version;
 
     // Handle legacy v1.0 format
     if (!version || version === '1.0') {
       return {
-        ...canvasData,
+        ...canvas,
         version: this.STORAGE_VERSION,
-        nodes: canvasData.nodes.map((node: any) => ({
-          ...node,
-          data: {
-            ...node.data,
-            // Convert legacy fields to unified structure
-            originalCode: node.data.code || node.data.originalCode || '',
-            source: 'ai-generated',
-            format: 'jsx',
-            description: node.data.prompt || node.data.description || '',
-            metadata: {
-              prompt: node.data.prompt,
-              generationTime: node.data.generationTime,
-              aiProvider: 'cerebras',
+        nodes: Array.isArray(canvas.nodes) ? (canvas.nodes as unknown[]).map((node: unknown) => {
+          if (!node || typeof node !== 'object') return node;
+          const n = node as Record<string, unknown>;
+          const nodeData = n.data as Record<string, unknown> || {};
+          
+          return {
+            ...n,
+            data: {
+              ...nodeData,
+              // Convert legacy fields to unified structure
+              originalCode: nodeData.code || nodeData.originalCode || '',
+              source: 'ai-generated',
+              format: 'jsx',
+              description: nodeData.prompt || nodeData.description || '',
+              metadata: {
+                prompt: nodeData.prompt,
+                generationTime: nodeData.generationTime,
+                aiProvider: 'cerebras',
+              },
             },
-          },
-        })),
+          };
+        }) : [],
       };
     }
 
     // Handle v1.0.0 format - no native components
     if (version === '1.0.0') {
       return {
-        ...canvasData,
+        ...canvas,
         version: this.STORAGE_VERSION,
         // Nodes remain the same, native components didn't exist in 1.0.0
       };
@@ -657,12 +693,12 @@ export class StorageService {
     // Handle v2.0 format - minimal changes needed
     if (version === '2.0') {
       return {
-        ...canvasData,
+        ...canvas,
         version: this.STORAGE_VERSION,
       };
     }
 
-    return canvasData;
+    return canvas;
   }
 
   /**
@@ -671,8 +707,8 @@ export class StorageService {
   private calculateStorageUsage(): { totalSize: number; usagePercent: number } {
     let totalSize = 0;
     
-    for (let key in localStorage) {
-      if (localStorage.hasOwnProperty(key)) {
+    for (const key in localStorage) {
+      if (Object.prototype.hasOwnProperty.call(localStorage, key)) {
         totalSize += localStorage[key].length;
       }
     }

@@ -3,6 +3,8 @@
  * This file contains the shared interfaces used across the component pipeline
  */
 
+import type { Edge } from '@xyflow/react';
+
 /**
  * Component source types
  */
@@ -208,7 +210,7 @@ export interface PipelineOptions {
    */
   compilerOptions?: {
     presets?: string[];
-    plugins?: any[];
+    plugins?: unknown[];
   };
 }
 
@@ -249,7 +251,7 @@ export interface ExportedCanvas {
   version: string;
   exportedAt: number;
   nodes: ExportedNode[];
-  edges?: any[]; // React Flow edges
+  edges?: Edge[]; // React Flow edges
   metadata?: {
     appVersion?: string;
     compilerVersion?: string;

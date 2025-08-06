@@ -9,9 +9,17 @@ import App from './App.tsx';
 // Make React and ReactDOM available globally for ESM modules
 // This is required for the singleton shims to work - the shims export window.React
 // to ensure all ESM modules use the same React instance as the main app
+// Extend the Window interface to include React and ReactDOM
+declare global {
+  interface Window {
+    React: typeof React;
+    ReactDOM: typeof ReactDOM;
+  }
+}
+
 if (typeof window !== 'undefined') {
-  (window as any).React = React;
-  (window as any).ReactDOM = ReactDOM;
+  window.React = React;
+  window.ReactDOM = ReactDOM;
   console.log('✅ React and ReactDOM set on window object for singleton shims');
 }
 

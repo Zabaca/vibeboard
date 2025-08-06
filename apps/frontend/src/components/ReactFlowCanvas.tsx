@@ -33,6 +33,7 @@ import ShapeNode from './native/ShapeNode.tsx';
 import TextNode from './native/TextNode.tsx';
 import StickyNote from './native/StickyNote.tsx';
 import NativeComponentsToolbar from './native/NativeComponentsToolbar.tsx';
+import NativeComponentContextMenu from './native/NativeComponentContextMenu.tsx';
 
 // Define nodeTypes outside of component to prevent re-renders
 const nodeTypes = {
@@ -58,6 +59,12 @@ const ReactFlowCanvas: React.FC = () => {
   });
   const [showLibrary, setShowLibrary] = useState(false);
   const [showURLImport, setShowURLImport] = useState(false);
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    nodeId: string;
+    nodeType: NativeComponentType;
+  } | null>(null);
   const reactFlowInstance = useRef<ReactFlowInstance<Node<ComponentNodeData>, Edge> | null>(null);
   
   // Check if we're in development mode
@@ -358,28 +365,95 @@ const ReactFlowCanvas: React.FC = () => {
         ...nativeNodeData,
         presentationMode,
         onDelete: handleDeleteComponent,
-        onUpdateState: (nodeId: string, newState: ComponentState) => {
-          setNodes((nds) =>
-            nds.map((node) => {
-              if (node.id === nodeId && node.data) {
-                return {
-                  ...node,
-                  data: {
-                    ...node.data,
-                    state: newState,
-                  },
-                };
-              }
-              return node;
-            })
-          );
-        },
+        onUpdateState: handleNativeComponentStateUpdate,
       },
     };
     
     setNodes((nds) => [...nds, newNode]);
     posthogService.trackComponentInteraction('create_native', nodeId, { type, subType });
   }, [setNodes, presentationMode, handleDeleteComponent, getViewportCenter]);
+
+  // Handle right-click on nodes to show context menu
+  const handleNodeContextMenu = useCallback((event: React.MouseEvent, node: Node) => {
+    event.preventDefault();
+    
+    // Only show context menu for native components
+    if (node.type && ['shape', 'text', 'sticky'].includes(node.type)) {
+      setContextMenu({
+        x: event.clientX,
+        y: event.clientY,
+        nodeId: node.id,
+        nodeType: node.type as NativeComponentType,
+      });
+    }
+  }, []);
+
+  // Handle duplicate for any node type
+  const handleDuplicateNode = useCallback((nodeId: string) => {
+    const nodeToDuplicate = nodes.find(n => n.id === nodeId);
+    if (!nodeToDuplicate) return;
+
+    const newNodeId = `${nodeToDuplicate.type}-${Date.now()}`;
+    const newNode: Node = {
+      ...nodeToDuplicate,
+      id: newNodeId,
+      position: {
+        x: nodeToDuplicate.position.x + 50,
+        y: nodeToDuplicate.position.y + 50,
+      },
+      data: {
+        ...nodeToDuplicate.data,
+        id: newNodeId,
+      },
+    };
+
+    setNodes((nds) => [...nds, newNode]);
+    posthogService.trackComponentInteraction('duplicate', nodeId);
+  }, [nodes, setNodes]);
+
+  // Handle bring to front
+  const handleBringToFront = useCallback((nodeId: string) => {
+    setNodes((nds) => {
+      const nodeIndex = nds.findIndex(n => n.id === nodeId);
+      if (nodeIndex === -1) return nds;
+      
+      const newNodes = [...nds];
+      const [node] = newNodes.splice(nodeIndex, 1);
+      newNodes.push(node);
+      return newNodes;
+    });
+  }, [setNodes]);
+
+  // Handle send to back
+  const handleSendToBack = useCallback((nodeId: string) => {
+    setNodes((nds) => {
+      const nodeIndex = nds.findIndex(n => n.id === nodeId);
+      if (nodeIndex === -1) return nds;
+      
+      const newNodes = [...nds];
+      const [node] = newNodes.splice(nodeIndex, 1);
+      newNodes.unshift(node);
+      return newNodes;
+    });
+  }, [setNodes]);
+
+  // Handle native component state updates
+  const handleNativeComponentStateUpdate = useCallback((nodeId: string, newState: ComponentState) => {
+    setNodes((nds) =>
+      nds.map((n) => {
+        if (n.id === nodeId && n.data) {
+          return {
+            ...n,
+            data: {
+              ...n.data,
+              state: newState,
+            },
+          };
+        }
+        return n;
+      })
+    );
+  }, [setNodes]);
 
   // Add keyboard shortcuts
   useEffect(() => {
@@ -536,9 +610,15 @@ const ReactFlowCanvas: React.FC = () => {
               ...node.data,
               presentationMode,
               onDelete: handleDeleteComponent,
-              onRegenerate: handleRegenerateComponent,
-              onDuplicate: handleDuplicateComponent,
-              onCompilationComplete: handleCompilationComplete,
+              // Add native component specific callbacks
+              ...(node.type && ['shape', 'text', 'sticky'].includes(node.type) ? {
+                onUpdateState: handleNativeComponentStateUpdate,
+              } : {
+                // AI component specific callbacks
+                onRegenerate: handleRegenerateComponent,
+                onDuplicate: handleDuplicateComponent,
+                onCompilationComplete: handleCompilationComplete,
+              }),
             } as ComponentNodeData,
           }));
           setNodes(validNodes);
@@ -582,11 +662,16 @@ const ReactFlowCanvas: React.FC = () => {
 
   // Save nodes and edges to storage whenever they change
   useEffect(() => {
-    if (nodes.length > 0) {
-      storageService.saveNodes(nodes).catch(error => {
-        console.error('Failed to save nodes:', error);
-      });
-    }
+    // Debounce the save to avoid too frequent saves
+    const timeoutId = setTimeout(() => {
+      if (nodes.length > 0) {
+        storageService.saveNodes(nodes).catch(error => {
+          console.error('Failed to save nodes:', error);
+        });
+      }
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(timeoutId);
   }, [nodes]);
 
   useEffect(() => {
@@ -810,6 +895,7 @@ const ReactFlowCanvas: React.FC = () => {
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         nodeTypes={nodeTypes}
+        onNodeContextMenu={handleNodeContextMenu}
         fitView
         defaultViewport={{ x: 0, y: 0, zoom: 1 }}
         onInit={(instance) => { reactFlowInstance.current = instance; }}
@@ -1388,6 +1474,21 @@ const ReactFlowCanvas: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Native Component Context Menu */}
+      {contextMenu && (
+        <NativeComponentContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          nodeId={contextMenu.nodeId}
+          nodeType={contextMenu.nodeType}
+          onClose={() => setContextMenu(null)}
+          onDelete={handleDeleteComponent}
+          onDuplicate={handleDuplicateNode}
+          onBringToFront={handleBringToFront}
+          onSendToBack={handleSendToBack}
+        />
       )}
     </div>
   );

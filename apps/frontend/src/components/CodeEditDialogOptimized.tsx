@@ -327,9 +327,9 @@ const CodeEditDialogOptimized: React.FC<CodeEditDialogOptimizedProps> = ({
         style={{
           backgroundColor: '#1a1a1a',
           borderRadius: '16px',
-          width: '90%',
-          maxWidth: '1200px',
-          height: '85vh',
+          width: '95%',
+          maxWidth: '90vw',
+          height: '90vh',
           display: 'flex',
           flexDirection: 'column',
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',

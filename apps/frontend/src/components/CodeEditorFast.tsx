@@ -16,7 +16,7 @@ const editorStyles = `
     position: relative;
     width: 100%;
     height: 100%;
-    overflow: auto;
+    overflow: hidden;
     background: #1e1e1e;
     border-radius: 8px;
   }
@@ -40,6 +40,7 @@ const editorStyles = `
     line-height: 1.5;
     white-space: pre;
     overflow-wrap: normal;
+    overflow: auto;
     z-index: 2;
   }
   
@@ -47,8 +48,6 @@ const editorStyles = `
     position: absolute;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
     padding: 16px;
     margin: 0;
     border: none;
@@ -59,6 +58,7 @@ const editorStyles = `
     line-height: 1.5;
     white-space: pre;
     overflow-wrap: normal;
+    overflow: hidden;
     pointer-events: none;
     z-index: 1;
   }
@@ -128,9 +128,15 @@ const editorStyles = `
 `;
 
 // Inject styles if not already present
-if (typeof document !== 'undefined' && !document.querySelector('#code-editor-fast-styles')) {
+if (typeof document !== 'undefined') {
+  // Remove old styles if they exist
+  const oldStyle = document.querySelector('#code-editor-fast-styles-v2');
+  if (oldStyle) {
+    oldStyle.remove();
+  }
+  
   const styleSheet = document.createElement('style');
-  styleSheet.id = 'code-editor-fast-styles';
+  styleSheet.id = 'code-editor-fast-styles-v2';
   styleSheet.textContent = editorStyles;
   document.head.appendChild(styleSheet);
 }

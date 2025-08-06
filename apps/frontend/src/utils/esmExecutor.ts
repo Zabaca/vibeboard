@@ -218,27 +218,14 @@ export class ESMExecutor {
     }
     
     // 4. Other node modules / bare imports - use ESM CDN
-    const cdnMappings: Record<string, string> = {
-      'framer-motion': 'https://esm.sh/framer-motion@11',
-      'lucide-react': 'https://esm.sh/lucide-react@0.309.0',
-      'recharts': 'https://esm.sh/recharts@2',
-      '@radix-ui/react-dialog': 'https://esm.sh/@radix-ui/react-dialog@1',
-      '@radix-ui/react-tabs': 'https://esm.sh/@radix-ui/react-tabs@1',
-    };
+    // Note: We used to have explicit mappings here, but now our default logic
+    // handles all packages consistently with ?external=react,react-dom
     
-    // Check if we have a specific mapping
-    if (cdnMappings[specifier]) {
-      return cdnMappings[specifier];
-    }
-    
-    // Handle scoped packages
-    if (specifier.startsWith('@')) {
-      return `https://esm.sh/${specifier}`;
-    }
-    
-    // Default to esm.sh for other packages
-    const packageName = specifier.split('/')[0];
-    return `https://esm.sh/${packageName}`;
+    // Default: Use ESM.sh for all other packages
+    // ESM.sh handles both scoped (@org/pkg) and regular packages (pkg or pkg/subpath)
+    // Always use external=react,react-dom to prevent any potential React duplication
+    // ESM.sh will ignore the parameter for packages that don't use React
+    return `https://esm.sh/${specifier}?external=react,react-dom`;
   }
 
   /**

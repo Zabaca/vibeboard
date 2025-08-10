@@ -16,6 +16,7 @@ interface CodeEditDialogOptimizedProps {
   getNodeCode?: (nodeId: string) => string;
   getComponentElement?: (nodeId: string) => HTMLElement | null;
   visionMetadata?: VisionMetadata;
+  onVisionMetadataUpdate?: (nodeId: string, metadata: VisionMetadata) => void;
 }
 
 // Isolated component for refinement section to prevent re-renders
@@ -465,6 +466,7 @@ const CodeEditDialogOptimized: React.FC<CodeEditDialogOptimizedProps> = ({
   getNodeCode,
   getComponentElement,
   visionMetadata,
+  onVisionMetadataUpdate,
 }) => {
   const [refinementPrompt, setRefinementPrompt] = useState('');
   const [editedCode, setEditedCode] = useState(code);
@@ -530,6 +532,11 @@ const CodeEditDialogOptimized: React.FC<CodeEditDialogOptimizedProps> = ({
         };
 
         setCurrentVisionMetadata(updatedMetadata);
+        
+        // Save vision metadata back to parent component
+        if (nodeId && onVisionMetadataUpdate) {
+          onVisionMetadataUpdate(nodeId, updatedMetadata);
+        }
       } else {
         console.warn('⚠️ Vision analysis failed:', analysisResult.error);
       }
@@ -581,7 +588,14 @@ const CodeEditDialogOptimized: React.FC<CodeEditDialogOptimizedProps> = ({
         
         setCurrentVisionMetadata(updatedMetadata);
         
-        // Automatically trigger vision analysis after screenshot capture
+        // Save screenshot metadata back to parent component immediately
+        if (nodeId && onVisionMetadataUpdate) {
+          onVisionMetadataUpdate(nodeId, updatedMetadata);
+        }
+        
+        // Always trigger vision analysis when capturing a new screenshot
+        // This function is only called when we need a fresh analysis
+        console.log('🔍 New screenshot captured - triggering vision analysis');
         await performVisionAnalysis(screenshotResult.dataUrl, updatedMetadata);
       } else {
         console.error('❌ Screenshot capture failed:', screenshotResult.error);
@@ -599,15 +613,34 @@ const CodeEditDialogOptimized: React.FC<CodeEditDialogOptimizedProps> = ({
       setRefinementPrompt('');
       setEditedCode(nodeCode);
       
-      // Always clear existing vision metadata when switching components
-      setCurrentVisionMetadata(undefined);
+      // Log vision metadata status for debugging
+      console.log('🔍 Vision metadata check:', {
+        hasScreenshot: !!visionMetadata?.screenshot,
+        hasVisionAnalysis: !!visionMetadata?.visionAnalysis,
+        nodeId
+      });
       
-      // Always trigger fresh screenshot capture when modal opens for a component
-      if (nodeId && getComponentElement) {
-        captureComponentScreenshot();
+      // Use existing vision metadata if available, don't clear it
+      // Only capture fresh screenshot if we don't have existing vision data
+      const hasExistingVisionData = visionMetadata?.screenshot || visionMetadata?.visionAnalysis;
+      
+      if (hasExistingVisionData) {
+        console.log('✅ Using existing vision metadata - no screenshot capture needed', {
+          hasScreenshot: !!visionMetadata?.screenshot,
+          hasAnalysis: !!visionMetadata?.visionAnalysis
+        });
+        setCurrentVisionMetadata(visionMetadata);
+      } else {
+        console.log('🔍 No existing vision data - capturing fresh screenshot');
+        setCurrentVisionMetadata(undefined);
+        
+        // Only trigger fresh screenshot capture if we don't have existing vision data
+        if (nodeId && getComponentElement) {
+          captureComponentScreenshot();
+        }
       }
     }
-  }, [nodeCode, isOpen, nodeId]); // Removed captureComponentScreenshot and getComponentElement from deps
+  }, [nodeCode, isOpen, nodeId, visionMetadata]); // Added visionMetadata to deps
 
   // Vision analysis is now handled by the backend during regeneration
 

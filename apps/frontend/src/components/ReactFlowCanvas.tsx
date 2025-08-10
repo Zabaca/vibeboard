@@ -392,6 +392,21 @@ const ReactFlowCanvas: React.FC = () => {
               code: processedComponent.compiledCode || processedComponent.originalCode,
               prompt: originalPrompt, // Keep the original prompt
               generationTime: result.generationTime || 0,
+              // Update vision metadata if analysis was performed during regeneration
+              metadata: {
+                ...processedComponent.metadata,
+                vision: result.visionAnalysis ? {
+                  screenshot: node.data.metadata?.vision?.screenshot, // Keep existing screenshot
+                  visionAnalysis: {
+                    analysis: result.visionAnalysis,
+                    analyzedAt: Date.now(),
+                    prompt: refinementPrompt,
+                    model: 'llama-4-maverick', // Default model used by cerebras service
+                  },
+                  version: (node.data.metadata?.vision?.version || 0) + 1, // Increment version
+                  lastUpdated: Date.now(),
+                } : node.data.metadata?.vision, // Keep existing vision data if no new analysis
+              },
             };
             return {
               ...node,
@@ -432,7 +447,28 @@ const ReactFlowCanvas: React.FC = () => {
     return nodeElement as HTMLElement;
   }, []);
 
-  // Vision analysis completion will be handled when backend returns updated metadata
+  // Handle vision metadata updates from the edit dialog
+  const handleVisionMetadataUpdate = useCallback((nodeId: string, visionMetadata: VisionMetadata) => {
+    setNodes((nds) =>
+      nds.map((node) => {
+        if (node.id === nodeId) {
+          const nodeData = node.data as ComponentNodeData;
+          return {
+            ...node,
+            data: {
+              ...nodeData,
+              metadata: {
+                ...nodeData.metadata,
+                vision: visionMetadata,
+              },
+            },
+          };
+        }
+        return node;
+      })
+    );
+    console.log('✅ Vision metadata updated for node:', nodeId);
+  }, [setNodes]);
 
   const handleCancelEdit = useCallback(() => {
     setEditDialog({ isOpen: false, nodeId: '', prompt: '', code: '' });
@@ -1594,6 +1630,7 @@ const ReactFlowCanvas: React.FC = () => {
         visionMetadata={editDialog.nodeId ? 
           nodes.find(n => n.id === editDialog.nodeId)?.data?.metadata?.vision : undefined
         }
+        onVisionMetadataUpdate={handleVisionMetadataUpdate}
       />
 
       {/* Component Library Dialog */}

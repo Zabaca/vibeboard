@@ -97,15 +97,17 @@ export async function captureElementScreenshot(
     }
 
     // Configure dom-to-image options
+    const style: Record<string, string> = useCORS ? {} : { 
+      // Disable external resources if CORS is not enabled
+      'background-image': 'none'
+    };
+
     const domToImageOptions = {
       bgcolor: backgroundColor,
       width: Math.min(element.offsetWidth, maxWidth),
       height: Math.min(element.offsetHeight, maxHeight),
       scale,
-      style: useCORS ? {} : { 
-        // Disable external resources if CORS is not enabled
-        'background-image': 'none'
-      },
+      style,
       cacheBust: true, // Prevent cache issues
       imagePlaceholder: backgroundColor, // Fallback for failed images
     };
@@ -205,7 +207,7 @@ export async function compressCanvasImage(
       resizedCanvas.toBlob(
         (blob) => blob ? resolve(blob) : reject(new Error('Failed to create blob')),
         mimeType,
-        targetFormat === 'webp' || targetFormat === 'jpeg' ? quality : undefined
+        targetFormat === 'webp' ? quality : undefined
       );
     });
 
@@ -589,7 +591,6 @@ export function showScreenshotNotification(
       body: message,
       icon: type === 'success' ? '✅' : type === 'error' ? '❌' : '📸',
       tag: 'vibeboard-screenshot',
-      renotify: true,
     });
     
     // Auto close after 3 seconds
@@ -614,7 +615,7 @@ export async function captureScreenUsingDisplayMedia(): Promise<ScreenshotResult
     }
 
     const stream = await navigator.mediaDevices.getDisplayMedia({
-      video: { mediaSource: 'screen' }
+      video: true
     });
 
     const video = document.createElement('video');

@@ -226,8 +226,23 @@ const GeneratedApp = ({ code, component, presentationMode = false, onCompilation
   // Track if component has already been processed for this hash
   const [processedHash, setProcessedHash] = useState<string | null>(null);
 
+  // Fallback for intersection observer - process stored components after a delay
   useEffect(() => {
-    // Only process component if it has been rendered (lazy transpilation)
+    const hasStoredCode = component?.compiledAt && (component?.originalCode || component?.compiledCode);
+    
+    if (hasStoredCode && !isInViewport && !hasBeenRendered) {
+      console.log('📦 Stored component detected, setting fallback timer');
+      const fallbackTimer = setTimeout(() => {
+        console.log('🔄 Intersection observer fallback - forcing stored component to render');
+        setIsInViewport(true);
+      }, 500); // Short delay to let intersection observer work first
+      
+      return () => clearTimeout(fallbackTimer);
+    }
+  }, [component?.compiledAt, component?.originalCode, component?.compiledCode, isInViewport, hasBeenRendered]);
+
+  useEffect(() => {
+    // Only process component if it has been rendered (lazy transpilation) or is in viewport
     if (!isInViewport && !hasBeenRendered) {
       return;
     }

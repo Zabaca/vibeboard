@@ -1,4 +1,4 @@
-import { memo, useMemo, useRef, useCallback } from 'react';
+import { useMemo, useRef, useCallback } from 'react';
 import { Handle, Position, NodeResizer, type NodeProps } from '@xyflow/react';
 import GeneratedApp from './GeneratedApp.tsx';
 import { AsyncComponentLoader } from './AsyncComponentLoader.tsx';

@@ -641,6 +641,10 @@ const ReactFlowCanvas: React.FC = () => {
                 onRegenerate: handleRegenerateComponent,
                 onDuplicate: handleDuplicateComponent,
                 onCompilationComplete: handleCompilationComplete,
+                onCaptureScreenshot: (nodeId: string, result: any) => {
+                  console.log('📸 Screenshot captured for node:', nodeId, result);
+                  // TODO: Handle screenshot result (e.g., store in component metadata)
+                },
               }),
             } as ComponentNodeData,
           }));
@@ -732,6 +736,10 @@ const ReactFlowCanvas: React.FC = () => {
       onRegenerate: handleRegenerateComponent,
       onDuplicate: handleDuplicateComponent,
       onCompilationComplete: handleCompilationComplete,
+      onCaptureScreenshot: (nodeId: string, result: any) => {
+        console.log('📸 Screenshot captured for node:', nodeId, result);
+        // TODO: Handle screenshot result (e.g., store in component metadata)
+      },
     };
 
     const viewportCenter = getViewportCenter();

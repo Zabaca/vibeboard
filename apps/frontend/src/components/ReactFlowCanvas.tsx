@@ -81,12 +81,10 @@ const ReactFlowCanvas: React.FC = () => {
     // In development, get from env or localStorage
     const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
     
-    // Get Groq API key for vision analysis (optional)
-    const groqApiKey = import.meta.env.VITE_GROQ_API_KEY || localStorage.getItem('groq_api_key') || '';
     
     if (isProduction) {
       // Production: API key is handled by Netlify Function
-      return new CerebrasService('', groqApiKey);
+      return new CerebrasService('', true); // Enable vision
     }
     
     // Development: Get API key from environment variable or prompt user
@@ -95,10 +93,10 @@ const ReactFlowCanvas: React.FC = () => {
       const key = prompt('Please enter your Cerebras API key:');
       if (key) {
         localStorage.setItem('cerebras_api_key', key);
-        return new CerebrasService(key, groqApiKey);
+        return new CerebrasService(key, true); // Enable vision
       }
     }
-    return new CerebrasService(apiKey, groqApiKey);
+    return new CerebrasService(apiKey, true); // Enable vision
   });
 
   // Initialize the component pipeline for processing components

@@ -53,15 +53,15 @@ class VisionService {
   private retryAttempts: number = 3;
   private retryDelay: number = 1000; // 1 second
 
-  constructor(apiKey: string) {
-    this.apiKey = apiKey;
-    // Use proxy to avoid CORS issues (similar to Cerebras service)
+  constructor(apiKey?: string) {
+    this.apiKey = apiKey || ''; // API key not needed for Netlify function
+    // Use proxy/Netlify function to avoid CORS issues (similar to Cerebras service)
     const isLocalhost = typeof window !== 'undefined' && 
       (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
     
     this.baseURL = isLocalhost
-      ? '/api/groq'  // Vite proxy will need to be configured
-      : '/api/groq'; // Netlify Function for production
+      ? '/api/groq'  // Vite proxy
+      : '/.netlify/functions/groq'; // Netlify Function for production
     
     this.defaultModel = 'llama-4-maverick';
   }
@@ -78,6 +78,7 @@ class VisionService {
         'Content-Type': 'application/json',
       };
       
+      // No Authorization header needed - handled by Netlify function
       if (isLocalhost) {
         headers['Authorization'] = `Bearer ${this.apiKey}`;
       }
@@ -340,6 +341,7 @@ Relate your visual analysis to the code structure when making recommendations.`;
       'Content-Type': 'application/json',
     };
     
+    // No Authorization header needed - handled by Netlify function
     if (isLocalhost) {
       headers['Authorization'] = `Bearer ${this.apiKey}`;
     }

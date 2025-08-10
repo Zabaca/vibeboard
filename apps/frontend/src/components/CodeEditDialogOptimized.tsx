@@ -472,7 +472,7 @@ const CodeEditDialogOptimized: React.FC<CodeEditDialogOptimizedProps> = ({
   const [isResizing, setIsResizing] = useState(false);
   const [leftWidth, setLeftWidth] = useState(50);
   const [isCapturingScreenshot, setIsCapturingScreenshot] = useState(false);
-  const [isAnalyzing] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [currentVisionMetadata, setCurrentVisionMetadata] = useState<VisionMetadata | undefined>(visionMetadata);
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -491,6 +491,54 @@ const CodeEditDialogOptimized: React.FC<CodeEditDialogOptimizedProps> = ({
   useEffect(() => {
     setCurrentVisionMetadata(visionMetadata);
   }, [visionMetadata]);
+
+  // Perform vision analysis on screenshot
+  const performVisionAnalysis = useCallback(async (screenshotDataUrl: string, metadata: VisionMetadata) => {
+    if (!screenshotDataUrl) {
+      console.warn('Cannot perform vision analysis: no screenshot data');
+      return;
+    }
+
+    setIsAnalyzing(true);
+    console.log('🔍 Starting vision analysis...');
+
+    try {
+      // Create a simple VisionService instance (no API key needed - handled server-side)
+      const visionService = new (await import('../services/vision.ts')).default();
+      
+      // Trigger vision analysis with a generic analysis prompt
+      const analysisResult = await visionService.analyzeComponent({
+        imageDataUrl: screenshotDataUrl,
+        userPrompt: 'Analyze this component for visual design, layout, and potential improvements',
+        componentCode: nodeCode,
+        preferredModel: 'llama-4-maverick'
+      });
+
+      if (analysisResult.success && analysisResult.analysis) {
+        console.log('✅ Vision analysis completed');
+        
+        // Update metadata with analysis results
+        const updatedMetadata: VisionMetadata = {
+          ...metadata,
+          visionAnalysis: {
+            analysis: analysisResult.analysis,
+            analyzedAt: Date.now(),
+            prompt: 'Analyze this component for visual design, layout, and potential improvements',
+            model: analysisResult.model || 'llama-4-maverick',
+            confidence: analysisResult.confidence
+          }
+        };
+
+        setCurrentVisionMetadata(updatedMetadata);
+      } else {
+        console.warn('⚠️ Vision analysis failed:', analysisResult.error);
+      }
+    } catch (error) {
+      console.error('❌ Vision analysis error:', error);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  }, [nodeCode]);
 
   // Capture screenshot of component
   const captureComponentScreenshot = useCallback(async () => {
@@ -533,7 +581,8 @@ const CodeEditDialogOptimized: React.FC<CodeEditDialogOptimizedProps> = ({
         
         setCurrentVisionMetadata(updatedMetadata);
         
-        // Screenshot captured - vision analysis will be handled by backend during regeneration
+        // Automatically trigger vision analysis after screenshot capture
+        await performVisionAnalysis(screenshotResult.dataUrl, updatedMetadata);
       } else {
         console.error('❌ Screenshot capture failed:', screenshotResult.error);
       }
@@ -542,7 +591,7 @@ const CodeEditDialogOptimized: React.FC<CodeEditDialogOptimizedProps> = ({
     } finally {
       setIsCapturingScreenshot(false);
     }
-  }, [nodeId, getComponentElement, currentVisionMetadata]);
+  }, [nodeId, getComponentElement, currentVisionMetadata, performVisionAnalysis]);
 
   // Reset state and capture screenshot when modal opens
   useEffect(() => {

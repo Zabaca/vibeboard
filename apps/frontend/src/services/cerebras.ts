@@ -16,7 +16,7 @@ class CerebrasService {
   private baseURL: string;
   private visionService?: VisionService;
 
-  constructor(apiKey: string, groqApiKey?: string) {
+  constructor(apiKey: string, enableVision: boolean = true) {
     this.apiKey = apiKey;
     // Use proxy to avoid CORS issues
     // In development: Vite proxy
@@ -25,11 +25,11 @@ class CerebrasService {
       (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
     this.baseURL = isLocalhost
       ? '/api/cerebras/v1/chat/completions'  // Vite proxy
-      : '/api/cerebras';  // Netlify Function
+      : '/.netlify/functions/cerebras';  // Netlify Function
     
-    // Initialize vision service if Groq API key is available
-    if (groqApiKey) {
-      this.visionService = new VisionService(groqApiKey);
+    // Initialize vision service (no API key needed - handled by Netlify function)
+    if (enableVision) {
+      this.visionService = new VisionService();
     }
   }
 

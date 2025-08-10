@@ -14,9 +14,14 @@ interface StickyNoteData {
   presentationMode?: boolean;
   onDelete?: (nodeId: string) => void;
   onUpdateState?: (nodeId: string, newState: ComponentState) => void;
+  
+  // Index signature for React Flow compatibility
+  [key: string]: unknown;
 }
 
-type StickyNoteProps = NodeProps<Record<string, unknown>>;
+interface StickyNoteProps extends NodeProps {
+  data: StickyNoteData;
+}
 
 // Sticky note color schemes
 const stickyColors = {
@@ -51,7 +56,7 @@ const stickyColors = {
 };
 
 const StickyNote = ({ id, data, selected = false }: StickyNoteProps) => {
-  const { state, presentationMode, onDelete, onUpdateState } = data as StickyNoteData;
+  const { state, presentationMode, onDelete, onUpdateState } = data;
   const [isEditing, setIsEditing] = useState(false);
   const [tempText, setTempText] = useState(state.text || '');
   const textAreaRef = useRef<HTMLTextAreaElement>(null);

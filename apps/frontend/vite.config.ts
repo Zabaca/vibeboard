@@ -12,6 +12,27 @@ export default defineConfig({
         target: 'https://api.cerebras.ai',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/cerebras/, ''),
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq, req) => {
+            // Add the API key to the request headers
+            if (process.env.VITE_CEREBRAS_API_KEY) {
+              proxyReq.setHeader('Authorization', `Bearer ${process.env.VITE_CEREBRAS_API_KEY}`);
+            }
+          });
+        },
+      },
+      '/api/groq': {
+        target: 'https://api.groq.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/groq/, ''),
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq, req) => {
+            // Add the API key to the request headers
+            if (process.env.VITE_GROQ_API_KEY) {
+              proxyReq.setHeader('Authorization', `Bearer ${process.env.VITE_GROQ_API_KEY}`);
+            }
+          });
+        },
       },
       '/proxy/unpkg': {
         target: 'https://unpkg.com',

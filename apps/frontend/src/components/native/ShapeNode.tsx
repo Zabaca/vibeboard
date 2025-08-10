@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React, { memo, useState, useRef, useEffect } from 'react';
 import { Handle, Position, NodeResizer, type NodeProps } from '@xyflow/react';
 import type { ComponentState } from '../../types/native-component.types.ts';
@@ -24,7 +23,7 @@ const ShapeNode = ({ id, data, selected = false }: ShapeNodeProps) => {
   const shapeData = data as unknown as ShapeNodeData;
   const { state, presentationMode, onDelete, onUpdateState } = shapeData;
   const [isEditingText, setIsEditingText] = useState(false);
-  const [tempText, setTempText] = useState((state as any)?.text || '');
+  const [tempText, setTempText] = useState((state as unknown as { text?: string })?.text || '');
   const [showCustomizer, setShowCustomizer] = useState(false);
   const textInputRef = useRef<HTMLInputElement>(null);
 
@@ -38,7 +37,7 @@ const ShapeNode = ({ id, data, selected = false }: ShapeNodeProps) => {
 
   const handleTextSubmit = () => {
     setIsEditingText(false);
-    if (onUpdateState && tempText !== (state as any).text) {
+    if (onUpdateState && tempText !== (state as unknown as { text?: string }).text) {
       onUpdateState(id as string, { ...state, text: tempText });
     }
   };

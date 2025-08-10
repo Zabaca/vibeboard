@@ -283,12 +283,15 @@ const ComponentNode = ({ id, data, selected = false }: ComponentNodeProps) => {
           }}
         >
           {generatedAppComponent ? (
-            <div style={{ 
-              width: '100%', 
-              height: '100%',
-              // Override the white background in GeneratedApp
-              backgroundColor: 'transparent',
-            }}>
+            <div 
+              data-component-content="true"
+              style={{ 
+                width: '100%', 
+                height: '100%',
+                // Override the white background in GeneratedApp
+                backgroundColor: 'transparent',
+              }}
+            >
               {generatedAppComponent}
             </div>
           ) : (
@@ -600,6 +603,7 @@ const ComponentNode = ({ id, data, selected = false }: ComponentNodeProps) => {
       {/* AI Component Content */}
       <div 
         ref={contentRef} // Ref for screenshot capture
+        data-component-content="true"
         className="nodrag" // Prevent dragging when interacting with AI component
         style={{ 
           flex: 1, 

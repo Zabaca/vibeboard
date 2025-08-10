@@ -110,7 +110,7 @@ export const ImportFromURLDialog: React.FC<ImportFromURLDialogProps> = ({
       }
 
       return true;
-    } catch (e) {
+    } catch {
       setValidationMessage('❌ Invalid URL format');
       return false;
     }

@@ -329,7 +329,7 @@ const GeneratedApp = ({ code, component, presentationMode = false, onCompilation
           });
 
           if (esmResult.success && esmResult.component) {
-            setComponent(() => esmResult.component as React.ComponentType<{}> | null)
+            setComponent(() => esmResult.component as React.ComponentType<Record<string, never>> | null)
             setProcessedHash(codeHash); // Mark this code as processed
           } else {
             const errorInfo: ErrorInfo = {

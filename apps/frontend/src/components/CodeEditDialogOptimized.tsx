@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import CodeEditorSimple from './CodeEditorSimple.tsx';
 import { codeEditDialogStyles } from './CodeEditDialog.styles.ts';
+import { captureElementScreenshot } from '../utils/screenshotUtils.ts';
+import type { VisionMetadata } from '../types/component.types.ts';
 
 interface CodeEditDialogOptimizedProps {
   isOpen: boolean;
@@ -8,10 +10,12 @@ interface CodeEditDialogOptimizedProps {
   prompt: string;
   nodeId?: string;
   onSave: (newCode: string) => void;
-  onRegenerate: (refinementPrompt: string, currentCode: string) => void;
+  onRegenerate: (refinementPrompt: string, currentCode: string, screenshotDataUrl?: string) => void;
   onCancel: () => void;
   isGenerating?: boolean;
   getNodeCode?: (nodeId: string) => string;
+  getComponentElement?: (nodeId: string) => HTMLElement | null;
+  visionMetadata?: VisionMetadata;
 }
 
 // Isolated component for refinement section to prevent re-renders
@@ -20,13 +24,15 @@ const RefinementSection = React.memo(({
   setRefinementPrompt, 
   onRegenerate, 
   editedCode, 
-  isGenerating 
+  isGenerating,
+  screenshotDataUrl 
 }: {
   refinementPrompt: string;
   setRefinementPrompt: (value: string) => void;
-  onRegenerate: (prompt: string, code: string) => void;
+  onRegenerate: (prompt: string, code: string, screenshotDataUrl?: string) => void;
   editedCode: string;
   isGenerating: boolean;
+  screenshotDataUrl?: string;
 }) => {
   const [debouncedRefinementPrompt, setDebouncedRefinementPrompt] = useState('');
   
@@ -67,7 +73,7 @@ const RefinementSection = React.memo(({
         placeholder="Describe what changes you want to make to the component..."
       />
       <button
-        onClick={() => onRegenerate(debouncedRefinementPrompt, editedCode)}
+        onClick={() => onRegenerate(debouncedRefinementPrompt, editedCode, screenshotDataUrl)}
         disabled={isGenerating || !debouncedRefinementPrompt.trim()}
         style={{
           marginTop: '16px',
@@ -124,6 +130,226 @@ const RefinementSection = React.memo(({
 });
 
 RefinementSection.displayName = 'RefinementSection';
+
+// Vision Metadata Section Component
+const VisionMetadataSection = React.memo(({ 
+  visionMetadata, 
+  isCapturingScreenshot, 
+  isAnalyzing, 
+  onRetakeScreenshot 
+}: {
+  visionMetadata?: VisionMetadata;
+  isCapturingScreenshot: boolean;
+  isAnalyzing: boolean;
+  onRetakeScreenshot: () => void;
+}) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  const hasVisionData = visionMetadata?.screenshot || visionMetadata?.visionAnalysis;
+  
+  return (
+    <div style={{ 
+      display: 'flex',
+      flexDirection: 'column',
+    }}>
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '12px',
+      }}>
+        <label style={{
+          fontSize: '14px',
+          fontWeight: '500',
+          color: '#e5e5e5',
+          textTransform: 'uppercase',
+          letterSpacing: '0.5px',
+        }}>
+          Visual Analysis
+        </label>
+        
+        {/* Status Indicator */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {isCapturingScreenshot && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              color: '#f59e0b',
+              fontSize: '12px'
+            }}>
+              <span style={{
+                animation: 'spin 1s linear infinite',
+                display: 'inline-block'
+              }}>📷</span>
+              Capturing...
+            </div>
+          )}
+          
+          {isAnalyzing && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              color: '#6366f1',
+              fontSize: '12px'
+            }}>
+              <span style={{
+                animation: 'spin 1s linear infinite',
+                display: 'inline-block'
+              }}>🔍</span>
+              Analyzing...
+            </div>
+          )}
+          
+          {hasVisionData && !isCapturingScreenshot && !isAnalyzing && (
+            <button
+              onClick={onRetakeScreenshot}
+              style={{
+                background: '#2a2a2a',
+                color: '#e5e5e5',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '6px',
+                padding: '4px 8px',
+                fontSize: '11px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+              }}
+            >
+              📷 Retake
+            </button>
+          )}
+          
+          {hasVisionData && (
+            <button
+              onClick={() => setIsExpanded(!isExpanded)}
+              style={{
+                background: 'transparent',
+                color: '#e5e5e5',
+                border: 'none',
+                fontSize: '12px',
+                cursor: 'pointer',
+                transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                transition: 'transform 0.2s ease',
+              }}
+            >
+              ▼
+            </button>
+          )}
+        </div>
+      </div>
+      
+      {/* Vision Content */}
+      <div style={{
+        border: '1px solid rgba(255, 255, 255, 0.1)',
+        borderRadius: '8px',
+        backgroundColor: '#0d0d0d',
+        overflow: 'hidden',
+      }}>
+        {!hasVisionData && !isCapturingScreenshot && !isAnalyzing && (
+          <div style={{
+            padding: '16px',
+            textAlign: 'center',
+            color: '#888',
+            fontSize: '14px',
+          }}>
+            Screenshot will be captured automatically when you open this dialog
+          </div>
+        )}
+        
+        {hasVisionData && (
+          <>
+            {/* Screenshot Preview */}
+            {visionMetadata?.screenshot && (
+              <div style={{
+                padding: '12px',
+                borderBottom: isExpanded ? '1px solid rgba(255, 255, 255, 0.1)' : 'none',
+              }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                }}>
+                  <img
+                    src={visionMetadata.screenshot.dataUrl}
+                    alt="Component Screenshot"
+                    style={{
+                      width: '60px',
+                      height: '60px',
+                      objectFit: 'cover',
+                      borderRadius: '6px',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                    }}
+                  />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{
+                      color: '#e5e5e5',
+                      fontSize: '13px',
+                      fontWeight: '500',
+                      marginBottom: '4px',
+                    }}>
+                      Screenshot Captured
+                    </div>
+                    <div style={{
+                      color: '#888',
+                      fontSize: '11px',
+                    }}>
+                      {visionMetadata.screenshot.format.toUpperCase()} • {visionMetadata.screenshot.sizeKB.toFixed(1)}KB
+                      {visionMetadata.screenshot.capturedAt && (
+                        <> • {new Date(visionMetadata.screenshot.capturedAt).toLocaleTimeString()}</>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Vision Analysis (Expandable) */}
+            {isExpanded && visionMetadata?.visionAnalysis && (
+              <div style={{
+                padding: '16px',
+                maxHeight: '200px',
+                overflowY: 'auto',
+              }}>
+                <div style={{
+                  color: '#e5e5e5',
+                  fontSize: '13px',
+                  fontWeight: '500',
+                  marginBottom: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}>
+                  🔍 AI Analysis
+                  <span style={{
+                    color: '#888',
+                    fontSize: '11px',
+                    fontWeight: 'normal',
+                  }}>
+                    ({visionMetadata.visionAnalysis.model})
+                  </span>
+                </div>
+                <div style={{
+                  color: '#ccc',
+                  fontSize: '12px',
+                  lineHeight: '1.5',
+                  whiteSpace: 'pre-line',
+                  fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                }}>
+                  {visionMetadata.visionAnalysis.analysis}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+});
+
+VisionMetadataSection.displayName = 'VisionMetadataSection';
 
 // Isolated component for code editor section
 const CodeEditorSection = React.memo(({ 
@@ -237,12 +463,17 @@ const CodeEditDialogOptimized: React.FC<CodeEditDialogOptimizedProps> = ({
   onCancel,
   isGenerating = false,
   getNodeCode,
+  getComponentElement,
+  visionMetadata,
 }) => {
   const [refinementPrompt, setRefinementPrompt] = useState('');
   const [editedCode, setEditedCode] = useState(code);
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
   const [isResizing, setIsResizing] = useState(false);
   const [leftWidth, setLeftWidth] = useState(50);
+  const [isCapturingScreenshot, setIsCapturingScreenshot] = useState(false);
+  const [isAnalyzing] = useState(false);
+  const [currentVisionMetadata, setCurrentVisionMetadata] = useState<VisionMetadata | undefined>(visionMetadata);
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   
@@ -254,10 +485,95 @@ const CodeEditDialogOptimized: React.FC<CodeEditDialogOptimizedProps> = ({
     return code;
   }, [nodeId, getNodeCode, isOpen, code]);
 
+  // Vision service initialization removed - analysis now handled by backend
+
+  // Update vision metadata when prop changes
   useEffect(() => {
-    setRefinementPrompt('');
-    setEditedCode(nodeCode);
-  }, [nodeCode, isOpen]);
+    setCurrentVisionMetadata(visionMetadata);
+  }, [visionMetadata]);
+
+  // Capture screenshot of component
+  const captureComponentScreenshot = useCallback(async () => {
+    if (!nodeId || !getComponentElement) {
+      console.warn('Cannot capture screenshot: missing nodeId or getComponentElement function');
+      return;
+    }
+
+    const componentElement = getComponentElement(nodeId);
+    if (!componentElement) {
+      console.warn('Cannot capture screenshot: component element not found');
+      return;
+    }
+
+    setIsCapturingScreenshot(true);
+
+    try {
+      const screenshotResult = await captureElementScreenshot(componentElement, {
+        format: 'webp',
+        quality: 0.85,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        backgroundColor: '#ffffff',
+        debug: false,
+      });
+
+      if (screenshotResult.success && screenshotResult.dataUrl) {
+        console.log('✅ Screenshot captured successfully:', screenshotResult);
+        
+        // Update local metadata with screenshot
+        const updatedMetadata: VisionMetadata = {
+          ...currentVisionMetadata,
+          screenshot: {
+            dataUrl: screenshotResult.dataUrl,
+            format: screenshotResult.format || 'webp',
+            capturedAt: screenshotResult.capturedAt,
+            sizeKB: screenshotResult.sizeKB || 0,
+          },
+        };
+        
+        setCurrentVisionMetadata(updatedMetadata);
+        
+        // Screenshot captured - vision analysis will be handled by backend during regeneration
+      } else {
+        console.error('❌ Screenshot capture failed:', screenshotResult.error);
+      }
+    } catch (error) {
+      console.error('❌ Screenshot capture error:', error);
+    } finally {
+      setIsCapturingScreenshot(false);
+    }
+  }, [nodeId, getComponentElement, currentVisionMetadata]);
+
+  // Reset state and capture screenshot when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setRefinementPrompt('');
+      setEditedCode(nodeCode);
+      
+      // Always clear existing vision metadata when switching components
+      setCurrentVisionMetadata(undefined);
+      
+      // Always trigger fresh screenshot capture when modal opens for a component
+      if (nodeId && getComponentElement) {
+        captureComponentScreenshot();
+      }
+    }
+  }, [nodeCode, isOpen, nodeId]); // Removed captureComponentScreenshot and getComponentElement from deps
+
+  // Vision analysis is now handled by the backend during regeneration
+
+  // Handle retake screenshot
+  const handleRetakeScreenshot = useCallback(() => {
+    setCurrentVisionMetadata(prev => ({
+      ...prev,
+      screenshot: undefined,
+      visionAnalysis: undefined,
+    }));
+    captureComponentScreenshot();
+  }, [captureComponentScreenshot]);
+
+  // Note: Vision analysis is now handled in the backend during regeneration
+  // We no longer auto-trigger vision analysis on prompt changes
 
   const handleCopyCode = useCallback(async () => {
     try {
@@ -443,13 +759,21 @@ const CodeEditDialogOptimized: React.FC<CodeEditDialogOptimizedProps> = ({
                 color: '#e5e5e5',
                 fontSize: '14px',
                 fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                minHeight: '100px',
-                maxHeight: '200px',
+                minHeight: '80px',
+                maxHeight: '140px',
                 overflowY: 'auto',
               }}>
                 {prompt || 'No prompt provided'}
               </div>
             </div>
+
+            {/* Vision Metadata Section */}
+            <VisionMetadataSection
+              visionMetadata={currentVisionMetadata}
+              isCapturingScreenshot={isCapturingScreenshot}
+              isAnalyzing={isAnalyzing}
+              onRetakeScreenshot={handleRetakeScreenshot}
+            />
 
             {/* Refinement Section */}
             <RefinementSection
@@ -458,6 +782,7 @@ const CodeEditDialogOptimized: React.FC<CodeEditDialogOptimizedProps> = ({
               onRegenerate={onRegenerate}
               editedCode={editedCode}
               isGenerating={isGenerating}
+              screenshotDataUrl={currentVisionMetadata?.screenshot?.dataUrl}
             />
           </div>
         </div>

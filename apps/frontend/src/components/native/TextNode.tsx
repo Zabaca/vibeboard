@@ -1,7 +1,6 @@
-// @ts-nocheck
 import React, { memo, useState, useRef, useEffect } from 'react';
 import { Handle, Position, NodeResizer, type NodeProps } from '@xyflow/react';
-import type { NativeComponentNode, ComponentState } from '../../types/native-component.types.ts';
+import type { ComponentState } from '../../types/native-component.types.ts';
 import TextCustomizer from './TextCustomizer.tsx';
 
 interface TextNodeData {

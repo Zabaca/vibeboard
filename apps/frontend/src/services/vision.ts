@@ -4,14 +4,14 @@
  */
 
 import type { VisionMetadata } from '../types/component.types';
+import { posthogService } from './posthog.ts';
 
-// Known vision-capable models on Groq (from test-vision-verified.js)
+// Known vision-capable models on Groq (with full model names)
 const VISION_MODELS = {
-  'llama-4-maverick': 'llama-4-maverick-17b-128e-instruct',
-  'llama-4-scout': 'llama-4-scout-17b-16e-instruct', 
+  'llama-4-maverick': 'meta-llama/llama-4-maverick-17b-128e-instruct',
+  'llama-3.2-90b': 'meta-llama/llama-3.2-90b-vision-preview',
+  'llama-3.2-11b': 'meta-llama/llama-3.2-11b-vision-preview',
   'llava': 'llava-v1.5-7b-4096-preview',
-  'llama-3.2-90b': 'llama-3.2-90b-vision-preview',
-  'llama-3.2-11b': 'llama-3.2-11b-vision-preview'
 } as const;
 
 export type VisionModel = keyof typeof VISION_MODELS;
@@ -82,7 +82,7 @@ class VisionService {
         headers['Authorization'] = `Bearer ${this.apiKey}`;
       }
 
-      const response = await fetch(`${this.baseURL}/models`, {
+      const response = await fetch(`${this.baseURL}/openai/v1/models`, {
         method: 'GET',
         headers,
       });
@@ -255,6 +255,21 @@ Relate your visual analysis to the code structure when making recommendations.`;
         const result = await this.makeVisionRequest(modelId, request.imageDataUrl, visionPrompt);
         const processingTime = (Date.now() - startTime) / 1000;
 
+        // Track successful vision analysis
+        posthogService.track('vision_service_analysis_success', {
+          model: modelId,
+          processing_time: processingTime,
+          analysis_length: result.analysis.length,
+          tokens_total: result.tokensUsed?.total,
+          tokens_image: result.tokensUsed?.imageTokens,
+          tokens_text: result.tokensUsed?.textTokens,
+          prompt_length: request.userPrompt.length,
+          image_size_kb: validation.sizeKB,
+          attempt: attempt,
+          confidence: result.confidence,
+          timestamp: new Date().toISOString(),
+        });
+
         return {
           success: true,
           analysis: result.analysis,
@@ -284,11 +299,25 @@ Relate your visual analysis to the code structure when making recommendations.`;
       }
     }
 
+    const finalProcessingTime = (Date.now() - startTime) / 1000;
+    
+    // Track failed vision analysis
+    posthogService.track('vision_service_analysis_failed', {
+      model: modelId,
+      processing_time: finalProcessingTime,
+      error: lastError?.message || 'Vision analysis failed',
+      retryable: this.isRetryableError(lastError),
+      prompt_length: request.userPrompt.length,
+      image_size_kb: validation.sizeKB,
+      total_attempts: this.retryAttempts,
+      timestamp: new Date().toISOString(),
+    });
+
     return {
       success: false,
       error: lastError?.message || 'Vision analysis failed',
       retryable: this.isRetryableError(lastError),
-      processingTime: (Date.now() - startTime) / 1000
+      processingTime: finalProcessingTime
     };
   }
 
@@ -336,7 +365,7 @@ Relate your visual analysis to the code structure when making recommendations.`;
       max_tokens: 2000
     };
 
-    const response = await fetch(`${this.baseURL}/chat/completions`, {
+    const response = await fetch(`${this.baseURL}/openai/v1/chat/completions`, {
       method: 'POST',
       headers,
       body: JSON.stringify(requestBody),

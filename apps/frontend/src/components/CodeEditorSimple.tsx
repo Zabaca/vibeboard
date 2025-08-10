@@ -47,8 +47,8 @@ const CodeEditorSimple: React.FC<CodeEditorSimpleProps> = ({
         keymap.of(defaultKeymap),
         
         // Update listener
-        EditorView.updateListener.of((update: any) => {
-          if (update.docChanged && onChangeRef.current) {
+        EditorView.updateListener.of((update: { docChanged?: boolean; state?: { doc?: { toString(): string } } }) => {
+          if (update.docChanged && onChangeRef.current && update.state?.doc) {
             const newValue = update.state.doc.toString();
             onChangeRef.current(newValue);
           }
@@ -97,7 +97,7 @@ const CodeEditorSimple: React.FC<CodeEditorSimpleProps> = ({
       view.destroy();
       viewRef.current = null;
     };
-  }, [readOnly]);
+  }, [readOnly, value]);
   
   // Update content when value prop changes
   useEffect(() => {

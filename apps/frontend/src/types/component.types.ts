@@ -134,6 +134,8 @@ export interface VisionMetadata {
     model: string;
     confidence?: number;
   };
+  version?: number; // Track vision metadata version for migration/cleanup
+  lastUpdated?: number; // Track when vision data was last modified
 }
 
 /**

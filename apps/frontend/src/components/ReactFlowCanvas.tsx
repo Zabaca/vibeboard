@@ -27,7 +27,8 @@ import { ComponentPipeline } from '../services/ComponentPipeline.ts';
 import { getCompiledComponent } from '../data/compiledComponents.generated.ts';
 import { storageService } from '../services/StorageService.ts';
 import { posthogService } from '../services/posthog.ts';
-import type { UnifiedComponentNode } from '../types/component.types.ts';
+import type { UnifiedComponentNode, VisionMetadata } from '../types/component.types.ts';
+import type { ScreenshotResult } from '../utils/screenshotUtils.ts';
 import type { NativeComponentType, NativeComponentNode, ComponentState } from '../types/native-component.types.ts';
 import { defaultComponentStates } from '../types/native-component.types.ts';
 import ShapeNode from './native/ShapeNode.tsx';
@@ -138,6 +139,189 @@ const ReactFlowCanvas: React.FC = () => {
       })
     );
   }, [setNodes]);
+
+  // Handle screenshot capture from ComponentNode
+  const handleScreenshotCapture = useCallback((nodeId: string, result: ScreenshotResult) => {
+    console.log('📸 Screenshot captured for node:', nodeId, result);
+    
+    if (!result.success) {
+      console.error('Failed to capture screenshot:', result.error);
+      return;
+    }
+
+    // Update the node's vision metadata with the screenshot
+    setNodes((nds) =>
+      nds.map((node) => {
+        if (node.id === nodeId) {
+          const nodeData = node.data as ComponentNodeData;
+          
+          // Create vision metadata structure with version tracking
+          const visionMetadata: VisionMetadata = {
+            screenshot: {
+              dataUrl: result.dataUrl || '',
+              format: result.format || 'png',
+              capturedAt: result.capturedAt,
+              sizeKB: result.sizeKB || 0,
+              dimensions: result.dimensions,
+            },
+            // Vision analysis will be added later when edit modal triggers analysis
+            visionAnalysis: nodeData.metadata?.vision?.visionAnalysis,
+            version: 1, // Initialize version for new vision data
+            lastUpdated: Date.now(),
+          };
+          
+          return {
+            ...node,
+            data: {
+              ...nodeData,
+              metadata: {
+                ...nodeData.metadata,
+                vision: visionMetadata,
+              },
+            },
+          };
+        }
+        return node;
+      })
+    );
+    
+    // Save to storage after updating
+    const updatedNodes = nodes.map((node) => {
+      if (node.id === nodeId) {
+        const nodeData = node.data as ComponentNodeData;
+        return {
+          ...node,
+          data: {
+            ...nodeData,
+            metadata: {
+              ...nodeData.metadata,
+              vision: {
+                screenshot: {
+                  dataUrl: result.dataUrl || '',
+                  format: result.format || 'png',
+                  capturedAt: result.capturedAt,
+                  sizeKB: result.sizeKB || 0,
+                  dimensions: result.dimensions,
+                },
+                visionAnalysis: nodeData.metadata?.vision?.visionAnalysis,
+              },
+            },
+          },
+        };
+      }
+      return node;
+    });
+    
+    storageService.saveCanvas(updatedNodes, edges);
+    posthogService.trackComponentInteraction('screenshot_captured', nodeId);
+  }, [setNodes, nodes, edges]);
+
+  // Handle vision analysis results (currently unused, but will be used by EditComponentModal)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const handleVisionAnalysisComplete = useCallback((
+    nodeId: string, 
+    analysis: string, 
+    model: string, 
+    prompt: string,
+    confidence?: number
+  ) => {
+    console.log('🔍 Vision analysis complete for node:', nodeId);
+    
+    setNodes((nds) =>
+      nds.map((node) => {
+        if (node.id === nodeId) {
+          const nodeData = node.data as ComponentNodeData;
+          
+          // Update vision analysis while preserving screenshot data
+          const currentVision = nodeData.metadata?.vision;
+          const visionMetadata: VisionMetadata = {
+            screenshot: currentVision?.screenshot,
+            visionAnalysis: {
+              analysis,
+              analyzedAt: Date.now(),
+              prompt,
+              model,
+              confidence,
+            },
+            version: (currentVision?.version || 0) + 1, // Increment version on update
+            lastUpdated: Date.now(),
+          };
+          
+          return {
+            ...node,
+            data: {
+              ...nodeData,
+              metadata: {
+                ...nodeData.metadata,
+                vision: visionMetadata,
+              },
+            },
+          };
+        }
+        return node;
+      })
+    );
+    
+    // Save to storage after updating
+    storageService.saveCanvas(nodes, edges);
+    posthogService.trackComponentInteraction('vision_analysis_complete', nodeId);
+  }, [setNodes, nodes, edges]);
+
+  // Clean up old vision data to prevent storage bloat (currently unused, but available for manual cleanup)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const cleanupVisionData = useCallback((maxAge: number = 7 * 24 * 60 * 60 * 1000) => {
+    console.log('🧹 Cleaning up old vision data...');
+    const now = Date.now();
+    let cleanedCount = 0;
+    
+    setNodes((nds) =>
+      nds.map((node) => {
+        const nodeData = node.data as ComponentNodeData;
+        const vision = nodeData.metadata?.vision;
+        
+        if (!vision) return node;
+        
+        const shouldCleanupScreenshot = vision.screenshot && 
+          (now - vision.screenshot.capturedAt) > maxAge;
+        
+        const shouldCleanupAnalysis = vision.visionAnalysis && 
+          (now - vision.visionAnalysis.analyzedAt) > maxAge;
+        
+        if (shouldCleanupScreenshot || shouldCleanupAnalysis) {
+          cleanedCount++;
+          
+          const cleanedVision: VisionMetadata = {
+            screenshot: shouldCleanupScreenshot ? undefined : vision.screenshot,
+            visionAnalysis: shouldCleanupAnalysis ? undefined : vision.visionAnalysis,
+            version: (vision.version || 0) + 1,
+            lastUpdated: now,
+          };
+          
+          return {
+            ...node,
+            data: {
+              ...nodeData,
+              metadata: {
+                ...nodeData.metadata,
+                vision: Object.keys(cleanedVision).some(key => 
+                  key !== 'version' && key !== 'lastUpdated' && 
+                  cleanedVision[key as keyof VisionMetadata] !== undefined
+                ) ? cleanedVision : undefined,
+              },
+            },
+          };
+        }
+        
+        return node;
+      })
+    );
+    
+    if (cleanedCount > 0) {
+      console.log(`✅ Cleaned up vision data from ${cleanedCount} components`);
+      storageService.saveCanvas(nodes, edges);
+      posthogService.trackFeatureUsage('vision_data_cleanup', { cleanedCount });
+    }
+  }, [setNodes, nodes, edges]);
 
   // Define handlers first before using them in useEffect
   const handleDeleteComponent = useCallback((nodeId: string) => {
@@ -641,10 +825,7 @@ const ReactFlowCanvas: React.FC = () => {
                 onRegenerate: handleRegenerateComponent,
                 onDuplicate: handleDuplicateComponent,
                 onCompilationComplete: handleCompilationComplete,
-                onCaptureScreenshot: (nodeId: string, result: any) => {
-                  console.log('📸 Screenshot captured for node:', nodeId, result);
-                  // TODO: Handle screenshot result (e.g., store in component metadata)
-                },
+                onCaptureScreenshot: handleScreenshotCapture,
               }),
             } as ComponentNodeData,
           }));
@@ -736,10 +917,7 @@ const ReactFlowCanvas: React.FC = () => {
       onRegenerate: handleRegenerateComponent,
       onDuplicate: handleDuplicateComponent,
       onCompilationComplete: handleCompilationComplete,
-      onCaptureScreenshot: (nodeId: string, result: any) => {
-        console.log('📸 Screenshot captured for node:', nodeId, result);
-        // TODO: Handle screenshot result (e.g., store in component metadata)
-      },
+      onCaptureScreenshot: handleScreenshotCapture,
     };
 
     const viewportCenter = getViewportCenter();

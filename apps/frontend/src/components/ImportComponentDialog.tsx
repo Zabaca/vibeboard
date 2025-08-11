@@ -87,36 +87,43 @@ const ImportComponentDialog: React.FC<ImportComponentDialogProps> = ({
         >
           {/* Header */}
           <div style={{ marginBottom: '20px' }}>
-            <h2 style={{
-              margin: '0 0 8px 0',
-              fontSize: '24px',
-              fontWeight: '600',
-              color: '#1f2937',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-            }}>
+            <h2
+              style={{
+                margin: '0 0 8px 0',
+                fontSize: '24px',
+                fontWeight: '600',
+                color: '#1f2937',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+              }}
+            >
               📥 Import Component
             </h2>
-            <p style={{
-              margin: 0,
-              fontSize: '14px',
-              color: '#6b7280',
-              lineHeight: '1.5',
-            }}>
-              Paste your React component code below. It will be processed through the same pipeline as AI-generated components.
+            <p
+              style={{
+                margin: 0,
+                fontSize: '14px',
+                color: '#6b7280',
+                lineHeight: '1.5',
+              }}
+            >
+              Paste your React component code below. It will be processed through the same pipeline
+              as AI-generated components.
             </p>
           </div>
 
           {/* Description Input */}
           <div style={{ marginBottom: '16px' }}>
-            <label style={{
-              display: 'block',
-              marginBottom: '6px',
-              fontSize: '13px',
-              fontWeight: '500',
-              color: '#374151',
-            }}>
+            <label
+              style={{
+                display: 'block',
+                marginBottom: '6px',
+                fontSize: '13px',
+                fontWeight: '500',
+                color: '#374151',
+              }}
+            >
               Component Description (Optional)
             </label>
             <input
@@ -146,14 +153,24 @@ const ImportComponentDialog: React.FC<ImportComponentDialogProps> = ({
           </div>
 
           {/* Code Editor */}
-          <div style={{ flex: 1, marginBottom: '20px', minHeight: '300px', display: 'flex', flexDirection: 'column' }}>
-            <label style={{
-              display: 'block',
-              marginBottom: '8px',
-              fontSize: '13px',
-              fontWeight: '500',
-              color: '#374151',
-            }}>
+          <div
+            style={{
+              flex: 1,
+              marginBottom: '20px',
+              minHeight: '300px',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            <label
+              style={{
+                display: 'block',
+                marginBottom: '8px',
+                fontSize: '13px',
+                fontWeight: '500',
+                color: '#374151',
+              }}
+            >
               Component Code
             </label>
             <textarea
@@ -172,7 +189,8 @@ const ImportComponentDialog: React.FC<ImportComponentDialogProps> = ({
                 border: '2px solid #e5e7eb',
                 borderRadius: '8px',
                 resize: 'none',
-                fontFamily: '"JetBrains Mono", "SF Mono", Monaco, Inconsolata, "Roboto Mono", "Droid Sans Mono", "Liberation Mono", Menlo, Courier, monospace',
+                fontFamily:
+                  '"JetBrains Mono", "SF Mono", Monaco, Inconsolata, "Roboto Mono", "Droid Sans Mono", "Liberation Mono", Menlo, Courier, monospace',
                 outline: 'none',
                 transition: 'border-color 0.2s',
                 backgroundColor: isProcessing ? '#f9fafb' : 'white',
@@ -199,42 +217,53 @@ export default function MyComponent() {
   );
 }`}
             />
-            <div style={{
-              marginTop: '8px',
-              fontSize: '12px',
-              color: '#9ca3af',
-            }}>
+            <div
+              style={{
+                marginTop: '8px',
+                fontSize: '12px',
+                color: '#9ca3af',
+              }}
+            >
               💡 Tip: Press Ctrl+Enter (or Cmd+Enter) to import • ESM/JSX/TSX formats supported
             </div>
           </div>
 
           {/* Example Formats */}
           <details style={{ marginBottom: '20px' }}>
-            <summary style={{
-              cursor: 'pointer',
-              fontSize: '13px',
-              color: '#6366f1',
-              fontWeight: '500',
-              userSelect: 'none',
-              padding: '4px 0',
-            }}>
+            <summary
+              style={{
+                cursor: 'pointer',
+                fontSize: '13px',
+                color: '#6366f1',
+                fontWeight: '500',
+                userSelect: 'none',
+                padding: '4px 0',
+              }}
+            >
               Supported formats & examples
             </summary>
-            <div style={{
-              marginTop: '8px',
-              padding: '12px',
-              backgroundColor: '#f9fafb',
-              borderRadius: '8px',
-              fontSize: '12px',
-              lineHeight: '1.6',
-              color: '#4b5563',
-            }}>
-              <div><strong>✅ Supported:</strong></div>
+            <div
+              style={{
+                marginTop: '8px',
+                padding: '12px',
+                backgroundColor: '#f9fafb',
+                borderRadius: '8px',
+                fontSize: '12px',
+                lineHeight: '1.6',
+                color: '#4b5563',
+              }}
+            >
+              <div>
+                <strong>✅ Supported:</strong>
+              </div>
               <div>• React functional components (with hooks)</div>
               <div>• JSX/TSX syntax</div>
               <div>• ES modules (import/export)</div>
               <div>• Components with external dependencies (will attempt CDN resolution)</div>
-              <div><br/><strong>⚠️ Note:</strong></div>
+              <div>
+                <br />
+                <strong>⚠️ Note:</strong>
+              </div>
               <div>• Component will be processed and transpiled automatically</div>
               <div>• Missing React imports will be added automatically</div>
               <div>• External dependencies will be resolved via CDN when possible</div>
@@ -242,11 +271,13 @@ export default function MyComponent() {
           </details>
 
           {/* Actions */}
-          <div style={{
-            display: 'flex',
-            gap: '12px',
-            justifyContent: 'flex-end',
-          }}>
+          <div
+            style={{
+              display: 'flex',
+              gap: '12px',
+              justifyContent: 'flex-end',
+            }}
+          >
             <button
               onClick={onCancel}
               disabled={isProcessing}
@@ -281,7 +312,7 @@ export default function MyComponent() {
                 fontSize: '14px',
                 fontWeight: '500',
                 color: 'white',
-                backgroundColor: isProcessing ? '#9ca3af' : (isValidCode ? '#6366f1' : '#d1d5db'),
+                backgroundColor: isProcessing ? '#9ca3af' : isValidCode ? '#6366f1' : '#d1d5db',
                 border: 'none',
                 borderRadius: '8px',
                 cursor: isProcessing || !isValidCode ? 'not-allowed' : 'pointer',
@@ -303,16 +334,18 @@ export default function MyComponent() {
             >
               {isProcessing ? (
                 <>
-                  <span style={{
-                    display: 'inline-block',
-                    animation: 'spin 1s linear infinite',
-                  }}>⏳</span>
+                  <span
+                    style={{
+                      display: 'inline-block',
+                      animation: 'spin 1s linear infinite',
+                    }}
+                  >
+                    ⏳
+                  </span>
                   Processing...
                 </>
               ) : (
-                <>
-                  📥 Import Component
-                </>
+                <>📥 Import Component</>
               )}
             </button>
           </div>

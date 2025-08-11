@@ -20,13 +20,13 @@ describe('ESM Component Execution', () => {
         useCache: false,
         validateOutput: true,
         debug: true, // Enable debug to see routing logs
-      }
+      },
     );
 
     // Should succeed and detect as ESM
     assertEquals(result.success, true, `Processing should succeed: ${result.error}`);
     assertEquals(result.component?.format, 'esm', 'Component should have ESM format');
-    
+
     // Should have fixed the missing imports
     assertStringIncludes(result.component?.originalCode || '', 'useCallback');
     assertStringIncludes(result.component?.originalCode || '', 'useMemo');
@@ -39,14 +39,14 @@ describe('ESM Component Execution', () => {
         useCache: false,
         validateOutput: false, // Skip validation to see if execution succeeds
         debug: true,
-      }
+      },
     );
 
     console.log('Pipeline result:', {
       success: result.success,
       format: result.component?.format,
       hasModuleUrl: !!result.component?.moduleUrl,
-      error: result.error
+      error: result.error,
     });
 
     // This test will show us exactly what's happening

@@ -9,6 +9,8 @@
     "preview": "pnpm --filter frontend preview",
     "typecheck": "pnpm --filter frontend typecheck",
     "lint": "pnpm --filter frontend lint",
+    "format": "pnpm --filter frontend format",
+    "check": "pnpm --filter frontend check",
     "dev:all": "pnpm --parallel dev",
     "build:all": "pnpm -r build",
     "frontend": "pnpm --filter frontend"

@@ -10,7 +10,7 @@ describe('Missing Imports Fix', () => {
 
   it('should detect missing useCallback and useMemo imports', () => {
     const validation = ImportFixer.validateImports(timerWithMissingImports);
-    
+
     assertEquals(validation.valid, false);
     assertEquals(validation.missingImports.includes('useCallback'), true);
     assertEquals(validation.missingImports.includes('useMemo'), true);
@@ -18,7 +18,7 @@ describe('Missing Imports Fix', () => {
 
   it('should automatically fix missing React hook imports', () => {
     const result = ImportFixer.fixImports(timerWithMissingImports);
-    
+
     assertEquals(result.success, true);
     assertEquals(result.addedImports?.includes('useCallback'), true);
     assertEquals(result.addedImports?.includes('useMemo'), true);
@@ -35,13 +35,13 @@ describe('Missing Imports Fix', () => {
         useCache: false,
         validateOutput: true,
         debug: false, // Disable debug to reduce test output
-      }
+      },
     );
 
     // The component should have the fixed imports in its transpiled code
     // even if execution fails in test environment due to import map issues
     assertEquals(result.component?.originalCode !== undefined, true);
-    
+
     // Verify that the processed code includes the missing imports
     // Check the original code was fixed with imports
     const processedCode = result.component?.originalCode || '';
@@ -53,11 +53,11 @@ describe('Missing Imports Fix', () => {
   it('should not modify code that already has correct imports', () => {
     const correctCode = timerWithMissingImports.replace(
       "import React, { useState, useEffect, useRef } from 'react';",
-      "import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';"
+      "import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';",
     );
 
     const result = ImportFixer.fixImports(correctCode);
-    
+
     assertEquals(result.success, true);
     assertEquals(result.addedImports?.length || 0, 0);
     assertEquals(result.code, correctCode);

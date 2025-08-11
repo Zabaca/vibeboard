@@ -48,7 +48,7 @@ export const ImportFromURLDialog: React.FC<ImportFromURLDialogProps> = ({
   const [recentUrls, setRecentUrls] = useState<string[]>([]);
   const [showExamples, setShowExamples] = useState(false);
   const [validationMessage, setValidationMessage] = useState<string | null>(null);
-  
+
   const pipeline = React.useRef(new ComponentPipeline()).current;
   const urlImportService = React.useRef(new URLImportService()).current;
 
@@ -65,56 +65,65 @@ export const ImportFromURLDialog: React.FC<ImportFromURLDialogProps> = ({
     }
   }, []);
 
-  const validateUrl = useCallback((urlString: string) => {
-    if (!urlString) {
-      setValidationMessage(null);
-      return false;
-    }
-
-    try {
-      const urlObj = new URL(urlString);
-      
-      // Check if it's HTTPS or localhost
-      if (urlObj.protocol !== 'https:' && !['localhost', '127.0.0.1'].includes(urlObj.hostname)) {
-        setValidationMessage('⚠️ URL must use HTTPS for security');
+  const validateUrl = useCallback(
+    (urlString: string) => {
+      if (!urlString) {
+        setValidationMessage(null);
         return false;
       }
 
-      // Check if domain is trusted
-      const trustedDomains = urlImportService.getTrustedDomains();
-      const hostname = urlObj.hostname;
-      const isTrusted = trustedDomains.some(domain => 
-        hostname === domain || hostname.endsWith(`.${domain}`)
-      );
+      try {
+        const urlObj = new URL(urlString);
 
-      if (!isTrusted) {
-        setValidationMessage(`⚠️ Domain ${hostname} is not in the trusted list`);
-        return false;
-      }
+        // Check if it's HTTPS or localhost
+        if (urlObj.protocol !== 'https:' && !['localhost', '127.0.0.1'].includes(urlObj.hostname)) {
+          setValidationMessage('⚠️ URL must use HTTPS for security');
+          return false;
+        }
 
-      // Special warning for ESM CDNs that often have issues
-      if (hostname === 'esm.sh' || hostname === 'cdn.skypack.dev' || hostname.includes('unpkg.com')) {
-        setValidationMessage('⚠️ ESM modules may require special handling - try local test components instead');
+        // Check if domain is trusted
+        const trustedDomains = urlImportService.getTrustedDomains();
+        const hostname = urlObj.hostname;
+        const isTrusted = trustedDomains.some(
+          (domain) => hostname === domain || hostname.endsWith(`.${domain}`),
+        );
+
+        if (!isTrusted) {
+          setValidationMessage(`⚠️ Domain ${hostname} is not in the trusted list`);
+          return false;
+        }
+
+        // Special warning for ESM CDNs that often have issues
+        if (
+          hostname === 'esm.sh' ||
+          hostname === 'cdn.skypack.dev' ||
+          hostname.includes('unpkg.com')
+        ) {
+          setValidationMessage(
+            '⚠️ ESM modules may require special handling - try local test components instead',
+          );
+          return true;
+        }
+
+        // Check file extension
+        const pathname = urlObj.pathname.toLowerCase();
+        const validExtensions = ['.js', '.jsx', '.ts', '.tsx', '.mjs', '.esm.js'];
+        const hasValidExtension = validExtensions.some((ext) => pathname.endsWith(ext));
+
+        if (!hasValidExtension && !pathname.includes('esm.sh') && !pathname.includes('skypack')) {
+          setValidationMessage('ℹ️ URL may not contain a valid JavaScript module');
+        } else {
+          setValidationMessage('✅ URL appears valid');
+        }
+
         return true;
+      } catch {
+        setValidationMessage('❌ Invalid URL format');
+        return false;
       }
-      
-      // Check file extension
-      const pathname = urlObj.pathname.toLowerCase();
-      const validExtensions = ['.js', '.jsx', '.ts', '.tsx', '.mjs', '.esm.js'];
-      const hasValidExtension = validExtensions.some(ext => pathname.endsWith(ext));
-      
-      if (!hasValidExtension && !pathname.includes('esm.sh') && !pathname.includes('skypack')) {
-        setValidationMessage('ℹ️ URL may not contain a valid JavaScript module');
-      } else {
-        setValidationMessage('✅ URL appears valid');
-      }
-
-      return true;
-    } catch {
-      setValidationMessage('❌ Invalid URL format');
-      return false;
-    }
-  }, [urlImportService]);
+    },
+    [urlImportService],
+  );
 
   const handleImport = useCallback(async () => {
     if (!url || !validateUrl(url)) {
@@ -126,19 +135,23 @@ export const ImportFromURLDialog: React.FC<ImportFromURLDialogProps> = ({
     setError(null);
 
     try {
-      const result = await pipeline.processURLComponent(url, {
-        requireHTTPS: true,
-        timeout: 15000,
-        useCache: true,
-      }, {
-        debug: true,
-        validateOutput: true,
-        useCache: true,
-      });
+      const result = await pipeline.processURLComponent(
+        url,
+        {
+          requireHTTPS: true,
+          timeout: 15000,
+          useCache: true,
+        },
+        {
+          debug: true,
+          validateOutput: true,
+          useCache: true,
+        },
+      );
 
       if (result.success && result.component) {
         // Save to recent URLs
-        const newRecent = [url, ...recentUrls.filter(u => u !== url)].slice(0, 5);
+        const newRecent = [url, ...recentUrls.filter((u) => u !== url)].slice(0, 5);
         setRecentUrls(newRecent);
         localStorage.setItem('recentImportUrls', JSON.stringify(newRecent));
 
@@ -156,22 +169,28 @@ export const ImportFromURLDialog: React.FC<ImportFromURLDialogProps> = ({
     }
   }, [url, validateUrl, pipeline, onImport, onClose, recentUrls]);
 
-  const handleExampleClick = useCallback((exampleUrl: string) => {
-    setUrl(exampleUrl);
-    validateUrl(exampleUrl);
-    // Don't hide examples immediately so user can see the URL was populated
-    // setShowExamples(false);
-  }, [validateUrl]);
+  const handleExampleClick = useCallback(
+    (exampleUrl: string) => {
+      setUrl(exampleUrl);
+      validateUrl(exampleUrl);
+      // Don't hide examples immediately so user can see the URL was populated
+      // setShowExamples(false);
+    },
+    [validateUrl],
+  );
 
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey && !isImporting) {
-      e.preventDefault();
-      handleImport();
-    }
-    if (e.key === 'Escape') {
-      onClose();
-    }
-  }, [handleImport, isImporting, onClose]);
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter' && !e.shiftKey && !isImporting) {
+        e.preventDefault();
+        handleImport();
+      }
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    },
+    [handleImport, isImporting, onClose],
+  );
 
   useEffect(() => {
     if (url) {
@@ -220,20 +239,24 @@ export const ImportFromURLDialog: React.FC<ImportFromURLDialogProps> = ({
         <h2 style={{ marginTop: 0, marginBottom: '16px', color: '#333' }}>
           Import Component from URL
         </h2>
-        
-        <div style={{ 
-          marginBottom: '16px',
-          padding: '12px',
-          backgroundColor: '#f0f9ff',
-          borderRadius: '6px',
-          border: '1px solid #bfdbfe',
-          fontSize: '13px',
-          lineHeight: '1.5',
-          color: '#1e40af'
-        }}>
+
+        <div
+          style={{
+            marginBottom: '16px',
+            padding: '12px',
+            backgroundColor: '#f0f9ff',
+            borderRadius: '6px',
+            border: '1px solid #bfdbfe',
+            fontSize: '13px',
+            lineHeight: '1.5',
+            color: '#1e40af',
+          }}
+        >
           <strong>📦 Supported Formats:</strong>
           <ul style={{ margin: '8px 0 0 20px', paddingLeft: 0 }}>
-            <li>JSX/JS files with <code>const Component = ...</code></li>
+            <li>
+              JSX/JS files with <code>const Component = ...</code>
+            </li>
             <li>Local development server (http://localhost:5173/...)</li>
             <li>GitHub raw content URLs</li>
             <li>ESM modules (esm.sh, skypack.dev) - experimental</li>
@@ -243,7 +266,7 @@ export const ImportFromURLDialog: React.FC<ImportFromURLDialogProps> = ({
             Use the local test components for best results.
           </div>
         </div>
-        
+
         <div style={{ marginBottom: '16px' }}>
           <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: '#666' }}>
             Component URL
@@ -265,13 +288,19 @@ export const ImportFromURLDialog: React.FC<ImportFromURLDialogProps> = ({
             autoFocus
           />
           {validationMessage && (
-            <div style={{ 
-              marginTop: '4px', 
-              fontSize: '12px', 
-              color: validationMessage.startsWith('✅') ? '#10b981' :
-                     validationMessage.startsWith('❌') ? '#ef4444' :
-                     validationMessage.startsWith('⚠️') ? '#f59e0b' : '#6b7280'
-            }}>
+            <div
+              style={{
+                marginTop: '4px',
+                fontSize: '12px',
+                color: validationMessage.startsWith('✅')
+                  ? '#10b981'
+                  : validationMessage.startsWith('❌')
+                    ? '#ef4444'
+                    : validationMessage.startsWith('⚠️')
+                      ? '#f59e0b'
+                      : '#6b7280',
+              }}
+            >
               {validationMessage}
             </div>
           )}
@@ -293,7 +322,7 @@ export const ImportFromURLDialog: React.FC<ImportFromURLDialogProps> = ({
           >
             {showExamples ? 'Hide' : 'Show'} Example URLs
           </button>
-          
+
           {showExamples && (
             <div style={{ marginTop: '12px', maxHeight: '200px', overflowY: 'auto' }}>
               {EXAMPLE_URLS.map((example, index) => {
@@ -321,18 +350,34 @@ export const ImportFromURLDialog: React.FC<ImportFromURLDialogProps> = ({
                         e.currentTarget.style.backgroundColor = '#f9fafb';
                       }
                     }}
-                >
-                  <div style={{ fontSize: '13px', fontWeight: '500', color: '#1f2937', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    {isSelected && <span>✓</span>}
-                    {example.label}
+                  >
+                    <div
+                      style={{
+                        fontSize: '13px',
+                        fontWeight: '500',
+                        color: '#1f2937',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                      }}
+                    >
+                      {isSelected && <span>✓</span>}
+                      {example.label}
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px' }}>
+                      {example.description}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: '11px',
+                        color: '#3b82f6',
+                        marginTop: '2px',
+                        wordBreak: 'break-all',
+                      }}
+                    >
+                      {example.url}
+                    </div>
                   </div>
-                  <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px' }}>
-                    {example.description}
-                  </div>
-                  <div style={{ fontSize: '11px', color: '#3b82f6', marginTop: '2px', wordBreak: 'break-all' }}>
-                    {example.url}
-                  </div>
-                </div>
                 );
               })}
             </div>
@@ -342,7 +387,9 @@ export const ImportFromURLDialog: React.FC<ImportFromURLDialogProps> = ({
         {/* Recent URLs */}
         {recentUrls.length > 0 && (
           <div style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: '#666' }}>
+            <label
+              style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: '#666' }}
+            >
               Recent Imports
             </label>
             <div style={{ maxHeight: '120px', overflowY: 'auto' }}>
@@ -379,29 +426,33 @@ export const ImportFromURLDialog: React.FC<ImportFromURLDialogProps> = ({
 
         {/* Error message */}
         {error && (
-          <div style={{
-            padding: '12px',
-            backgroundColor: '#fee',
-            border: '1px solid #fcc',
-            borderRadius: '6px',
-            marginBottom: '16px',
-            color: '#c00',
-            fontSize: '14px',
-          }}>
+          <div
+            style={{
+              padding: '12px',
+              backgroundColor: '#fee',
+              border: '1px solid #fcc',
+              borderRadius: '6px',
+              marginBottom: '16px',
+              color: '#c00',
+              fontSize: '14px',
+            }}
+          >
             {error}
           </div>
         )}
 
         {/* Supported CDNs info */}
-        <div style={{
-          padding: '12px',
-          backgroundColor: '#f0f9ff',
-          border: '1px solid #bae6fd',
-          borderRadius: '6px',
-          marginBottom: '16px',
-          fontSize: '13px',
-          color: '#0369a1',
-        }}>
+        <div
+          style={{
+            padding: '12px',
+            backgroundColor: '#f0f9ff',
+            border: '1px solid #bae6fd',
+            borderRadius: '6px',
+            marginBottom: '16px',
+            fontSize: '13px',
+            color: '#0369a1',
+          }}
+        >
           <strong>Supported sources:</strong>
           <ul style={{ margin: '8px 0 0 0', paddingLeft: '20px' }}>
             <li>ESM CDNs: esm.sh, skypack.dev, unpkg.com, jsdelivr.net</li>

@@ -2,7 +2,7 @@ import type { URLImportOptions, UnifiedComponentNode } from '../types/component.
 
 /**
  * URLImportService
- * 
+ *
  * Service for importing React components from external URLs
  * Supports various CDN providers and GitHub sources
  */
@@ -14,11 +14,11 @@ export class URLImportService {
     'unpkg.com',
     'jsdelivr.net',
     'cdnjs.cloudflare.com',
-    
+
     // GitHub
     'raw.githubusercontent.com',
     'gist.githubusercontent.com',
-    
+
     // Development CDNs
     'localhost',
     '127.0.0.1',
@@ -36,8 +36,14 @@ export class URLImportService {
    */
   async importFromURL(
     url: string,
-    options: URLImportOptions = {}
-  ): Promise<{ success: boolean; component?: Partial<UnifiedComponentNode>; error?: string; tempCode?: string; tempEtag?: string }> {
+    options: URLImportOptions = {},
+  ): Promise<{
+    success: boolean;
+    component?: Partial<UnifiedComponentNode>;
+    error?: string;
+    tempCode?: string;
+    tempEtag?: string;
+  }> {
     try {
       // Validate URL
       const validation = this.validateURL(url, options);
@@ -67,21 +73,21 @@ export class URLImportService {
 
       // Create component node (but don't cache yet)
       const component = this.createComponentFromCode(fetchResult.code!, url);
-      
+
       // Return fetch result separately - will cache after successful processing
-      return { 
-        success: true, 
+      return {
+        success: true,
         component,
         tempCode: fetchResult.code,
-        tempEtag: fetchResult.etag
+        tempEtag: fetchResult.etag,
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.error('URL import error:', errorMessage);
-      
+
       // Clear cache for this URL on error
       this.removeFromCache(url);
-      
+
       return { success: false, error: errorMessage };
     }
   }
@@ -113,15 +119,19 @@ export class URLImportService {
       const parsed = new URL(url);
 
       // Check HTTPS requirement
-      if (options.requireHTTPS !== false && parsed.protocol !== 'https:' && !this.isLocalhost(parsed)) {
+      if (
+        options.requireHTTPS !== false &&
+        parsed.protocol !== 'https:' &&
+        !this.isLocalhost(parsed)
+      ) {
         return { valid: false, error: 'URL must use HTTPS for security' };
       }
 
       // Check against allowed domains
       const allowedDomains = options.allowedDomains || this.trustedDomains;
       const hostname = parsed.hostname;
-      
-      const isAllowed = allowedDomains.some(domain => {
+
+      const isAllowed = allowedDomains.some((domain) => {
         return hostname === domain || hostname.endsWith(`.${domain}`);
       });
 
@@ -135,8 +145,8 @@ export class URLImportService {
       // Check file extension for supported formats
       const pathname = parsed.pathname.toLowerCase();
       const supportedExtensions = ['.js', '.jsx', '.ts', '.tsx', '.mjs', '.esm.js'];
-      const hasValidExtension = supportedExtensions.some(ext => pathname.endsWith(ext));
-      
+      const hasValidExtension = supportedExtensions.some((ext) => pathname.endsWith(ext));
+
       if (!hasValidExtension && !pathname.includes('esm.sh') && !pathname.includes('skypack')) {
         console.warn(`URL ${url} may not contain a valid JavaScript module`);
       }
@@ -159,31 +169,32 @@ export class URLImportService {
    */
   private getProxiedUrl(url: string): string {
     // Only use proxy in development
-    const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const isDevelopment =
+      window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     if (!isDevelopment) {
       return url;
     }
 
     try {
       const urlObj = new URL(url);
-      
+
       // Proxy unpkg.com through our Vite proxy
       if (urlObj.hostname === 'unpkg.com') {
         const path = urlObj.pathname + urlObj.search;
         return `/proxy/unpkg${path}`;
       }
-      
+
       // Proxy other CDNs if needed
       if (urlObj.hostname === 'cdn.skypack.dev') {
         const path = urlObj.pathname + urlObj.search;
         return `/proxy/skypack${path}`;
       }
-      
+
       if (urlObj.hostname === 'jsdelivr.net' || urlObj.hostname === 'cdn.jsdelivr.net') {
         const path = urlObj.pathname + urlObj.search;
         return `/proxy/jsdelivr${path}`;
       }
-      
+
       // ESM.sh and GitHub usually work without proxy due to proper CORS headers
       return url;
     } catch {
@@ -196,7 +207,7 @@ export class URLImportService {
    */
   private async fetchComponent(
     url: string,
-    options: URLImportOptions
+    options: URLImportOptions,
   ): Promise<{ success: boolean; code?: string; etag?: string; error?: string }> {
     try {
       const controller = new AbortController();
@@ -211,7 +222,7 @@ export class URLImportService {
       const response = await fetch(fetchUrl, {
         method: 'GET',
         headers: {
-          'Accept': 'application/javascript, text/javascript, text/plain',
+          Accept: 'application/javascript, text/javascript, text/plain',
           ...options.headers,
         },
         signal: controller.signal,
@@ -236,7 +247,10 @@ export class URLImportService {
 
       // Basic validation that it looks like JavaScript/React code
       if (!this.looksLikeCode(code, url)) {
-        return { success: false, error: 'Response does not appear to be valid JavaScript/React code' };
+        return {
+          success: false,
+          error: 'Response does not appear to be valid JavaScript/React code',
+        };
       }
 
       return { success: true, code, etag };
@@ -259,14 +273,17 @@ export class URLImportService {
     if (code.includes('<!DOCTYPE') || code.includes('<html')) {
       return false; // It's HTML, not JavaScript
     }
-    
+
     // For ESM modules from CDNs, be more lenient
     // They often have minified code that doesn't match typical patterns
-    if (url && (url.includes('esm.sh') || url.includes('skypack.dev') || url.includes('jsdelivr'))) {
+    if (
+      url &&
+      (url.includes('esm.sh') || url.includes('skypack.dev') || url.includes('jsdelivr'))
+    ) {
       // For known CDNs, just check it's not obviously wrong
       return !code.includes('404') && !code.includes('Not Found') && code.length > 50;
     }
-    
+
     // Check for common patterns in JavaScript/React code
     const patterns = [
       /function\s+\w+/,
@@ -278,12 +295,12 @@ export class URLImportService {
       /class\s+\w+/,
       /=>\s*{/,
       /React\./,
-      /<[A-Z]\w*/,  // JSX component
-      /\w+\s*:\s*function/,  // Object methods
-      /\w+\s*\(\s*\)/,  // Function calls
+      /<[A-Z]\w*/, // JSX component
+      /\w+\s*:\s*function/, // Object methods
+      /\w+\s*\(\s*\)/, // Function calls
     ];
 
-    return patterns.some(pattern => pattern.test(code));
+    return patterns.some((pattern) => pattern.test(code));
   }
 
   /**
@@ -298,7 +315,7 @@ export class URLImportService {
     // Detect format from content and extension
     // Default to JSX for local files unless they explicitly have ESM exports
     let format: 'esm' | 'jsx' | 'tsx' = 'jsx';
-    
+
     // Only mark as ESM if it has actual ES module exports (not just 'export' in comments)
     if (code.match(/^export\s+(default|{|const|let|var|function|class)/m)) {
       format = 'esm';

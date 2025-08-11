@@ -50,27 +50,29 @@ export interface IndexedDBUtilsInterface {
   // Database management
   initialize(): Promise<boolean>;
   isSupported(): boolean;
-  
+
   // Image storage
-  saveImage(imageData: Omit<ImageStorageData, 'id' | 'createdAt' | 'lastAccessed'>): Promise<string>;
+  saveImage(
+    imageData: Omit<ImageStorageData, 'id' | 'createdAt' | 'lastAccessed'>,
+  ): Promise<string>;
   getImage(imageId: string): Promise<ImageStorageData | null>;
   deleteImage(imageId: string): Promise<boolean>;
   listImages(): Promise<ImageStorageData[]>;
   cleanupUnusedImages(referencedImageIds: string[]): Promise<number>;
-  
+
   // Canvas data storage (complete canvas with nodes/edges)
   saveCanvas(canvas: Omit<CanvasData, 'id' | 'createdAt' | 'lastModified'>): Promise<string>;
   getCanvas(canvasId?: string): Promise<CanvasData | null>;
   updateCanvas(canvasId: string, updates: Partial<CanvasData>): Promise<boolean>;
   deleteCanvas(canvasId: string): Promise<boolean>;
   listCanvases(): Promise<CanvasData[]>;
-  
+
   // Storage management
   getStorageQuota(): Promise<StorageQuotaInfo>;
   cleanup(maxAge?: number): Promise<{ deletedImages: number; freedSpace: number }>;
   migrate(legacyData?: unknown): Promise<boolean>;
   migrateFromLocalStorage(): Promise<boolean>;
-  
+
   // Utility methods
   createBlobUrl(imageData: ArrayBuffer, format: string): string;
   revokeBlobUrl(url: string): void;
@@ -84,16 +86,16 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
   private readonly DB_VERSION = 2; // Bumped to force schema update
   private readonly STORES = {
     IMAGES: 'images',
-    CANVAS: 'canvas',  // Renamed from CANVAS_METADATA to store full canvas data
+    CANVAS: 'canvas', // Renamed from CANVAS_METADATA to store full canvas data
     SETTINGS: 'settings',
   };
-  
+
   // Storage limits and thresholds
   private readonly MAX_IMAGE_SIZE_KB = 10 * 1024; // 10MB per image
   private readonly CLEANUP_AGE_DAYS = 30; // Delete unused images after 30 days
   // @ts-ignore - Reserved for future quota monitoring
   private readonly _WARNING_QUOTA_PERCENTAGE = 80; // Warn at 80% quota usage
-  // @ts-ignore - Reserved for future quota monitoring  
+  // @ts-ignore - Reserved for future quota monitoring
   private readonly _CRITICAL_QUOTA_PERCENTAGE = 95; // Critical at 95% quota usage
 
   private constructor() {
@@ -150,11 +152,10 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
    */
   private createObjectStores(db: IDBDatabase): void {
     try {
-      
       // Images store - for storing compressed image data
       if (!db.objectStoreNames.contains(this.STORES.IMAGES)) {
-        const imageStore = db.createObjectStore(this.STORES.IMAGES, { 
-          keyPath: 'id' 
+        const imageStore = db.createObjectStore(this.STORES.IMAGES, {
+          keyPath: 'id',
         });
         imageStore.createIndex('createdAt', 'createdAt', { unique: false });
         imageStore.createIndex('lastAccessed', 'lastAccessed', { unique: false });
@@ -164,8 +165,8 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
 
       // Canvas store - for storing complete canvas data (nodes, edges, etc.)
       if (!db.objectStoreNames.contains(this.STORES.CANVAS)) {
-        const canvasStore = db.createObjectStore(this.STORES.CANVAS, { 
-          keyPath: 'id' 
+        const canvasStore = db.createObjectStore(this.STORES.CANVAS, {
+          keyPath: 'id',
         });
         canvasStore.createIndex('lastModified', 'lastModified', { unique: false });
         canvasStore.createIndex('name', 'name', { unique: false });
@@ -177,7 +178,6 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
         db.createObjectStore(this.STORES.SETTINGS, { keyPath: 'key' });
       } else {
       }
-
     } catch (error) {
       console.error('❌ Failed to create object stores:', error);
       throw error;
@@ -187,7 +187,9 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
   /**
    * Save image data to IndexedDB
    */
-  async saveImage(imageData: Omit<ImageStorageData, 'id' | 'createdAt' | 'lastAccessed'>): Promise<string> {
+  async saveImage(
+    imageData: Omit<ImageStorageData, 'id' | 'createdAt' | 'lastAccessed'>,
+  ): Promise<string> {
     if (!this.db) {
       throw new Error('Database not initialized');
     }
@@ -233,14 +235,14 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
 
       request.onsuccess = () => {
         const imageData = request.result as ImageStorageData | undefined;
-        
+
         if (imageData) {
           // Update last accessed time
           const updateRequest = store.put({
             ...imageData,
             lastAccessed: Date.now(),
           });
-          
+
           updateRequest.onsuccess = () => resolve(imageData);
           updateRequest.onerror = () => resolve(imageData); // Still return data even if access time update fails
         } else {
@@ -313,7 +315,7 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
 
     const allImages = await this.listImages();
     const referencedSet = new Set(referencedImageIds);
-    const unreferencedImages = allImages.filter(img => !referencedSet.has(img.id));
+    const unreferencedImages = allImages.filter((img) => !referencedSet.has(img.id));
 
     let deletedCount = 0;
     for (const image of unreferencedImages) {
@@ -324,7 +326,6 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
         console.warn(`Failed to delete unused image ${image.id}:`, error);
       }
     }
-
 
     return deletedCount;
   }
@@ -373,7 +374,6 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
     }
 
     return new Promise((resolve, reject) => {
-      
       try {
         const transaction = this.db!.transaction([this.STORES.CANVAS], 'readonly');
         const store = transaction.objectStore(this.STORES.CANVAS);
@@ -490,7 +490,7 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
         const estimate = await navigator.storage.estimate();
         const usage = estimate.usage || 0;
         const quota = estimate.quota || 0;
-        
+
         return {
           usage,
           quota,
@@ -514,15 +514,16 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
   /**
    * Clean up old and unused data
    */
-  async cleanup(maxAge: number = this.CLEANUP_AGE_DAYS): Promise<{ deletedImages: number; freedSpace: number }> {
+  async cleanup(
+    maxAge: number = this.CLEANUP_AGE_DAYS,
+  ): Promise<{ deletedImages: number; freedSpace: number }> {
     if (!this.db) {
       throw new Error('Database not initialized');
     }
 
-
-    const cutoffDate = Date.now() - (maxAge * 24 * 60 * 60 * 1000);
+    const cutoffDate = Date.now() - maxAge * 24 * 60 * 60 * 1000;
     const images = await this.listImages();
-    
+
     let deletedImages = 0;
     let freedSpace = 0;
 
@@ -539,7 +540,6 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
       }
     }
 
-    
     return { deletedImages, freedSpace };
   }
 
@@ -547,7 +547,6 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
    * Migrate data from localStorage to IndexedDB
    */
   async migrate(legacyData?: unknown): Promise<boolean> {
-    
     try {
       // Migration logic would depend on the legacy data format
       // For now, just mark migration as complete
@@ -557,7 +556,7 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
 
       const transaction = this.db.transaction([this.STORES.SETTINGS], 'readwrite');
       const store = transaction.objectStore(this.STORES.SETTINGS);
-      
+
       await new Promise<void>((resolve, reject) => {
         const request = store.put({
           key: 'migrationInfo',
@@ -581,7 +580,6 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
    * Migrate existing localStorage data to IndexedDB
    */
   async migrateFromLocalStorage(): Promise<boolean> {
-    
     try {
       // Check if we've already migrated
       const migrationInfo = await this.getMigrationInfo();
@@ -592,14 +590,14 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
       // Try to get nodes and edges from localStorage
       const nodesKey = 'ai-whiteboard-nodes';
       const edgesKey = 'ai-whiteboard-edges';
-      
+
       const nodesData = localStorage.getItem(nodesKey);
       const edgesData = localStorage.getItem(edgesKey);
-      
+
       if (nodesData || edgesData) {
         let nodes: unknown[] = [];
         let edges: unknown[] = [];
-        
+
         try {
           if (nodesData) {
             const parsed = JSON.parse(nodesData);
@@ -612,7 +610,7 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
               nodes = parsed.nodes;
             }
           }
-          
+
           if (edgesData) {
             const parsed = JSON.parse(edgesData);
             if (parsed.compressed && parsed.data) {
@@ -626,7 +624,7 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
         } catch (parseError) {
           console.warn('Failed to parse localStorage data:', parseError);
         }
-        
+
         // Save to IndexedDB
         if (nodes.length > 0 || edges.length > 0) {
           await this.saveCanvas({
@@ -641,17 +639,16 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
               componentCount: nodes.length,
             },
           });
-          
         }
       }
-      
+
       // Mark migration as complete
       await this.migrate({ fromLocalStorage: true });
-      
+
       // Optionally clean up localStorage (commented out for safety)
       // localStorage.removeItem(nodesKey);
       // localStorage.removeItem(edgesKey);
-      
+
       return true;
     } catch (error) {
       console.error('Failed to migrate from localStorage:', error);
@@ -712,16 +709,22 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
   /**
    * Optimize image by compressing it (placeholder for now)
    */
-  async optimizeImage(imageData: ArrayBuffer, _format: string, maxSizeKB: number = this.MAX_IMAGE_SIZE_KB): Promise<ArrayBuffer> {
+  async optimizeImage(
+    imageData: ArrayBuffer,
+    _format: string,
+    maxSizeKB: number = this.MAX_IMAGE_SIZE_KB,
+  ): Promise<ArrayBuffer> {
     // For now, just return the original data
     // In a real implementation, you might use canvas to resize/compress
     const currentSizeKB = imageData.byteLength / 1024;
-    
+
     if (currentSizeKB <= maxSizeKB) {
       return imageData;
     }
 
-    console.warn(`Image size (${currentSizeKB}KB) exceeds maximum (${maxSizeKB}KB). Consider implementing compression.`);
+    console.warn(
+      `Image size (${currentSizeKB}KB) exceeds maximum (${maxSizeKB}KB). Consider implementing compression.`,
+    );
     return imageData;
   }
 
@@ -749,8 +752,4 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
 export const indexedDBUtils = IndexedDBUtils.getInstance();
 
 // Export types for external use
-export type {
-  ImageStorageData,
-  CanvasData,
-  StorageQuotaInfo,
-};
+export type { ImageStorageData, CanvasData, StorageQuotaInfo };

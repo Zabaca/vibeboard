@@ -7,8 +7,8 @@
 export interface ClipboardResult {
   success: boolean;
   type: 'text' | 'image' | 'unsupported';
-  data?: string;         // Text content or image data URL
-  format?: string;       // MIME type or text format
+  data?: string; // Text content or image data URL
+  format?: string; // MIME type or text format
   metadata?: {
     sizeKB?: number;
     dimensions?: { width: number; height: number };
@@ -25,9 +25,11 @@ const SUPPORTED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/g
  * Check if clipboard API is supported
  */
 export function isClipboardSupported(): boolean {
-  return 'navigator' in globalThis && 
-         'clipboard' in navigator && 
-         typeof navigator.clipboard.read === 'function';
+  return (
+    'navigator' in globalThis &&
+    'clipboard' in navigator &&
+    typeof navigator.clipboard.read === 'function'
+  );
 }
 
 /**
@@ -38,30 +40,32 @@ export async function readClipboard(): Promise<ClipboardResult> {
     return {
       success: false,
       type: 'unsupported',
-      error: 'Clipboard API not supported in this browser'
+      error: 'Clipboard API not supported in this browser',
     };
   }
 
   try {
     // Request clipboard permission if needed
-    const permission = await navigator.permissions.query({ name: 'clipboard-read' as PermissionName });
-    
+    const permission = await navigator.permissions.query({
+      name: 'clipboard-read' as PermissionName,
+    });
+
     if (permission.state === 'denied') {
       return {
         success: false,
         type: 'unsupported',
-        error: 'Clipboard access denied'
+        error: 'Clipboard access denied',
       };
     }
 
     // Read clipboard items
     const clipboardItems = await navigator.clipboard.read();
-    
+
     if (clipboardItems.length === 0) {
       return {
         success: false,
         type: 'unsupported',
-        error: 'Clipboard is empty'
+        error: 'Clipboard is empty',
       };
     }
 
@@ -87,7 +91,7 @@ export async function readClipboard(): Promise<ClipboardResult> {
     // Provide specific error message based on available types
     const availableTypes = clipboardItem.types.join(', ');
     let errorMessage = 'Unsupported clipboard format';
-    
+
     if (availableTypes.includes('text/')) {
       errorMessage = 'Text format not supported. Try copying plain text or formatted content.';
     } else if (availableTypes.includes('image/')) {
@@ -99,27 +103,30 @@ export async function readClipboard(): Promise<ClipboardResult> {
     return {
       success: false,
       type: 'unsupported',
-      error: errorMessage
+      error: errorMessage,
     };
-
   } catch (error) {
     console.error('Failed to read clipboard:', error);
-    
+
     // Provide specific error messages based on error type
     let errorMessage = 'Unknown clipboard error';
-    
+
     if (error instanceof Error) {
       if (error.message.includes('permission') || error.message.includes('denied')) {
         errorMessage = 'Clipboard access denied. Please allow clipboard permissions and try again.';
-      } else if (error.message.includes('not supported') || error.message.includes('not available')) {
-        errorMessage = 'Clipboard API not available. Try using a modern browser or enable clipboard access.';
+      } else if (
+        error.message.includes('not supported') ||
+        error.message.includes('not available')
+      ) {
+        errorMessage =
+          'Clipboard API not available. Try using a modern browser or enable clipboard access.';
       } else if (error.message.includes('insecure') || error.message.includes('https')) {
         errorMessage = 'Clipboard access requires HTTPS. Please use a secure connection.';
       } else {
         errorMessage = error.message;
       }
     }
-    
+
     // Fallback to text-only clipboard access
     if (navigator.clipboard?.readText) {
       try {
@@ -129,7 +136,7 @@ export async function readClipboard(): Promise<ClipboardResult> {
             success: true,
             type: 'text',
             data: text,
-            format: 'plain'
+            format: 'plain',
           };
         }
       } catch (textError) {
@@ -144,7 +151,7 @@ export async function readClipboard(): Promise<ClipboardResult> {
     return {
       success: false,
       type: 'unsupported',
-      error: errorMessage
+      error: errorMessage,
     };
   }
 }
@@ -152,22 +159,25 @@ export async function readClipboard(): Promise<ClipboardResult> {
 /**
  * Process image data from clipboard
  */
-async function processImageFromClipboard(clipboardItem: ClipboardItem, mimeType: string): Promise<ClipboardResult> {
+async function processImageFromClipboard(
+  clipboardItem: ClipboardItem,
+  mimeType: string,
+): Promise<ClipboardResult> {
   try {
     const blob = await clipboardItem.getType(mimeType);
-    
+
     // Validate image size
     if (blob.size > MAX_IMAGE_SIZE_BYTES) {
       return {
         success: false,
         type: 'image',
-        error: `Image too large. Maximum size is ${MAX_IMAGE_SIZE_MB}MB`
+        error: `Image too large. Maximum size is ${MAX_IMAGE_SIZE_MB}MB`,
       };
     }
 
     // Get image dimensions
     const dimensions = await getImageDimensions(blob);
-    
+
     // Convert to data URL
     const dataUrl = await blobToDataUrl(blob);
 
@@ -178,16 +188,15 @@ async function processImageFromClipboard(clipboardItem: ClipboardItem, mimeType:
       format: mimeType,
       metadata: {
         sizeKB: Math.round(blob.size / 1024),
-        dimensions
-      }
+        dimensions,
+      },
     };
-
   } catch (error) {
     console.error('Failed to process image from clipboard:', error);
     return {
       success: false,
       type: 'image',
-      error: error instanceof Error ? error.message : 'Failed to process image'
+      error: error instanceof Error ? error.message : 'Failed to process image',
     };
   }
 }
@@ -204,7 +213,7 @@ async function processTextFromClipboard(clipboardItem: ClipboardItem): Promise<C
       return {
         success: false,
         type: 'text',
-        error: 'Clipboard text is empty'
+        error: 'Clipboard text is empty',
       };
     }
 
@@ -215,15 +224,14 @@ async function processTextFromClipboard(clipboardItem: ClipboardItem): Promise<C
       success: true,
       type: 'text',
       data: text,
-      format
+      format,
     };
-
   } catch (error) {
     console.error('Failed to process text from clipboard:', error);
     return {
       success: false,
       type: 'text',
-      error: error instanceof Error ? error.message : 'Failed to process text'
+      error: error instanceof Error ? error.message : 'Failed to process text',
     };
   }
 }
@@ -240,7 +248,7 @@ async function processHtmlFromClipboard(clipboardItem: ClipboardItem): Promise<C
       return {
         success: false,
         type: 'text',
-        error: 'Clipboard HTML is empty'
+        error: 'Clipboard HTML is empty',
       };
     }
 
@@ -252,15 +260,14 @@ async function processHtmlFromClipboard(clipboardItem: ClipboardItem): Promise<C
       success: true,
       type: 'text',
       data: plainText,
-      format: 'html-derived'
+      format: 'html-derived',
     };
-
   } catch (error) {
     console.error('Failed to process HTML from clipboard:', error);
     return {
       success: false,
       type: 'text',
-      error: error instanceof Error ? error.message : 'Failed to process HTML'
+      error: error instanceof Error ? error.message : 'Failed to process HTML',
     };
   }
 }
@@ -300,23 +307,23 @@ export function detectTextFormat(text: string): string {
  */
 function isCodeLike(text: string): boolean {
   const codePatterns = [
-    /^import\s+/m,                    // ES6 imports
-    /^function\s+\w+\s*\(/m,         // Function declarations
-    /^(const|let|var)\s+\w+\s*=/m,   // Variable declarations
+    /^import\s+/m, // ES6 imports
+    /^function\s+\w+\s*\(/m, // Function declarations
+    /^(const|let|var)\s+\w+\s*=/m, // Variable declarations
     /^\s*(if|for|while|switch)\s*\(/m, // Control structures
-    /^class\s+\w+/m,                 // Class declarations
-    /^\s*\/\*[\s\S]*?\*\//,          // Multi-line comments
-    /^\s*\/\/.*$/m,                  // Single-line comments
-    /^<\w+.*>.*<\/\w+>$/s,           // HTML-like tags
-    /^\s*\{[\s\S]*\}\s*$/,           // JSON-like objects
-    /^\s*\[[\s\S]*\]\s*$/,           // Arrays
-    /console\.log\(/,                // Console statements
-    /return\s+/,                     // Return statements
+    /^class\s+\w+/m, // Class declarations
+    /^\s*\/\*[\s\S]*?\*\//, // Multi-line comments
+    /^\s*\/\/.*$/m, // Single-line comments
+    /^<\w+.*>.*<\/\w+>$/s, // HTML-like tags
+    /^\s*\{[\s\S]*\}\s*$/, // JSON-like objects
+    /^\s*\[[\s\S]*\]\s*$/, // Arrays
+    /console\.log\(/, // Console statements
+    /return\s+/, // Return statements
   ];
 
   // Check for indentation patterns (tabs or multiple spaces)
   const hasIndentation = /^[ \t]{2,}/m.test(text);
-  
+
   // Check for semicolons at line endings
   const hasSemicolons = /;$/m.test(text);
 
@@ -324,7 +331,7 @@ function isCodeLike(text: string): boolean {
   const hasBraces = /[{}]/.test(text);
 
   // If multiple code indicators are present
-  const patternMatches = codePatterns.filter(pattern => pattern.test(text)).length;
+  const patternMatches = codePatterns.filter((pattern) => pattern.test(text)).length;
   const structuralIndicators = [hasIndentation, hasSemicolons, hasBraces].filter(Boolean).length;
 
   return patternMatches >= 1 || (patternMatches >= 1 && structuralIndicators >= 1);
@@ -335,7 +342,7 @@ function isCodeLike(text: string): boolean {
  */
 function isJsonLike(text: string): boolean {
   const trimmed = text.trim();
-  
+
   // Must start with { or [
   if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
     return false;
@@ -354,19 +361,19 @@ function isJsonLike(text: string): boolean {
  */
 function isMarkdownLike(text: string): boolean {
   const markdownPatterns = [
-    /^#{1,6}\s+/m,        // Headers
-    /^\*\s+/m,            // Unordered lists
-    /^\d+\.\s+/m,         // Ordered lists
-    /\*\*.*\*\*/,         // Bold text
-    /\*.*\*/,             // Italic text
-    /`.*`/,               // Inline code
-    /^```/m,              // Code blocks
-    /^\|.*\|/m,           // Tables
-    /\[.*\]\(.*\)/,       // Links
-    /^>/m,                // Blockquotes
+    /^#{1,6}\s+/m, // Headers
+    /^\*\s+/m, // Unordered lists
+    /^\d+\.\s+/m, // Ordered lists
+    /\*\*.*\*\*/, // Bold text
+    /\*.*\*/, // Italic text
+    /`.*`/, // Inline code
+    /^```/m, // Code blocks
+    /^\|.*\|/m, // Tables
+    /\[.*\]\(.*\)/, // Links
+    /^>/m, // Blockquotes
   ];
 
-  const matches = markdownPatterns.filter(pattern => pattern.test(text)).length;
+  const matches = markdownPatterns.filter((pattern) => pattern.test(text)).length;
   return matches >= 2; // Require multiple markdown indicators
 }
 
@@ -375,7 +382,7 @@ function isMarkdownLike(text: string): boolean {
  */
 function isUrlLike(text: string): boolean {
   const trimmed = text.trim();
-  
+
   // Single line and looks like URL
   if (trimmed.includes('\n')) {
     return false;
@@ -396,7 +403,7 @@ function stripHtmlTags(html: string): string {
   // Create a temporary div to parse HTML
   const tempDiv = document.createElement('div');
   tempDiv.innerHTML = html;
-  
+
   // Get plain text content
   return tempDiv.textContent || tempDiv.innerText || '';
 }
@@ -413,7 +420,7 @@ function getImageDimensions(blob: Blob): Promise<{ width: number; height: number
       URL.revokeObjectURL(url);
       resolve({
         width: img.naturalWidth,
-        height: img.naturalHeight
+        height: img.naturalHeight,
       });
     };
 
@@ -432,7 +439,7 @@ function getImageDimensions(blob: Blob): Promise<{ width: number; height: number
 function blobToDataUrl(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    
+
     reader.onload = () => {
       if (typeof reader.result === 'string') {
         resolve(reader.result);
@@ -440,9 +447,9 @@ function blobToDataUrl(blob: Blob): Promise<string> {
         reject(new Error('Failed to convert blob to data URL'));
       }
     };
-    
+
     reader.onerror = () => reject(reader.error || new Error('FileReader error'));
-    
+
     reader.readAsDataURL(blob);
   });
 }
@@ -450,7 +457,10 @@ function blobToDataUrl(blob: Blob): Promise<string> {
 /**
  * Validate image format and size
  */
-export function validateImageData(dataUrl: string, maxSizeMB: number = MAX_IMAGE_SIZE_MB): {
+export function validateImageData(
+  dataUrl: string,
+  maxSizeMB: number = MAX_IMAGE_SIZE_MB,
+): {
   valid: boolean;
   error?: string;
   format?: string;
@@ -462,17 +472,17 @@ export function validateImageData(dataUrl: string, maxSizeMB: number = MAX_IMAGE
     if (!mimeMatch) {
       return {
         valid: false,
-        error: 'Invalid data URL format'
+        error: 'Invalid data URL format',
       };
     }
 
     const mimeType = mimeMatch[1];
-    
+
     // Check if format is supported
     if (!SUPPORTED_IMAGE_TYPES.includes(mimeType)) {
       return {
         valid: false,
-        error: `Unsupported image format: ${mimeType}`
+        error: `Unsupported image format: ${mimeType}`,
       };
     }
 
@@ -487,20 +497,19 @@ export function validateImageData(dataUrl: string, maxSizeMB: number = MAX_IMAGE
         valid: false,
         error: `Image too large: ${sizeMB.toFixed(1)}MB (max: ${maxSizeMB}MB)`,
         format: mimeType,
-        sizeKB
+        sizeKB,
       };
     }
 
     return {
       valid: true,
       format: mimeType,
-      sizeKB
+      sizeKB,
     };
-
   } catch (error) {
     return {
       valid: false,
-      error: error instanceof Error ? error.message : 'Image validation failed'
+      error: error instanceof Error ? error.message : 'Image validation failed',
     };
   }
 }
@@ -514,19 +523,19 @@ export function formatTextForDisplay(text: string, detectedFormat: string): stri
     case 'json':
       // Preserve formatting for code
       return text;
-    
+
     case 'markdown':
       // For now, just return as-is (could be enhanced with markdown parsing)
       return text;
-    
+
     case 'url':
       // Return the URL as-is
       return text;
-    
+
     case 'html-derived':
       // Already converted to plain text
       return text;
-    
+
     default:
       // Plain text - normalize line endings
       return text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
@@ -538,16 +547,16 @@ export function formatTextForDisplay(text: string, detectedFormat: string): stri
  */
 export function getFormatDisplayName(format: string): string {
   const formatNames: Record<string, string> = {
-    'plain': 'Plain Text',
-    'code': 'Code',
-    'json': 'JSON',
-    'markdown': 'Markdown',
-    'url': 'URL',
+    plain: 'Plain Text',
+    code: 'Code',
+    json: 'JSON',
+    markdown: 'Markdown',
+    url: 'URL',
     'html-derived': 'Rich Text',
     'image/png': 'PNG Image',
-    'image/jpeg': 'JPEG Image', 
+    'image/jpeg': 'JPEG Image',
     'image/webp': 'WebP Image',
-    'image/gif': 'GIF Image'
+    'image/gif': 'GIF Image',
   };
 
   return formatNames[format] || format;
@@ -579,7 +588,9 @@ export async function requestClipboardPermission(): Promise<boolean> {
   }
 
   try {
-    const permission = await navigator.permissions.query({ name: 'clipboard-read' as PermissionName });
+    const permission = await navigator.permissions.query({
+      name: 'clipboard-read' as PermissionName,
+    });
     return permission.state === 'granted' || permission.state === 'prompt';
   } catch {
     // Fallback to basic capability check

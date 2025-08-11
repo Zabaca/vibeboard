@@ -32,10 +32,7 @@ export class GeneratedCodeValidator {
   constructor(casesDir?: string) {
     this.transformer = new CodeTransformer();
     this.pipeline = new ComponentPipeline();
-    this.casesDir = casesDir || path.join(
-      path.dirname(new URL(import.meta.url).pathname),
-      'cases'
-    );
+    this.casesDir = casesDir || path.join(path.dirname(new URL(import.meta.url).pathname), 'cases');
   }
 
   /**
@@ -43,16 +40,18 @@ export class GeneratedCodeValidator {
    */
   async validateAll(): Promise<ValidationResult[]> {
     const results: ValidationResult[] = [];
-    
+
     try {
       // Read all files in the cases directory
       const files = [];
       for await (const entry of Deno.readDir(this.casesDir)) {
-        if (entry.isFile && 
-            (entry.name.endsWith('.jsx') || 
-             entry.name.endsWith('.tsx') || 
-             entry.name.endsWith('.js') || 
-             entry.name.endsWith('.ts'))) {
+        if (
+          entry.isFile &&
+          (entry.name.endsWith('.jsx') ||
+            entry.name.endsWith('.tsx') ||
+            entry.name.endsWith('.js') ||
+            entry.name.endsWith('.ts'))
+        ) {
           files.push(entry.name);
         }
       }
@@ -69,13 +68,14 @@ export class GeneratedCodeValidator {
         const result = await this.validateFile(filename);
         results.push(result);
       }
-
     } catch (error) {
       if (error instanceof Deno.errors.NotFound) {
         console.error(`❌ Cases directory not found: ${this.casesDir}`);
         console.error('   Create the directory and add AI-generated code files to test');
       } else {
-        console.error(`❌ Error reading cases directory: ${error instanceof Error ? error.message : String(error)}`);
+        console.error(
+          `❌ Error reading cases directory: ${error instanceof Error ? error.message : String(error)}`,
+        );
       }
     }
 
@@ -88,15 +88,15 @@ export class GeneratedCodeValidator {
   async validateFile(filename: string): Promise<ValidationResult> {
     const filepath = path.join(this.casesDir, filename);
     const startTime = performance.now();
-    
+
     try {
       // Read the file
       const code = await Deno.readTextFile(filepath);
       const fileInfo = await Deno.stat(filepath);
-      
+
       // Detect if this is an ESM component
       const isESM = this.isESMModule(code);
-      
+
       const legacyResult: any = null;
       let pipelineResult: any = null;
       let pipelineSuccess = false;
@@ -105,29 +105,35 @@ export class GeneratedCodeValidator {
       // Always test the legacy transformer for compatibility
       const legacyTransformResult = this.transformer.transform(code, {
         debug: false,
-        validateOutput: true
+        validateOutput: true,
       });
 
       // Test ComponentPipeline for both ESM and legacy components
       try {
-        pipelineResult = await this.pipeline.processComponent({
-          originalCode: code,
-          source: 'ai-generated',
-          format: isESM ? 'esm' : undefined
-        }, {
-          debug: false, // Debug disabled for clean output
-          useCache: false,
-          validateOutput: false // Skip validation to focus on processing
-        });
-        
+        pipelineResult = await this.pipeline.processComponent(
+          {
+            originalCode: code,
+            source: 'ai-generated',
+            format: isESM ? 'esm' : undefined,
+          },
+          {
+            debug: false, // Debug disabled for clean output
+            useCache: false,
+            validateOutput: false, // Skip validation to focus on processing
+          },
+        );
+
         pipelineSuccess = pipelineResult.success;
-        
+
         // Check if JSX was transpiled even if execution failed (for ESM in test environment)
         if (pipelineResult.component?.compiledCode) {
           // Check if JSX was transpiled (no JSX tags remaining)
-          const hasJSX = /<[A-Z]|<(div|span|button|input|form|h[1-6]|p|a|ul|li)/.test(pipelineResult.component.compiledCode);
-          jsxTranspiled = !hasJSX && (/<[A-Z]|<(div|span|button|input|form|h[1-6]|p|a|ul|li)/.test(code));
-          
+          const hasJSX = /<[A-Z]|<(div|span|button|input|form|h[1-6]|p|a|ul|li)/.test(
+            pipelineResult.component.compiledCode,
+          );
+          jsxTranspiled =
+            !hasJSX && /<[A-Z]|<(div|span|button|input|form|h[1-6]|p|a|ul|li)/.test(code);
+
           // For ESM components, consider transpilation success even if execution fails due to React not being available
           if (isESM && jsxTranspiled && pipelineResult.error?.includes('React is not defined')) {
             pipelineSuccess = true; // Override for test environment
@@ -150,7 +156,7 @@ export class GeneratedCodeValidator {
           hasComponent: true, // ESM components always have default export
           isESM: true,
           pipelineSuccess: true,
-          jsxTranspiled
+          jsxTranspiled,
         };
       }
 
@@ -158,11 +164,11 @@ export class GeneratedCodeValidator {
       if (legacyTransformResult.success && legacyTransformResult.code) {
         // Use the shared ComponentExecutor to validate execution, just like the app does
         const validationResult = ComponentExecutor.validate(legacyTransformResult.code);
-        
+
         if (validationResult.valid) {
           // Also check if a component exists
           const hasComponent = ComponentExecutor.hasComponent(legacyTransformResult.code);
-          
+
           return {
             filename,
             success: true,
@@ -172,7 +178,7 @@ export class GeneratedCodeValidator {
             hasComponent,
             isESM,
             pipelineSuccess,
-            jsxTranspiled
+            jsxTranspiled,
           };
         } else {
           // The transformation succeeded but execution would fail
@@ -185,7 +191,7 @@ export class GeneratedCodeValidator {
             fileSize: fileInfo.size,
             isESM,
             pipelineSuccess,
-            jsxTranspiled
+            jsxTranspiled,
           };
         }
       } else {
@@ -193,7 +199,7 @@ export class GeneratedCodeValidator {
         const errors = [];
         if (legacyTransformResult.error) errors.push(`Legacy: ${legacyTransformResult.error}`);
         if (pipelineResult?.error) errors.push(`Pipeline: ${pipelineResult.error}`);
-        
+
         return {
           filename,
           success: false,
@@ -203,7 +209,7 @@ export class GeneratedCodeValidator {
           fileSize: fileInfo.size,
           isESM,
           pipelineSuccess,
-          jsxTranspiled
+          jsxTranspiled,
         };
       }
     } catch (error) {
@@ -211,7 +217,7 @@ export class GeneratedCodeValidator {
         filename,
         success: false,
         error: `Failed to read or process file: ${error.message}`,
-        transformationTime: performance.now() - startTime
+        transformationTime: performance.now() - startTime,
       };
     }
   }
@@ -221,15 +227,14 @@ export class GeneratedCodeValidator {
    */
   private isESMModule(code: string): boolean {
     const esmPatterns = [
-      /^import\s+/m,                          // import statements
-      /^export\s+default/m,                   // default export
-      /^export\s+{/m,                        // named exports
-      /^export\s+(const|let|var|function|class)/m,  // export declarations
+      /^import\s+/m, // import statements
+      /^export\s+default/m, // default export
+      /^export\s+{/m, // named exports
+      /^export\s+(const|let|var|function|class)/m, // export declarations
     ];
-    
-    return esmPatterns.some(pattern => pattern.test(code));
-  }
 
+    return esmPatterns.some((pattern) => pattern.test(code));
+  }
 
   /**
    * Print a formatted report of the validation results
@@ -239,18 +244,18 @@ export class GeneratedCodeValidator {
       return;
     }
 
-    const passed = results.filter(r => r.success);
-    const failed = results.filter(r => !r.success);
-    const withWarnings = results.filter(r => r.warnings && r.warnings.length > 0);
-    const esmComponents = results.filter(r => r.isESM);
-    const pipelineSuccesses = results.filter(r => r.pipelineSuccess);
-    const jsxTranspiled = results.filter(r => r.jsxTranspiled);
+    const passed = results.filter((r) => r.success);
+    const failed = results.filter((r) => !r.success);
+    const withWarnings = results.filter((r) => r.warnings && r.warnings.length > 0);
+    const esmComponents = results.filter((r) => r.isESM);
+    const pipelineSuccesses = results.filter((r) => r.pipelineSuccess);
+    const jsxTranspiled = results.filter((r) => r.jsxTranspiled);
     const successRate = (passed.length / results.length) * 100;
 
     console.log('\n' + '='.repeat(70));
     console.log('📊 VALIDATION REPORT');
     console.log('='.repeat(70));
-    
+
     // Summary stats
     console.log('\n📈 Summary:');
     console.log(`   Total files tested: ${results.length}`);
@@ -258,50 +263,53 @@ export class GeneratedCodeValidator {
     console.log(`   ❌ Failed: ${failed.length}`);
     console.log(`   ⚠️  With warnings: ${withWarnings.length}`);
     console.log(`   Success rate: ${successRate.toFixed(1)}%`);
-    
+
     // ESM and Pipeline stats
     console.log('\n🚀 ESM & Pipeline Stats:');
     console.log(`   📦 ESM components: ${esmComponents.length}`);
     console.log(`   🔧 Pipeline successes: ${pipelineSuccesses.length}`);
     console.log(`   🔄 JSX transpiled: ${jsxTranspiled.length}`);
-    
+
     // Calculate average transformation time
-    const avgTime = results.reduce((sum, r) => sum + (r.transformationTime || 0), 0) / results.length;
+    const avgTime =
+      results.reduce((sum, r) => sum + (r.transformationTime || 0), 0) / results.length;
     console.log(`   Average transformation time: ${avgTime.toFixed(2)}ms`);
 
     // Detailed results
     console.log('\n📝 Detailed Results:\n');
-    
+
     results.forEach((result, index) => {
       const icon = result.success ? '✅' : '❌';
       const componentIcon = result.hasComponent ? '🧩' : '⚪';
       const esmIcon = result.isESM ? '📦' : '📄';
       const pipelineIcon = result.pipelineSuccess ? '🔧' : '⚪';
       const jsxIcon = result.jsxTranspiled ? '🔄' : '';
-      
-      console.log(`${index + 1}. ${icon} ${result.filename} ${componentIcon}${esmIcon}${pipelineIcon}${jsxIcon}`);
-      
+
+      console.log(
+        `${index + 1}. ${icon} ${result.filename} ${componentIcon}${esmIcon}${pipelineIcon}${jsxIcon}`,
+      );
+
       if (result.fileSize) {
         console.log(`   Size: ${this.formatFileSize(result.fileSize)}`);
       }
-      
+
       if (result.transformationTime) {
         console.log(`   Time: ${result.transformationTime.toFixed(2)}ms`);
       }
-      
+
       if (!result.success && result.error) {
         console.log(`   ❌ Error: ${result.error}`);
       }
-      
+
       if (result.warnings && result.warnings.length > 0) {
         console.log(`   ⚠️  Warnings:`);
-        result.warnings.forEach(w => console.log(`      - ${w}`));
+        result.warnings.forEach((w) => console.log(`      - ${w}`));
       }
-      
+
       if (result.success && !result.hasComponent) {
         console.log(`   ⚠️  No React component detected in output`);
       }
-      
+
       console.log('');
     });
 
@@ -329,9 +337,9 @@ if (import.meta.main) {
   const validator = new GeneratedCodeValidator();
   const results = await validator.validateAll();
   validator.printReport(results);
-  
+
   // Exit with error code if any failures
-  const hasFailures = results.some(r => !r.success);
+  const hasFailures = results.some((r) => !r.success);
   if (hasFailures) {
     Deno.exit(1);
   }

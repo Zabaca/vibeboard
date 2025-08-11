@@ -10,7 +10,7 @@ interface ShapeNodeData {
   state: ComponentState;
   source: 'native';
   id: string;
-  
+
   // UI-specific fields
   presentationMode?: boolean;
   onDelete?: (nodeId: string) => void;
@@ -55,8 +55,13 @@ const ShapeNode = ({ id, data, selected = false }: ShapeNodeProps) => {
 
   // Render different shapes based on shapeType
   const renderShape = () => {
-    const { shapeType = 'rectangle', fillColor = '#ffffff', strokeColor = '#6366f1', strokeWidth = 2 } = state;
-    
+    const {
+      shapeType = 'rectangle',
+      fillColor = '#ffffff',
+      strokeColor = '#6366f1',
+      strokeWidth = 2,
+    } = state;
+
     switch (shapeType) {
       case 'rectangle':
         return (
@@ -72,7 +77,7 @@ const ShapeNode = ({ id, data, selected = false }: ShapeNodeProps) => {
             ry="8"
           />
         );
-      
+
       case 'square':
         return (
           <rect
@@ -87,7 +92,7 @@ const ShapeNode = ({ id, data, selected = false }: ShapeNodeProps) => {
             ry="8"
           />
         );
-      
+
       case 'triangle':
         return (
           <polygon
@@ -98,7 +103,7 @@ const ShapeNode = ({ id, data, selected = false }: ShapeNodeProps) => {
             transform="scale(1.8) translate(-22, -22)"
           />
         );
-      
+
       default:
         return null;
     }
@@ -244,7 +249,14 @@ const ShapeNode = ({ id, data, selected = false }: ShapeNodeProps) => {
             }}
             title="Customize shape"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <circle cx="12" cy="12" r="3" />
               <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1" />
             </svg>
@@ -268,7 +280,14 @@ const ShapeNode = ({ id, data, selected = false }: ShapeNodeProps) => {
             }}
             title="Lock shape"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <rect x="5" y="11" width="14" height="11" rx="2" ry="2" />
               <path d="M7 11V7a5 5 0 0110 0v4" />
             </svg>
@@ -293,7 +312,14 @@ const ShapeNode = ({ id, data, selected = false }: ShapeNodeProps) => {
               }}
               title="Delete shape"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
                 <path d="M3 6h18" />
                 <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6" />
                 <path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2" />
@@ -318,7 +344,14 @@ const ShapeNode = ({ id, data, selected = false }: ShapeNodeProps) => {
           onClick={() => onUpdateState?.(id, { ...state, locked: false })}
           title="Click to unlock"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#6b7280"
+            strokeWidth="2"
+          >
             <rect x="5" y="11" width="14" height="11" rx="2" ry="2" />
             <path d="M7 11V7a5 5 0 0110 0v4" />
           </svg>

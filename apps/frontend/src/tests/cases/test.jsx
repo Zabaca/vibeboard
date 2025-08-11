@@ -97,7 +97,7 @@ const GrowthChart = () => {
   };
 
   const getMaxValue = (data) => {
-    return Math.max(...data.map(item => item.value));
+    return Math.max(...data.map((item) => item.value));
   };
 
   const renderChart = (data, color, title, formatFn) => {
@@ -107,13 +107,21 @@ const GrowthChart = () => {
       <div style={chartWrapperStyle}>
         <div style={chartTitleStyle}>
           <svg style={iconStyle} viewBox="0 0 24 24" fill="none">
-            <path d="M12 20V10M18 20V4M6 20v-4" stroke={color} strokeWidth="2" strokeLinecap="round" />
+            <path
+              d="M12 20V10M18 20V4M6 20v-4"
+              stroke={color}
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
           </svg>
           {title}
         </div>
         <div style={chartGridStyle}>
           {data.map((item, index) => (
-            <div key={index} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div
+              key={index}
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+            >
               <div style={valueLabelStyle}>{formatFn(item.value)}</div>
               <div
                 style={{

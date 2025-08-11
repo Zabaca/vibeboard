@@ -5,7 +5,7 @@ const DashboardCharts = () => {
     { month: 'Mar', value: 15000 },
     { month: 'Apr', value: 22000 },
     { month: 'May', value: 18000 },
-    { month: 'Jun', value: 25000 }
+    { month: 'Jun', value: 25000 },
   ]);
 
   const [userData] = useState([
@@ -14,12 +14,12 @@ const DashboardCharts = () => {
     { month: 'Mar', value: 580 },
     { month: 'Apr', value: 720 },
     { month: 'May', value: 890 },
-    { month: 'Jun', value: 1100 }
+    { month: 'Jun', value: 1100 },
   ]);
 
   const maxValue = useMemo(() => {
-    const revMax = Math.max(...revenueData.map(item => item.value));
-    const userMax = Math.max(...userData.map(item => item.value));
+    const revMax = Math.max(...revenueData.map((item) => item.value));
+    const userMax = Math.max(...userData.map((item) => item.value));
     return Math.max(revMax, userMax);
   }, [revenueData, userData]);
 
@@ -31,14 +31,14 @@ const DashboardCharts = () => {
     backgroundColor: '#f8f9fa',
     borderRadius: '12px',
     boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-    fontFamily: 'sans-serif'
+    fontFamily: 'sans-serif',
   };
 
   const chartContainerStyle = {
     backgroundColor: 'white',
     borderRadius: '10px',
     padding: '20px',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
   };
 
   const titleStyle = {
@@ -48,7 +48,7 @@ const DashboardCharts = () => {
     marginBottom: '15px',
     display: 'flex',
     alignItems: 'center',
-    gap: '10px'
+    gap: '10px',
   };
 
   const chartGridStyle = {
@@ -59,7 +59,7 @@ const DashboardCharts = () => {
     padding: '10px 0',
     borderBottom: '1px solid #eee',
     borderLeft: '1px solid #eee',
-    position: 'relative'
+    position: 'relative',
   };
 
   const yAxisStyle = {
@@ -71,12 +71,12 @@ const DashboardCharts = () => {
     flexDirection: 'column',
     justifyContent: 'space-between',
     fontSize: '12px',
-    color: '#777'
+    color: '#777',
   };
 
   const yAxisLabelStyle = {
     position: 'absolute',
-    left: '-30px'
+    left: '-30px',
   };
 
   const barContainerStyle = {
@@ -84,7 +84,7 @@ const DashboardCharts = () => {
     flexDirection: 'column',
     alignItems: 'center',
     flex: '1',
-    height: '100%'
+    height: '100%',
   };
 
   const barStyle = (value, max, color) => ({
@@ -92,34 +92,34 @@ const DashboardCharts = () => {
     backgroundColor: color,
     height: `${(value / max) * 100}%`,
     borderRadius: '4px 4px 0 0',
-    transition: 'height 0.5s ease'
+    transition: 'height 0.5s ease',
   });
 
   const labelStyle = {
     marginTop: '8px',
     fontSize: '12px',
-    color: '#666'
+    color: '#666',
   };
 
   const legendStyle = {
     display: 'flex',
     justifyContent: 'center',
     gap: '20px',
-    marginTop: '15px'
+    marginTop: '15px',
   };
 
   const legendItemStyle = {
     display: 'flex',
     alignItems: 'center',
     gap: '6px',
-    fontSize: '14px'
+    fontSize: '14px',
   };
 
   const legendColorBoxStyle = (color) => ({
     width: '12px',
     height: '12px',
     backgroundColor: color,
-    borderRadius: '2px'
+    borderRadius: '2px',
   });
 
   const formatCurrency = (value) => {
@@ -134,7 +134,14 @@ const DashboardCharts = () => {
     <div style={chartStyle}>
       <div style={chartContainerStyle}>
         <div style={titleStyle}>
-          <div style={{width: '12px', height: '12px', backgroundColor: '#4361ee', borderRadius: '50%'}}></div>
+          <div
+            style={{
+              width: '12px',
+              height: '12px',
+              backgroundColor: '#4361ee',
+              borderRadius: '50%',
+            }}
+          ></div>
           Revenue Growth
         </div>
         <div style={chartGridStyle}>
@@ -162,7 +169,14 @@ const DashboardCharts = () => {
 
       <div style={chartContainerStyle}>
         <div style={titleStyle}>
-          <div style={{width: '12px', height: '12px', backgroundColor: '#f72585', borderRadius: '50%'}}></div>
+          <div
+            style={{
+              width: '12px',
+              height: '12px',
+              backgroundColor: '#f72585',
+              borderRadius: '50%',
+            }}
+          ></div>
           User Growth
         </div>
         <div style={chartGridStyle}>

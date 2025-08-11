@@ -4,7 +4,11 @@
  */
 
 import React, { useRef, useState } from 'react';
-import { captureElementScreenshot, getOptimalScreenshotOptions, type ScreenshotResult } from '../utils/screenshotUtils.ts';
+import {
+  captureElementScreenshot,
+  getOptimalScreenshotOptions,
+  type ScreenshotResult,
+} from '../utils/screenshotUtils.ts';
 
 const ScreenshotTest: React.FC = () => {
   const testElementRef = useRef<HTMLDivElement>(null);
@@ -18,17 +22,17 @@ const ScreenshotTest: React.FC = () => {
     }
 
     setIsCapturing(true);
-    
+
     try {
       const options = getOptimalScreenshotOptions(scenario);
       const result = await captureElementScreenshot(testElementRef.current, {
         ...options,
         debug: true, // Enable debug logging for testing
       });
-      
+
       setScreenshotResult(result);
       console.log('Screenshot test result:', result);
-      
+
       if (result.success) {
         console.log(`✅ ${scenario} screenshot captured:`, {
           format: result.format,
@@ -45,14 +49,14 @@ const ScreenshotTest: React.FC = () => {
         capturedAt: Date.now(),
       });
     }
-    
+
     setIsCapturing(false);
   };
 
   return (
     <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
       <h2 style={{ marginBottom: '20px', color: '#333' }}>Screenshot Capture Test</h2>
-      
+
       {/* Test element to be captured */}
       <div
         ref={testElementRef}
@@ -96,19 +100,21 @@ const ScreenshotTest: React.FC = () => {
             borderRadius: '20%',
           }}
         />
-        
+
         <h3 style={{ margin: '0 0 10px 0', fontSize: '24px', textAlign: 'center' }}>
           Test Component
         </h3>
         <p style={{ margin: '0 0 15px 0', textAlign: 'center', opacity: 0.9 }}>
           This component will be captured as an image
         </p>
-        <div style={{
-          background: 'rgba(255, 255, 255, 0.2)',
-          padding: '8px 16px',
-          borderRadius: '20px',
-          fontSize: '14px',
-        }}>
+        <div
+          style={{
+            background: 'rgba(255, 255, 255, 0.2)',
+            padding: '8px 16px',
+            borderRadius: '20px',
+            fontSize: '14px',
+          }}
+        >
           📸 Ready for screenshot
         </div>
       </div>
@@ -131,7 +137,7 @@ const ScreenshotTest: React.FC = () => {
         >
           {isCapturing ? 'Capturing...' : 'Capture Component (WebP 85%)'}
         </button>
-        
+
         <button
           onClick={() => handleCaptureTest('preview')}
           disabled={isCapturing}
@@ -148,7 +154,7 @@ const ScreenshotTest: React.FC = () => {
         >
           Capture Preview (WebP 75%)
         </button>
-        
+
         <button
           onClick={() => handleCaptureTest('thumbnail')}
           disabled={isCapturing}
@@ -168,28 +174,36 @@ const ScreenshotTest: React.FC = () => {
 
       {/* Results display */}
       {screenshotResult && (
-        <div style={{
-          background: screenshotResult.success ? '#f0f9ff' : '#fef2f2',
-          border: `1px solid ${screenshotResult.success ? '#0ea5e9' : '#ef4444'}`,
-          borderRadius: '8px',
-          padding: '16px',
-        }}>
-          <h3 style={{
-            margin: '0 0 10px 0',
-            color: screenshotResult.success ? '#0c4a6e' : '#7f1d1d',
-          }}>
+        <div
+          style={{
+            background: screenshotResult.success ? '#f0f9ff' : '#fef2f2',
+            border: `1px solid ${screenshotResult.success ? '#0ea5e9' : '#ef4444'}`,
+            borderRadius: '8px',
+            padding: '16px',
+          }}
+        >
+          <h3
+            style={{
+              margin: '0 0 10px 0',
+              color: screenshotResult.success ? '#0c4a6e' : '#7f1d1d',
+            }}
+          >
             {screenshotResult.success ? '✅ Screenshot Captured' : '❌ Capture Failed'}
           </h3>
-          
+
           {screenshotResult.success ? (
             <div>
               <div style={{ marginBottom: '10px', fontSize: '14px' }}>
-                <strong>Format:</strong> {screenshotResult.format}<br />
-                <strong>Size:</strong> {screenshotResult.sizeKB}KB<br />
-                <strong>Dimensions:</strong> {screenshotResult.dimensions?.width}×{screenshotResult.dimensions?.height}<br />
+                <strong>Format:</strong> {screenshotResult.format}
+                <br />
+                <strong>Size:</strong> {screenshotResult.sizeKB}KB
+                <br />
+                <strong>Dimensions:</strong> {screenshotResult.dimensions?.width}×
+                {screenshotResult.dimensions?.height}
+                <br />
                 <strong>Processing Time:</strong> {screenshotResult.processingTime}ms
               </div>
-              
+
               {screenshotResult.dataUrl && (
                 <div>
                   <p style={{ margin: '10px 0 5px 0', fontWeight: 'bold' }}>Preview:</p>
@@ -204,7 +218,7 @@ const ScreenshotTest: React.FC = () => {
                       objectFit: 'contain',
                     }}
                   />
-                  
+
                   <div style={{ marginTop: '10px' }}>
                     <a
                       href={screenshotResult.dataUrl}
@@ -231,9 +245,11 @@ const ScreenshotTest: React.FC = () => {
           )}
         </div>
       )}
-      
+
       <div style={{ marginTop: '20px', fontSize: '12px', color: '#6b7280' }}>
-        <p><strong>Note:</strong> This test component validates:</p>
+        <p>
+          <strong>Note:</strong> This test component validates:
+        </p>
         <ul>
           <li>html2canvas integration and DOM capture</li>
           <li>WebP compression with PNG fallback</li>

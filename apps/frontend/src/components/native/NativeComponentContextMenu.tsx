@@ -43,7 +43,7 @@ const NativeComponentContextMenu: React.FC<ContextMenuProps> = ({
         }}
         onClick={onClose}
       />
-      
+
       {/* Context menu */}
       <div
         style={{
@@ -59,23 +59,27 @@ const NativeComponentContextMenu: React.FC<ContextMenuProps> = ({
           fontSize: '14px',
         }}
       >
-        <div style={{
-          padding: '4px 12px',
-          fontSize: '12px',
-          fontWeight: '600',
-          color: '#6b7280',
-          textTransform: 'uppercase',
-          letterSpacing: '0.5px',
-        }}>
+        <div
+          style={{
+            padding: '4px 12px',
+            fontSize: '12px',
+            fontWeight: '600',
+            color: '#6b7280',
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px',
+          }}
+        >
           {nodeType} Options
         </div>
-        
-        <div style={{
-          width: '100%',
-          height: '1px',
-          background: '#e5e7eb',
-          margin: '4px 0',
-        }} />
+
+        <div
+          style={{
+            width: '100%',
+            height: '1px',
+            background: '#e5e7eb',
+            margin: '4px 0',
+          }}
+        />
 
         <button
           onClick={() => handleAction(() => onDuplicate(nodeId))}
@@ -90,8 +94,12 @@ const NativeComponentContextMenu: React.FC<ContextMenuProps> = ({
             borderRadius: '4px',
             transition: 'background 0.2s',
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = '#f3f4f6'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = '#f3f4f6';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'transparent';
+          }}
         >
           <span style={{ marginRight: '8px' }}>📋</span>
           Duplicate
@@ -110,8 +118,12 @@ const NativeComponentContextMenu: React.FC<ContextMenuProps> = ({
             borderRadius: '4px',
             transition: 'background 0.2s',
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = '#f3f4f6'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = '#f3f4f6';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'transparent';
+          }}
         >
           <span style={{ marginRight: '8px' }}>⬆️</span>
           Bring to Front
@@ -130,19 +142,25 @@ const NativeComponentContextMenu: React.FC<ContextMenuProps> = ({
             borderRadius: '4px',
             transition: 'background 0.2s',
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = '#f3f4f6'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = '#f3f4f6';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'transparent';
+          }}
         >
           <span style={{ marginRight: '8px' }}>⬇️</span>
           Send to Back
         </button>
 
-        <div style={{
-          width: '100%',
-          height: '1px',
-          background: '#e5e7eb',
-          margin: '4px 0',
-        }} />
+        <div
+          style={{
+            width: '100%',
+            height: '1px',
+            background: '#e5e7eb',
+            margin: '4px 0',
+          }}
+        />
 
         <button
           onClick={() => handleAction(() => onDelete(nodeId))}
@@ -158,8 +176,12 @@ const NativeComponentContextMenu: React.FC<ContextMenuProps> = ({
             transition: 'background 0.2s',
             color: '#dc2626',
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = '#fee2e2'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = '#fee2e2';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'transparent';
+          }}
         >
           <span style={{ marginRight: '8px' }}>🗑️</span>
           Delete

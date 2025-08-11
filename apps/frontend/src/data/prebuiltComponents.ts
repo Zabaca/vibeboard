@@ -63,7 +63,7 @@ export default function AnimatedButton() {
       </button>
     </div>
   );
-}`
+}`,
   },
   {
     id: 'card-profile',
@@ -149,7 +149,7 @@ export default function ProfileCard() {
       </div>
     </div>
   );
-}`
+}`,
   },
 
   // Data Components
@@ -241,7 +241,7 @@ export default function SimpleCounter() {
       </div>
     </div>
   );
-}`
+}`,
   },
   {
     id: 'timer-countdown',
@@ -360,7 +360,7 @@ export default function CountdownTimer() {
       </p>
     </div>
   );
-}`
+}`,
   },
 
   // Forms Components
@@ -522,10 +522,10 @@ export default function ContactForm() {
       </form>
     </div>
   );
-}`
+}`,
   },
 
-  // Charts Components  
+  // Charts Components
   {
     id: 'chart-bar',
     name: 'Bar Chart',
@@ -633,7 +633,7 @@ export default function BarChart() {
       </button>
     </div>
   );
-}`
+}`,
   },
 
   // Layout Components
@@ -737,7 +737,7 @@ export default function SimpleTabs() {
       </div>
     </div>
   );
-}`
+}`,
   },
 
   // Utility Components
@@ -837,7 +837,7 @@ export default function DigitalClock() {
       </div>
     </div>
   );
-}`
+}`,
   },
   {
     id: 'todo-list',
@@ -1008,6 +1008,6 @@ export default function TodoList() {
       </div>
     </div>
   );
-}`
-  }
+}`,
+  },
 ];

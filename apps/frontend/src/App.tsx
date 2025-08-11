@@ -7,12 +7,12 @@ import './App.css';
 function App() {
   const [testMode, setTestMode] = useState(false);
   const isDevelopment = import.meta.env.DEV;
-  
+
   // Initialize PostHog analytics
   useEffect(() => {
     posthogService.init();
   }, []);
-  
+
   return (
     <div className="app" style={{ width: '100vw', height: '100vh', margin: 0, padding: 0 }}>
       {/* Toggle button - only show in development */}
@@ -37,7 +37,7 @@ function App() {
           {testMode ? '🎨 Canvas Mode' : '🧪 Test ESM'}
         </button>
       )}
-      
+
       {/* Content - in production, always show ReactFlowCanvas */}
       {isDevelopment && testMode ? <ESMTestComponent /> : <ReactFlowCanvas />}
     </div>

@@ -9,12 +9,12 @@ interface StickyNoteData {
   state: ComponentState;
   source: 'native';
   id: string;
-  
+
   // UI-specific fields
   presentationMode?: boolean;
   onDelete?: (nodeId: string) => void;
   onUpdateState?: (nodeId: string, newState: ComponentState) => void;
-  
+
   // Index signature for React Flow compatibility
   [key: string]: unknown;
 }
@@ -70,7 +70,7 @@ const StickyNote = ({ id, data, selected = false }: StickyNoteProps) => {
       textAreaRef.current.style.height = 'auto';
       const newHeight = Math.max(100, textAreaRef.current.scrollHeight);
       textAreaRef.current.style.height = `${newHeight}px`;
-      
+
       // Update node height if auto-resize is enabled
       if (containerRef.current && !state.locked) {
         const padding = 32; // Account for padding
@@ -305,7 +305,14 @@ const StickyNote = ({ id, data, selected = false }: StickyNoteProps) => {
             }}
             title="Lock note"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <rect x="5" y="11" width="14" height="11" rx="2" ry="2" />
               <path d="M7 11V7a5 5 0 0110 0v4" />
             </svg>
@@ -330,7 +337,14 @@ const StickyNote = ({ id, data, selected = false }: StickyNoteProps) => {
               }}
               title="Delete note"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
                 <path d="M3 6h18" />
                 <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6" />
                 <path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2" />
@@ -355,7 +369,14 @@ const StickyNote = ({ id, data, selected = false }: StickyNoteProps) => {
           onClick={() => onUpdateState?.(id, { ...state, locked: false })}
           title="Click to unlock"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colorScheme.text} strokeWidth="2">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke={colorScheme.text}
+            strokeWidth="2"
+          >
             <rect x="5" y="11" width="14" height="11" rx="2" ry="2" />
             <path d="M7 11V7a5 5 0 0110 0v4" />
           </svg>

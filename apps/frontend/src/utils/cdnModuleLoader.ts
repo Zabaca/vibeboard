@@ -1,6 +1,6 @@
 /**
  * CDN Module Loader - Handles loading ES modules from CDNs with proper import resolution
- * 
+ *
  * This utility solves the problem of loading external ESM modules that have
  * server-relative imports which don't work in blob URL contexts.
  */
@@ -33,14 +33,14 @@ export class CDNModuleLoader {
 
       // First, try to load and follow any re-exports
       const code = await this.loadAndBundle(url, options);
-      
+
       if (options.debug) {
         console.log(`📝 Original code (first 500 chars):`, code.substring(0, 500));
       }
 
       // Try different loading strategies based on what the code looks like
       const module = await this.tryLoadStrategies(code, url, options);
-      
+
       if (module) {
         if (options.cache) {
           this.cache.set(url, module);
@@ -80,7 +80,7 @@ export class CDNModuleLoader {
           return `${prefix}'${absoluteUrl}'`;
         }
         return match;
-      }
+      },
     );
 
     // Make sure the code is still recognized as ESM
@@ -95,7 +95,11 @@ export class CDNModuleLoader {
   /**
    * Recursively load and bundle a module with its dependencies
    */
-  private async loadAndBundle(url: string, options: CDNModuleLoaderOptions, depth = 0): Promise<string> {
+  private async loadAndBundle(
+    url: string,
+    options: CDNModuleLoaderOptions,
+    depth = 0,
+  ): Promise<string> {
     if (depth > 5) {
       throw new Error('Maximum dependency depth exceeded');
     }
@@ -106,11 +110,12 @@ export class CDNModuleLoader {
     }
 
     let code = await response.text();
-    
+
     // Check if this has BOTH a re-export AND actual code (esm.sh issue)
     const reExportMatch = code.match(/^export\s+\*\s+from\s+['"]([^'"]+)['"]/m);
-    const hasActualExports = /export\s+{[^}]+}/m.test(code) || /export\s+(const|let|var|function|class)/m.test(code);
-    
+    const hasActualExports =
+      /export\s+{[^}]+}/m.test(code) || /export\s+(const|let|var|function|class)/m.test(code);
+
     if (reExportMatch && hasActualExports) {
       // This is the problematic case - strip the re-export line
       if (options.debug) {
@@ -121,7 +126,7 @@ export class CDNModuleLoader {
       // This is a pure re-export, follow it
       const targetPath = reExportMatch[1];
       let targetUrl: string;
-      
+
       if (targetPath.startsWith('/')) {
         // Server-relative path
         const urlObj = new URL(url);
@@ -135,20 +140,20 @@ export class CDNModuleLoader {
         // Bare import - might be a CDN-specific path
         targetUrl = new URL(targetPath, url).href;
       }
-      
+
       if (options.debug) {
         console.log(`  Following re-export: ${url} → ${targetUrl}`);
       }
-      
+
       // Recursively load the target module
       return this.loadAndBundle(targetUrl, options, depth + 1);
     }
-    
+
     // Check if this has relative imports that need resolving
     if (code.includes("from './") || code.includes('from "../')) {
       code = this.rewriteImports(code, url, options);
     }
-    
+
     return code;
   }
 
@@ -212,17 +217,19 @@ export class CDNModuleLoader {
     }
 
     // All strategies failed
-    const errorReport = errors
-      .map(e => `  - ${e.strategy}: ${e.error}`)
-      .join('\n');
-    
+    const errorReport = errors.map((e) => `  - ${e.strategy}: ${e.error}`).join('\n');
+
     throw new Error(`Failed to load ${packageName} from any CDN:\n${errorReport}`);
   }
 
   /**
    * Try different loading strategies for the module
    */
-  private async tryLoadStrategies(code: string, _url: string, options: CDNModuleLoaderOptions): Promise<any> {
+  private async tryLoadStrategies(
+    code: string,
+    _url: string,
+    options: CDNModuleLoaderOptions,
+  ): Promise<any> {
     const strategies = [
       // Strategy 1: Direct evaluation as a function (for IIFE modules)
       async () => {
@@ -231,19 +238,25 @@ export class CDNModuleLoader {
         }
         try {
           // Create a function that returns the module
-          const moduleFunc = new Function('window', 'global', 'exports', 'module', code + '\nreturn (typeof exports !== "undefined" ? exports : {});');
+          const moduleFunc = new Function(
+            'window',
+            'global',
+            'exports',
+            'module',
+            code + '\nreturn (typeof exports !== "undefined" ? exports : {});',
+          );
           const exports = {};
           const module = { exports };
           const global = window;
           const result = moduleFunc(window, global, exports, module);
-          
+
           // Check what we got
           const finalExports = module.exports || exports || result;
           if (options.debug) {
             console.log('  Result type:', typeof finalExports);
             console.log('  Keys:', Object.keys(finalExports));
           }
-          
+
           // Look for the main export
           if (typeof finalExports === 'function') {
             return finalExports;
@@ -254,7 +267,7 @@ export class CDNModuleLoader {
           if (finalExports.nanoid && typeof finalExports.nanoid === 'function') {
             return finalExports.nanoid;
           }
-          
+
           // Return the whole exports object
           return finalExports;
         } catch (e) {
@@ -264,7 +277,7 @@ export class CDNModuleLoader {
           return null;
         }
       },
-      
+
       // Strategy 2: Try as ESM with blob URL
       async () => {
         if (options.debug) {
@@ -273,34 +286,34 @@ export class CDNModuleLoader {
         try {
           // The code is already valid ESM, but we need to handle it properly
           const finalCode = code;
-          
+
           // Check what kind of exports we have
           const hasNamedExport = /export\s+\{[^}]*nanoid[^}]*\}/m.test(code);
           const hasDefaultExport = /export\s+default/m.test(code);
           const hasDirectExport = /export\s+(let|const|var|function)\s+nanoid/m.test(code);
-          
+
           if (options.debug) {
             console.log(`  Has named export with nanoid: ${hasNamedExport}`);
             console.log(`  Has default export: ${hasDefaultExport}`);
             console.log(`  Has direct export: ${hasDirectExport}`);
           }
-          
+
           // Create a blob URL for the module
           const blob = new Blob([finalCode], { type: 'application/javascript' });
           const blobUrl = URL.createObjectURL(blob);
-          
+
           try {
             // Import the module directly
             const module = await import(/* @vite-ignore */ blobUrl);
-            
+
             if (options.debug) {
               console.log('  Module imported:', module);
               console.log('  Module keys:', Object.keys(module));
             }
-            
+
             // Clean up blob URL
             URL.revokeObjectURL(blobUrl);
-            
+
             // Extract the function we need
             if (typeof module.nanoid === 'function') {
               return module.nanoid;
@@ -311,7 +324,7 @@ export class CDNModuleLoader {
             if (module.default && typeof module.default.nanoid === 'function') {
               return module.default.nanoid;
             }
-            
+
             // Return the whole module if we can't find the specific function
             return module;
           } catch (importError) {
@@ -325,7 +338,7 @@ export class CDNModuleLoader {
           return null;
         }
       },
-      
+
       // Strategy 3: Script tag injection (last resort)
       async () => {
         if (options.debug) {
@@ -334,7 +347,7 @@ export class CDNModuleLoader {
         try {
           // Create a unique global name
           const globalName = `__cdnModule_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-          
+
           // Wrap the code to capture exports
           const wrappedCode = `
             (function() {
@@ -344,23 +357,23 @@ export class CDNModuleLoader {
               window['${globalName}'] = module.exports || exports;
             })();
           `;
-          
+
           // Create and inject script
           const script = document.createElement('script');
           script.textContent = wrappedCode;
           document.head.appendChild(script);
-          
+
           // Get the module from global
           const moduleExports = (window as any)[globalName];
-          
+
           // Clean up
           document.head.removeChild(script);
           delete (window as any)[globalName];
-          
+
           if (options.debug) {
             console.log('  Module from global:', typeof moduleExports);
           }
-          
+
           // Extract the function
           if (typeof moduleExports === 'function') {
             return moduleExports;
@@ -371,7 +384,7 @@ export class CDNModuleLoader {
           if (moduleExports && typeof moduleExports.default === 'function') {
             return moduleExports.default;
           }
-          
+
           return moduleExports;
         } catch (e) {
           if (options.debug) {
@@ -379,9 +392,9 @@ export class CDNModuleLoader {
           }
           return null;
         }
-      }
+      },
     ];
-    
+
     // Try each strategy in order
     for (const strategy of strategies) {
       const result = await strategy();
@@ -392,7 +405,7 @@ export class CDNModuleLoader {
         return result;
       }
     }
-    
+
     return null;
   }
 

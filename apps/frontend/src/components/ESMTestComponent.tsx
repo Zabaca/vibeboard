@@ -11,8 +11,10 @@ export const ESMTestComponent: React.FC = () => {
   const [currentTest, setCurrentTest] = useState<string>('');
   const [testResults, setTestResults] = useState<string[]>([]);
   const [aiGeneratedCode, setAiGeneratedCode] = useState<string>('');
-  const [cdnUrl, setCdnUrl] = useState<string>('https://esm.sh/react-confetti@6.1.0?external=react');
-  
+  const [cdnUrl, setCdnUrl] = useState<string>(
+    'https://esm.sh/react-confetti@6.1.0?external=react',
+  );
+
   // ESM code for testing - using standard imports with import maps
   const esmTestCode = `
 import React, { useState } from 'react';
@@ -44,12 +46,9 @@ export default function TestComponent() {
   );
 }`;
 
-
   const addTestResult = (result: string) => {
-    setTestResults(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${result}`]);
+    setTestResults((prev) => [...prev, `[${new Date().toLocaleTimeString()}] ${result}`]);
   };
-
-
 
   const clearCache = () => {
     esmExecutor.clearCache();
@@ -171,48 +170,52 @@ const AIGeneratedCounter = () => {
 };
 
 export default AIGeneratedCounter;`;
-    
+
     addTestResult('🤖 Testing AI-generated ESM component with standard React imports');
-    addTestResult('📦 Processing JSX through ComponentPipeline (same as Generate Component flow)...');
-    
+    addTestResult(
+      '📦 Processing JSX through ComponentPipeline (same as Generate Component flow)...',
+    );
+
     try {
       // Import ComponentPipeline
       const { ComponentPipeline } = await import('../services/ComponentPipeline.ts');
       const pipeline = new ComponentPipeline();
-      
+
       // Process through the same pipeline as Generate Component
       const pipelineResult = await pipeline.processAIComponent(
         aiCode,
         'AI Generated Counter Component Test',
         0, // generationTime
-        { 
-          debug: true, 
+        {
+          debug: true,
           useCache: false, // Don't cache test components
-          validateOutput: true 
-        }
+          validateOutput: true,
+        },
       );
-      
+
       if (pipelineResult.success && pipelineResult.component) {
         addTestResult('✅ JSX transpilation successful!');
         addTestResult(`   Processing time: ${(pipelineResult.processingTime || 0).toFixed(2)}ms`);
         addTestResult(`   Original code: ${aiCode.length} chars`);
-        addTestResult(`   Transpiled code: ${pipelineResult.component.compiledCode?.length || 0} chars`);
-        
+        addTestResult(
+          `   Transpiled code: ${pipelineResult.component.compiledCode?.length || 0} chars`,
+        );
+
         // Set the transpiled code for display
         setAiGeneratedCode(pipelineResult.component.compiledCode || aiCode);
         setCurrentTest('ai-generated');
-        
+
         addTestResult('🎯 Component ready for execution via esmExecutor');
       } else {
         addTestResult(`❌ Pipeline processing failed: ${pipelineResult.error}`);
         if (pipelineResult.warnings?.length) {
-          pipelineResult.warnings.forEach(warning => 
-            addTestResult(`   ⚠️  Warning: ${warning}`)
-          );
+          pipelineResult.warnings.forEach((warning) => addTestResult(`   ⚠️  Warning: ${warning}`));
         }
       }
     } catch (error) {
-      addTestResult(`❌ ComponentPipeline error: ${error instanceof Error ? error.message : String(error)}`);
+      addTestResult(
+        `❌ ComponentPipeline error: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   };
 
@@ -222,8 +225,6 @@ export default AIGeneratedCounter;`;
     addTestResult('🎨 Testing React Icons component from esm.sh CDN...');
     addTestResult('  This loads real React icon components dynamically');
   };
-
-
 
   const testLucideIcons = () => {
     // Test Lucide React icons from NPM
@@ -266,12 +267,12 @@ export default AIGeneratedCounter;`;
       addTestResult('❌ Please enter a CDN URL to test');
       return;
     }
-    
+
     setCurrentTest(cdnUrl);
     addTestResult(`🚀 Testing direct CDN import: ${cdnUrl}`);
     addTestResult('  Using direct ES module import (no blob URLs)');
     addTestResult('  Import maps work normally for React resolution');
-    
+
     if (cdnUrl.includes('?external=react')) {
       addTestResult('  ✅ Using ?external=react for React 19 compatibility');
     } else {
@@ -287,41 +288,54 @@ export default AIGeneratedCounter;`;
     addTestResult('  Using optimized direct CDN import method');
   };
 
-
-
   return (
     <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
       <h1>ESM Component Testing</h1>
-      
+
       {/* Control Panel */}
-      <div style={{ 
-        marginBottom: '20px', 
-        padding: '15px', 
-        backgroundColor: '#f5f5f5',
-        borderRadius: '8px'
-      }}>
+      <div
+        style={{
+          marginBottom: '20px',
+          padding: '15px',
+          backgroundColor: '#f5f5f5',
+          borderRadius: '8px',
+        }}
+      >
         <h3>Test Controls</h3>
-        
+
         {/* Import Map Tests Section */}
         <div style={{ marginBottom: '15px' }}>
           <h4 style={{ margin: '10px 0', color: '#2E7D32' }}>🗺️ Import Map Tests</h4>
           <p style={{ fontSize: '12px', color: '#666', margin: '5px 0 10px 0' }}>
-            <strong>Flow:</strong> AsyncComponentLoader → Static File URLs → Import Map Resolution → React Component
+            <strong>Flow:</strong> AsyncComponentLoader → Static File URLs → Import Map Resolution →
+            React Component
           </p>
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-            <button onClick={testShimDirectly} style={{ ...buttonStyle, backgroundColor: '#00BCD4' }}>
+            <button
+              onClick={testShimDirectly}
+              style={{ ...buttonStyle, backgroundColor: '#00BCD4' }}
+            >
               Test Shim Module
             </button>
             <button onClick={testImportMaps} style={{ ...buttonStyle, backgroundColor: '#4CAF50' }}>
               Test Import Maps
             </button>
-            <button onClick={testStandardESM} style={{ ...buttonStyle, backgroundColor: '#8BC34A' }}>
+            <button
+              onClick={testStandardESM}
+              style={{ ...buttonStyle, backgroundColor: '#8BC34A' }}
+            >
               Standard ESM
             </button>
-            <button onClick={testHooksComponent} style={{ ...buttonStyle, backgroundColor: '#03A9F4' }}>
+            <button
+              onClick={testHooksComponent}
+              style={{ ...buttonStyle, backgroundColor: '#03A9F4' }}
+            >
               Hooks Test
             </button>
-            <button onClick={testNestedComponent} style={{ ...buttonStyle, backgroundColor: '#9C27B0' }}>
+            <button
+              onClick={testNestedComponent}
+              style={{ ...buttonStyle, backgroundColor: '#9C27B0' }}
+            >
               Nested Components
             </button>
             <button onClick={testNPMPackage} style={{ ...buttonStyle, backgroundColor: '#FF6B6B' }}>
@@ -332,15 +346,19 @@ export default AIGeneratedCounter;`;
             </button>
           </div>
         </div>
-        
+
         {/* AI-Generated ESM Section */}
         <div style={{ marginBottom: '15px' }}>
           <h4 style={{ margin: '10px 0', color: '#7B1FA2' }}>🤖 AI-Generated ESM Components</h4>
           <p style={{ fontSize: '12px', color: '#666', margin: '5px 0 10px 0' }}>
-            <strong>Flow:</strong> Raw JSX → ComponentPipeline → JSX Transpilation → esmExecutor → React Component
+            <strong>Flow:</strong> Raw JSX → ComponentPipeline → JSX Transpilation → esmExecutor →
+            React Component
           </p>
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-            <button onClick={testAIGeneratedESM} style={{ ...buttonStyle, backgroundColor: '#8E24AA' }}>
+            <button
+              onClick={testAIGeneratedESM}
+              style={{ ...buttonStyle, backgroundColor: '#8E24AA' }}
+            >
               Test AI ESM Component
             </button>
           </div>
@@ -350,9 +368,18 @@ export default AIGeneratedCounter;`;
         <div style={{ marginBottom: '15px' }}>
           <h4 style={{ margin: '10px 0', color: '#D32F2F' }}>🔗 Direct CDN URL Testing</h4>
           <p style={{ fontSize: '12px', color: '#666', margin: '5px 0 10px 0' }}>
-            <strong>Flow:</strong> Direct import() → CDN URL → No blob URLs → Native ES Module → React Component
+            <strong>Flow:</strong> Direct import() → CDN URL → No blob URLs → Native ES Module →
+            React Component
           </p>
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap' }}>
+          <div
+            style={{
+              display: 'flex',
+              gap: '10px',
+              alignItems: 'center',
+              marginBottom: '10px',
+              flexWrap: 'wrap',
+            }}
+          >
             <input
               type="text"
               value={cdnUrl}
@@ -368,31 +395,58 @@ export default AIGeneratedCounter;`;
                 fontFamily: 'monospace',
               }}
             />
-            <button onClick={testDirectCDNUrl} style={{ ...buttonStyle, backgroundColor: '#D32F2F', fontWeight: 'bold' }}>
+            <button
+              onClick={testDirectCDNUrl}
+              style={{ ...buttonStyle, backgroundColor: '#D32F2F', fontWeight: 'bold' }}
+            >
               🚀 Test CDN URL
             </button>
           </div>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            <button 
-              onClick={() => testPresetCDN('https://esm.sh/react-confetti@6.1.0?external=react', 'React Confetti', 'Celebration confetti animations')}
+            <button
+              onClick={() =>
+                testPresetCDN(
+                  'https://esm.sh/react-confetti@6.1.0?external=react',
+                  'React Confetti',
+                  'Celebration confetti animations',
+                )
+              }
               style={{ ...buttonStyle, backgroundColor: '#FF6B35', fontSize: '12px' }}
             >
               🎊 Confetti
             </button>
-            <button 
-              onClick={() => testPresetCDN('https://esm.sh/react-qr-code@2.0.12?external=react', 'QR Code', 'Generate QR codes from text')}
+            <button
+              onClick={() =>
+                testPresetCDN(
+                  'https://esm.sh/react-qr-code@2.0.12?external=react',
+                  'QR Code',
+                  'Generate QR codes from text',
+                )
+              }
               style={{ ...buttonStyle, backgroundColor: '#4ECDC4', fontSize: '12px' }}
             >
               📱 QR Code
             </button>
-            <button 
-              onClick={() => testPresetCDN('https://esm.sh/react-color@2.19.3/lib/Chrome?external=react', 'Color Picker', 'Chrome-style color picker')}
+            <button
+              onClick={() =>
+                testPresetCDN(
+                  'https://esm.sh/react-color@2.19.3/lib/Chrome?external=react',
+                  'Color Picker',
+                  'Chrome-style color picker',
+                )
+              }
               style={{ ...buttonStyle, backgroundColor: '#45B7D1', fontSize: '12px' }}
             >
               🎨 Color Picker
             </button>
-            <button 
-              onClick={() => testPresetCDN('https://esm.sh/react-markdown@9.0.1?external=react', 'Markdown', 'Render markdown to React')}
+            <button
+              onClick={() =>
+                testPresetCDN(
+                  'https://esm.sh/react-markdown@9.0.1?external=react',
+                  'Markdown',
+                  'Render markdown to React',
+                )
+              }
               style={{ ...buttonStyle, backgroundColor: '#96CEB4', fontSize: '12px' }}
             >
               📝 Markdown
@@ -402,24 +456,42 @@ export default AIGeneratedCounter;`;
 
         {/* React Component Libraries Section */}
         <div style={{ marginBottom: '15px' }}>
-          <h4 style={{ margin: '10px 0', color: '#1565C0' }}>⚛️ React Component Libraries from CDN</h4>
+          <h4 style={{ margin: '10px 0', color: '#1565C0' }}>
+            ⚛️ React Component Libraries from CDN
+          </h4>
           <p style={{ fontSize: '12px', color: '#666', margin: '5px 0 10px 0' }}>
-            <strong>Flow:</strong> AsyncComponentLoader → CDN URLs (esm.sh/jsdelivr) → Published NPM Packages → React Components
+            <strong>Flow:</strong> AsyncComponentLoader → CDN URLs (esm.sh/jsdelivr) → Published NPM
+            Packages → React Components
           </p>
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-            <button onClick={testReactIcons} style={{ ...buttonStyle, backgroundColor: '#2196F3', fontWeight: 'bold' }}>
+            <button
+              onClick={testReactIcons}
+              style={{ ...buttonStyle, backgroundColor: '#2196F3', fontWeight: 'bold' }}
+            >
               🎨 React Icons (NPM)
             </button>
-            <button onClick={testLucideIcons} style={{ ...buttonStyle, backgroundColor: '#10B981', fontWeight: 'bold' }}>
+            <button
+              onClick={testLucideIcons}
+              style={{ ...buttonStyle, backgroundColor: '#10B981', fontWeight: 'bold' }}
+            >
               🎨 Lucide Icons (NPM)
             </button>
-            <button onClick={testReactFeather} style={{ ...buttonStyle, backgroundColor: '#6366F1', fontWeight: 'bold' }}>
+            <button
+              onClick={testReactFeather}
+              style={{ ...buttonStyle, backgroundColor: '#6366F1', fontWeight: 'bold' }}
+            >
               🪶 React Feather (NPM)
             </button>
-            <button onClick={testLucideProduction} style={{ ...buttonStyle, backgroundColor: '#EC4899', fontWeight: 'bold' }}>
+            <button
+              onClick={testLucideProduction}
+              style={{ ...buttonStyle, backgroundColor: '#EC4899', fontWeight: 'bold' }}
+            >
               🚀 Lucide (Production Style)
             </button>
-            <button onClick={testConfettiButton} style={{ ...buttonStyle, backgroundColor: '#FFD700', fontWeight: 'bold' }}>
+            <button
+              onClick={testConfettiButton}
+              style={{ ...buttonStyle, backgroundColor: '#FFD700', fontWeight: 'bold' }}
+            >
               🎊 Confetti Button (NPM)
             </button>
           </div>
@@ -429,7 +501,8 @@ export default AIGeneratedCounter;`;
         <div>
           <h4 style={{ margin: '10px 0', color: '#FF6F00' }}>🗄️ Cache Management</h4>
           <p style={{ fontSize: '12px', color: '#666', margin: '5px 0 10px 0' }}>
-            <strong>Flow:</strong> esmExecutor Cache → Clear/Stats → Module URL Management → Performance Metrics
+            <strong>Flow:</strong> esmExecutor Cache → Clear/Stats → Module URL Management →
+            Performance Metrics
           </p>
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
             <button onClick={clearCache} style={{ ...buttonStyle, backgroundColor: '#ff9800' }}>
@@ -443,37 +516,43 @@ export default AIGeneratedCounter;`;
       </div>
 
       {/* Test Results */}
-      <div style={{ 
-        marginBottom: '20px', 
-        padding: '15px', 
-        backgroundColor: '#f9f9f9',
-        borderRadius: '8px',
-        maxHeight: '200px',
-        overflowY: 'auto'
-      }}>
+      <div
+        style={{
+          marginBottom: '20px',
+          padding: '15px',
+          backgroundColor: '#f9f9f9',
+          borderRadius: '8px',
+          maxHeight: '200px',
+          overflowY: 'auto',
+        }}
+      >
         <h3>Test Results</h3>
         {testResults.length === 0 ? (
           <p style={{ color: '#999' }}>No tests run yet</p>
         ) : (
           <div style={{ fontFamily: 'monospace', fontSize: '12px' }}>
             {testResults.map((result, i) => (
-              <div key={i} style={{ marginBottom: '5px' }}>{result}</div>
+              <div key={i} style={{ marginBottom: '5px' }}>
+                {result}
+              </div>
             ))}
           </div>
         )}
       </div>
 
       {/* Component Display Area */}
-      <div style={{ 
-        border: '2px dashed #ddd',
-        borderRadius: '8px',
-        padding: '20px',
-        minHeight: '300px',
-        backgroundColor: 'white'
-      }}>
+      <div
+        style={{
+          border: '2px dashed #ddd',
+          borderRadius: '8px',
+          padding: '20px',
+          minHeight: '300px',
+          backgroundColor: 'white',
+        }}
+      >
         <h3>Component Display</h3>
-        
-        {(currentTest.includes('/components/animated-button') || 
+
+        {(currentTest.includes('/components/animated-button') ||
           currentTest.includes('/components/simple-counter') ||
           currentTest.includes('/test-components/')) && (
           <AsyncComponentLoader
@@ -491,7 +570,7 @@ export default AIGeneratedCounter;`;
             }}
           />
         )}
-        
+
         {currentTest === 'code' && (
           <AsyncComponentLoader
             code={esmTestCode}
@@ -509,7 +588,7 @@ export default AIGeneratedCounter;`;
             }}
           />
         )}
-        
+
         {currentTest === 'dynamic' && (
           <AsyncComponentLoader
             code={esmTestCode}
@@ -518,7 +597,7 @@ export default AIGeneratedCounter;`;
             fallback={<div>Loading dynamic component...</div>}
           />
         )}
-        
+
         {currentTest === 'ai-generated' && aiGeneratedCode && (
           <AsyncComponentLoader
             code={aiGeneratedCode}
@@ -536,31 +615,34 @@ export default AIGeneratedCounter;`;
             }}
           />
         )}
-        
+
         {/* Direct CDN URL Tests */}
-        {currentTest && (currentTest.startsWith('https://esm.sh/') || 
-                           currentTest.startsWith('https://cdn.jsdelivr.net/') || 
-                           currentTest.startsWith('https://unpkg.com/')) && (
-          <AsyncComponentLoader
-            moduleUrl={currentTest}
-            debug={true}
-            cache={true}
-            onLoad={(result) => {
-              addTestResult(`✅ Direct CDN import successful!`);
-              addTestResult(`   URL: ${currentTest}`);
-              addTestResult(`   Load method: ${result.metadata?.loadTime === 0 ? 'Direct import (no blob)' : 'Fetch + blob method'}`);
-              if (result.metadata && result.metadata.loadTime > 0) {
-                addTestResult(`   Load time: ${result.metadata.loadTime.toFixed(2)}ms`);
-              }
-            }}
-            onError={(error) => {
-              addTestResult(`❌ Direct CDN import failed: ${error.message}`);
-              addTestResult(`   URL: ${currentTest}`);
-              addTestResult(`   Try checking the CDN URL or adding ?external=react flag`);
-            }}
-          />
-        )}
-        
+        {currentTest &&
+          (currentTest.startsWith('https://esm.sh/') ||
+            currentTest.startsWith('https://cdn.jsdelivr.net/') ||
+            currentTest.startsWith('https://unpkg.com/')) && (
+            <AsyncComponentLoader
+              moduleUrl={currentTest}
+              debug={true}
+              cache={true}
+              onLoad={(result) => {
+                addTestResult(`✅ Direct CDN import successful!`);
+                addTestResult(`   URL: ${currentTest}`);
+                addTestResult(
+                  `   Load method: ${result.metadata?.loadTime === 0 ? 'Direct import (no blob)' : 'Fetch + blob method'}`,
+                );
+                if (result.metadata && result.metadata.loadTime > 0) {
+                  addTestResult(`   Load time: ${result.metadata.loadTime.toFixed(2)}ms`);
+                }
+              }}
+              onError={(error) => {
+                addTestResult(`❌ Direct CDN import failed: ${error.message}`);
+                addTestResult(`   URL: ${currentTest}`);
+                addTestResult(`   Try checking the CDN URL or adding ?external=react flag`);
+              }}
+            />
+          )}
+
         {/* React Component Library Tests */}
         {currentTest === '/components/react-icons-demo.js' && (
           <AsyncComponentLoader
@@ -579,7 +661,7 @@ export default AIGeneratedCounter;`;
             }}
           />
         )}
-        
+
         {currentTest === '/components/lucide-icons-demo.js' && (
           <AsyncComponentLoader
             moduleUrl="/components/lucide-icons-demo.js"
@@ -598,7 +680,7 @@ export default AIGeneratedCounter;`;
             }}
           />
         )}
-        
+
         {currentTest === '/components/react-feather-demo.js' && (
           <AsyncComponentLoader
             moduleUrl="/components/react-feather-demo.js"
@@ -617,7 +699,7 @@ export default AIGeneratedCounter;`;
             }}
           />
         )}
-        
+
         {currentTest === '/components/lucide-icons-production.js' && (
           <AsyncComponentLoader
             moduleUrl="/components/lucide-icons-production.js"
@@ -629,7 +711,9 @@ export default AIGeneratedCounter;`;
               addTestResult(`   Icons immediately available`);
               addTestResult(`   This is how you'd use it in production`);
               if (result.metadata) {
-                addTestResult(`   Module parse time: ${result.metadata.loadTime?.toFixed(2) || 0}ms`);
+                addTestResult(
+                  `   Module parse time: ${result.metadata.loadTime?.toFixed(2) || 0}ms`,
+                );
               }
             }}
             onError={(error) => {
@@ -637,7 +721,7 @@ export default AIGeneratedCounter;`;
             }}
           />
         )}
-        
+
         {currentTest === '/components/confetti-button.js' && (
           <AsyncComponentLoader
             moduleUrl="/components/confetti-button.js"
@@ -656,7 +740,7 @@ export default AIGeneratedCounter;`;
             }}
           />
         )}
-        
+
         {!currentTest && (
           <p style={{ color: '#999', textAlign: 'center' }}>
             Click a test button to load a component
@@ -665,34 +749,67 @@ export default AIGeneratedCounter;`;
       </div>
 
       {/* Instructions */}
-      <div style={{ 
-        marginTop: '20px',
-        padding: '15px',
-        backgroundColor: '#e3f2fd',
-        borderRadius: '8px'
-      }}>
+      <div
+        style={{
+          marginTop: '20px',
+          padding: '15px',
+          backgroundColor: '#e3f2fd',
+          borderRadius: '8px',
+        }}
+      >
         <h3>Testing Instructions</h3>
         <h4>🔗 Direct CDN URL Testing (NEW!)</h4>
         <ol>
-          <li><strong>Custom URL Input:</strong> Enter any CDN URL to test direct ES module imports</li>
-          <li><strong>Preset Components:</strong> Quick test buttons for popular React components</li>
-          <li><strong>Direct Import Method:</strong> Uses native browser import() - no blob URLs!</li>
-          <li><strong>Import Maps Support:</strong> React resolution works normally (no shims needed)</li>
-          <li><strong>Performance:</strong> Faster loading, better compatibility, cleaner execution</li>
+          <li>
+            <strong>Custom URL Input:</strong> Enter any CDN URL to test direct ES module imports
+          </li>
+          <li>
+            <strong>Preset Components:</strong> Quick test buttons for popular React components
+          </li>
+          <li>
+            <strong>Direct Import Method:</strong> Uses native browser import() - no blob URLs!
+          </li>
+          <li>
+            <strong>Import Maps Support:</strong> React resolution works normally (no shims needed)
+          </li>
+          <li>
+            <strong>Performance:</strong> Faster loading, better compatibility, cleaner execution
+          </li>
         </ol>
         <h4>⚛️ React Component Libraries from NPM (via CDN)</h4>
         <ol>
-          <li><strong>React Icons:</strong> Dynamically loads multiple icon packs from react-icons NPM package</li>
-          <li><strong>Lucide Icons:</strong> Popular icon library (1000+ icons) loaded from NPM via esm.sh</li>
-          <li><strong>React Feather:</strong> Lightweight icon library (287 icons) with external React flag</li>
-          <li><strong>Lucide Production:</strong> Top-level import demonstration for production usage</li>
-          <li><strong>Confetti Button:</strong> Loads canvas-confetti NPM package for celebration effects</li>
+          <li>
+            <strong>React Icons:</strong> Dynamically loads multiple icon packs from react-icons NPM
+            package
+          </li>
+          <li>
+            <strong>Lucide Icons:</strong> Popular icon library (1000+ icons) loaded from NPM via
+            esm.sh
+          </li>
+          <li>
+            <strong>React Feather:</strong> Lightweight icon library (287 icons) with external React
+            flag
+          </li>
+          <li>
+            <strong>Lucide Production:</strong> Top-level import demonstration for production usage
+          </li>
+          <li>
+            <strong>Confetti Button:</strong> Loads canvas-confetti NPM package for celebration
+            effects
+          </li>
         </ol>
         <h4>🗺️ Import Map Tests</h4>
         <ol>
-          <li><strong>Check Support:</strong> Verify browser support for import maps and React availability</li>
-          <li><strong>Test Shim Module:</strong> Load a component that uses standard imports</li>
-          <li><strong>Standard ESM:</strong> Execute code with standard React imports</li>
+          <li>
+            <strong>Check Support:</strong> Verify browser support for import maps and React
+            availability
+          </li>
+          <li>
+            <strong>Test Shim Module:</strong> Load a component that uses standard imports
+          </li>
+          <li>
+            <strong>Standard ESM:</strong> Execute code with standard React imports
+          </li>
         </ol>
         <p style={{ marginTop: '10px', fontSize: '14px', color: '#666' }}>
           Open the browser console to see detailed debug output

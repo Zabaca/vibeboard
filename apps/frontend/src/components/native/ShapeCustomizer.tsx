@@ -48,8 +48,17 @@ const ShapeCustomizer: React.FC<ShapeCustomizerProps> = ({ state, onUpdateState,
       }}
       onClick={(e) => e.stopPropagation()}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-        <h4 style={{ margin: 0, fontSize: '14px', fontWeight: '600', color: '#111827' }}>Shape Settings</h4>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '12px',
+        }}
+      >
+        <h4 style={{ margin: 0, fontSize: '14px', fontWeight: '600', color: '#111827' }}>
+          Shape Settings
+        </h4>
         <button
           onClick={onClose}
           style={{
@@ -63,7 +72,14 @@ const ShapeCustomizer: React.FC<ShapeCustomizerProps> = ({ state, onUpdateState,
             justifyContent: 'center',
           }}
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
             <path d="M18 6L6 18" />
             <path d="M6 6l12 12" />
           </svg>
@@ -73,7 +89,9 @@ const ShapeCustomizer: React.FC<ShapeCustomizerProps> = ({ state, onUpdateState,
       {/* Shape Type */}
       {state.shapeType !== undefined && (
         <div style={{ marginBottom: '12px' }}>
-          <label style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', display: 'block' }}>
+          <label
+            style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', display: 'block' }}
+          >
             Shape Type
           </label>
           <div style={{ display: 'flex', gap: '4px' }}>
@@ -102,7 +120,9 @@ const ShapeCustomizer: React.FC<ShapeCustomizerProps> = ({ state, onUpdateState,
 
       {/* Fill Color */}
       <div style={{ marginBottom: '12px' }}>
-        <label style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', display: 'block' }}>
+        <label
+          style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', display: 'block' }}
+        >
           Fill Color
         </label>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px' }}>
@@ -146,7 +166,9 @@ const ShapeCustomizer: React.FC<ShapeCustomizerProps> = ({ state, onUpdateState,
 
       {/* Border Color */}
       <div style={{ marginBottom: '12px' }}>
-        <label style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', display: 'block' }}>
+        <label
+          style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', display: 'block' }}
+        >
           Border Color
         </label>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px' }}>
@@ -190,7 +212,9 @@ const ShapeCustomizer: React.FC<ShapeCustomizerProps> = ({ state, onUpdateState,
 
       {/* Border Width */}
       <div style={{ marginBottom: '12px' }}>
-        <label style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', display: 'block' }}>
+        <label
+          style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', display: 'block' }}
+        >
           Border Width
         </label>
         <input
@@ -202,7 +226,14 @@ const ShapeCustomizer: React.FC<ShapeCustomizerProps> = ({ state, onUpdateState,
           onChange={(e) => onUpdateState({ ...state, strokeWidth: parseInt(e.target.value) })}
           style={{ width: '100%' }}
         />
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#9ca3af' }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            fontSize: '10px',
+            color: '#9ca3af',
+          }}
+        >
           <span>0</span>
           <span>{state.strokeWidth || 2}px</span>
           <span>8</span>
@@ -213,7 +244,9 @@ const ShapeCustomizer: React.FC<ShapeCustomizerProps> = ({ state, onUpdateState,
       {state.text !== undefined && (
         <>
           <div style={{ marginBottom: '12px' }}>
-            <label style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', display: 'block' }}>
+            <label
+              style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', display: 'block' }}
+            >
               Font Size
             </label>
             <input
@@ -225,7 +258,14 @@ const ShapeCustomizer: React.FC<ShapeCustomizerProps> = ({ state, onUpdateState,
               onChange={(e) => onUpdateState({ ...state, fontSize: parseInt(e.target.value) })}
               style={{ width: '100%' }}
             />
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#9ca3af' }}>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                fontSize: '10px',
+                color: '#9ca3af',
+              }}
+            >
               <span>12</span>
               <span>{state.fontSize || 16}px</span>
               <span>48</span>
@@ -233,7 +273,9 @@ const ShapeCustomizer: React.FC<ShapeCustomizerProps> = ({ state, onUpdateState,
           </div>
 
           <div style={{ marginBottom: '12px' }}>
-            <label style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', display: 'block' }}>
+            <label
+              style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', display: 'block' }}
+            >
               Text Color
             </label>
             <input

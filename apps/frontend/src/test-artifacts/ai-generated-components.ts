@@ -664,13 +664,13 @@ export default Timer;`;
 // Metadata about AI generation for testing
 export const aiGenerationMetadata = {
   noteTakingApp: {
-    prompt: "Create a note taking app with categories",
+    prompt: 'Create a note taking app with categories',
     generationTime: 1515.18,
     tokens: {
       prompt: 279,
       completion: 3157,
-      total: 3436
+      total: 3436,
     },
-    model: "qwen-3-coder-480b"
-  }
+    model: 'qwen-3-coder-480b',
+  },
 };

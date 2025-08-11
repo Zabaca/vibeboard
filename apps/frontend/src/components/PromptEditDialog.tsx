@@ -74,35 +74,41 @@ const PromptEditDialog: React.FC<PromptEditDialogProps> = ({
         >
           {/* Header */}
           <div style={{ marginBottom: '20px' }}>
-            <h2 style={{
-              margin: '0 0 8px 0',
-              fontSize: '20px',
-              fontWeight: '600',
-              color: '#1f2937',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-            }}>
+            <h2
+              style={{
+                margin: '0 0 8px 0',
+                fontSize: '20px',
+                fontWeight: '600',
+                color: '#1f2937',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+              }}
+            >
               🔄 Regenerate Component
             </h2>
-            <p style={{
-              margin: 0,
-              fontSize: '14px',
-              color: '#6b7280',
-            }}>
+            <p
+              style={{
+                margin: 0,
+                fontSize: '14px',
+                color: '#6b7280',
+              }}
+            >
               Edit the prompt below to regenerate the component with new instructions
             </p>
           </div>
 
           {/* Prompt Editor */}
           <div style={{ marginBottom: '20px' }}>
-            <label style={{
-              display: 'block',
-              marginBottom: '8px',
-              fontSize: '13px',
-              fontWeight: '500',
-              color: '#374151',
-            }}>
+            <label
+              style={{
+                display: 'block',
+                marginBottom: '8px',
+                fontSize: '13px',
+                fontWeight: '500',
+                color: '#374151',
+              }}
+            >
               Component Prompt
             </label>
             <textarea
@@ -134,36 +140,42 @@ const PromptEditDialog: React.FC<PromptEditDialogProps> = ({
               }}
               placeholder="Describe the component you want to generate..."
             />
-            <div style={{
-              marginTop: '8px',
-              fontSize: '12px',
-              color: '#9ca3af',
-            }}>
+            <div
+              style={{
+                marginTop: '8px',
+                fontSize: '12px',
+                color: '#9ca3af',
+              }}
+            >
               💡 Tip: Press Ctrl+Enter (or Cmd+Enter) to regenerate
             </div>
           </div>
 
           {/* Example Prompts */}
           <details style={{ marginBottom: '20px' }}>
-            <summary style={{
-              cursor: 'pointer',
-              fontSize: '13px',
-              color: '#6366f1',
-              fontWeight: '500',
-              userSelect: 'none',
-              padding: '4px 0',
-            }}>
+            <summary
+              style={{
+                cursor: 'pointer',
+                fontSize: '13px',
+                color: '#6366f1',
+                fontWeight: '500',
+                userSelect: 'none',
+                padding: '4px 0',
+              }}
+            >
               Example improvements
             </summary>
-            <div style={{
-              marginTop: '8px',
-              padding: '12px',
-              backgroundColor: '#f9fafb',
-              borderRadius: '8px',
-              fontSize: '12px',
-              lineHeight: '1.6',
-              color: '#4b5563',
-            }}>
+            <div
+              style={{
+                marginTop: '8px',
+                padding: '12px',
+                backgroundColor: '#f9fafb',
+                borderRadius: '8px',
+                fontSize: '12px',
+                lineHeight: '1.6',
+                color: '#4b5563',
+              }}
+            >
               <div>• Add more interactive features</div>
               <div>• Change the color scheme to dark mode</div>
               <div>• Make it responsive for mobile</div>
@@ -174,11 +186,13 @@ const PromptEditDialog: React.FC<PromptEditDialogProps> = ({
           </details>
 
           {/* Actions */}
-          <div style={{
-            display: 'flex',
-            gap: '12px',
-            justifyContent: 'flex-end',
-          }}>
+          <div
+            style={{
+              display: 'flex',
+              gap: '12px',
+              justifyContent: 'flex-end',
+            }}
+          >
             <button
               onClick={onCancel}
               disabled={isGenerating}
@@ -235,16 +249,18 @@ const PromptEditDialog: React.FC<PromptEditDialogProps> = ({
             >
               {isGenerating ? (
                 <>
-                  <span style={{
-                    display: 'inline-block',
-                    animation: 'spin 1s linear infinite',
-                  }}>⏳</span>
+                  <span
+                    style={{
+                      display: 'inline-block',
+                      animation: 'spin 1s linear infinite',
+                    }}
+                  >
+                    ⏳
+                  </span>
                   Regenerating...
                 </>
               ) : (
-                <>
-                  🔄 Regenerate
-                </>
+                <>🔄 Regenerate</>
               )}
             </button>
           </div>

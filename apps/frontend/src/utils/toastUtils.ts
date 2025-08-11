@@ -32,7 +32,7 @@ function getToastContainer(): HTMLDivElement {
     pointer-events: none;
     max-width: 350px;
   `;
-  
+
   document.body.appendChild(toastContainer);
   return toastContainer;
 }
@@ -42,9 +42,12 @@ function getToastContainer(): HTMLDivElement {
  */
 function getToastIcon(type: ToastOptions['type']): string {
   switch (type) {
-    case 'success': return '✅';
-    case 'error': return '❌';
-    case 'warning': return '⚠️';
+    case 'success':
+      return '✅';
+    case 'error':
+      return '❌';
+    case 'warning':
+      return '⚠️';
     case 'info':
     default:
       return 'ℹ️';
@@ -72,10 +75,7 @@ function getToastColors(type: ToastOptions['type']): { bg: string; border: strin
  * Show a toast notification
  */
 export function showToast(message: string, options: ToastOptions = {}): void {
-  const {
-    type = 'info',
-    duration = 3000,
-  } = options;
+  const { type = 'info', duration = 3000 } = options;
 
   const container = getToastContainer();
   const toastId = `toast-${++toastCounter}`;
@@ -145,7 +145,7 @@ export function showToast(message: string, options: ToastOptions = {}): void {
       if (toast.parentNode) {
         toast.parentNode.removeChild(toast);
       }
-      
+
       // Remove container if empty
       if (container.children.length === 0) {
         container.remove();
@@ -193,11 +193,11 @@ export function showPasteSuccessToast(type: 'text' | 'image', format?: string): 
   const formatText = format ? ` (${format})` : '';
   const icon = type === 'image' ? '🖼️' : '📝';
   const typeText = type === 'image' ? 'Image' : 'Text';
-  
-  showToast(
-    `${icon} ${typeText} pasted successfully${formatText}`,
-    { type: 'success', duration: 3000 }
-  );
+
+  showToast(`${icon} ${typeText} pasted successfully${formatText}`, {
+    type: 'success',
+    duration: 3000,
+  });
 }
 
 /**
@@ -224,10 +224,7 @@ export function showPasteErrorToast(error: string): void {
     title = 'File too large';
   }
 
-  showToast(
-    `${icon} ${title}: ${error}`,
-    { type: 'error', duration }
-  );
+  showToast(`${icon} ${title}: ${error}`, { type: 'error', duration });
 }
 
 /**
@@ -236,7 +233,7 @@ export function showPasteErrorToast(error: string): void {
 export function showClipboardPermissionToast(): void {
   showToast(
     '🔒 To enable paste: Allow clipboard access in browser settings, then click the canvas and try again',
-    { type: 'warning', duration: 8000 }
+    { type: 'warning', duration: 8000 },
   );
 }
 
@@ -244,20 +241,20 @@ export function showClipboardPermissionToast(): void {
  * Show format help toast
  */
 export function showSupportedFormatsToast(): void {
-  showToast(
-    '📄 Supported formats: Text (any), Images (PNG, JPEG, WebP, GIF)',
-    { type: 'info', duration: 6000 }
-  );
+  showToast('📄 Supported formats: Text (any), Images (PNG, JPEG, WebP, GIF)', {
+    type: 'info',
+    duration: 6000,
+  });
 }
 
 /**
  * Show info toast for paste hints
  */
 export function showPasteHintToast(): void {
-  showToast(
-    '💡 Click on the canvas and press Ctrl+V to paste images or text',
-    { type: 'info', duration: 4000 }
-  );
+  showToast('💡 Click on the canvas and press Ctrl+V to paste images or text', {
+    type: 'info',
+    duration: 4000,
+  });
 }
 
 /**

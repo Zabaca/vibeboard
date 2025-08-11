@@ -13,7 +13,7 @@ export const codeEditDialogStyles = {
     zIndex: 1000,
     backdropFilter: 'blur(8px)',
   },
-  
+
   dialog: {
     backgroundColor: '#1a1a1a',
     borderRadius: '16px',
@@ -26,13 +26,13 @@ export const codeEditDialogStyles = {
     border: '1px solid rgba(255, 255, 255, 0.1)',
     overflow: 'hidden',
   },
-  
+
   header: {
     padding: '24px 32px',
     borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
     background: 'linear-gradient(to bottom, #2a2a2a, #1a1a1a)',
   },
-  
+
   title: {
     margin: 0,
     fontSize: '28px',
@@ -40,7 +40,7 @@ export const codeEditDialogStyles = {
     color: '#ffffff',
     letterSpacing: '-0.5px',
   },
-  
+
   content: {
     flex: 1,
     display: 'flex',
@@ -49,7 +49,7 @@ export const codeEditDialogStyles = {
     minHeight: 0,
     position: 'relative' as const,
   },
-  
+
   label: {
     fontSize: '14px',
     fontWeight: '500',
@@ -57,7 +57,7 @@ export const codeEditDialogStyles = {
     textTransform: 'uppercase' as const,
     letterSpacing: '0.5px',
   },
-  
+
   textarea: {
     flex: 1,
     width: '100%',
@@ -72,11 +72,11 @@ export const codeEditDialogStyles = {
     outline: 'none',
     transition: 'border-color 0.2s',
   },
-  
+
   textareaFocused: {
     borderColor: 'rgba(99, 102, 241, 0.5)',
   },
-  
+
   footer: {
     padding: '24px 32px',
     borderTop: '1px solid rgba(255, 255, 255, 0.1)',

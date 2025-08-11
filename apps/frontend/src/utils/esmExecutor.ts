@@ -42,10 +42,10 @@ export class ESMExecutor {
    */
   async executeModule(
     code: string,
-    options: ESMExecutionOptions = {}
+    options: ESMExecutionOptions = {},
   ): Promise<ESMExecutionResult> {
     const startTime = performance.now();
-    
+
     try {
       // Check if code is already an ESM module
       if (!this.isESMModule(code)) {
@@ -57,16 +57,16 @@ export class ESMExecutor {
 
       // Generate cache key
       const cacheKey = this.generateCacheKey(code);
-      
+
       // Check cache if enabled
       if (options.cache && this.moduleCache.has(cacheKey)) {
         const cached = this.moduleCache.get(cacheKey)!;
         cached.hits++;
-        
+
         if (options.debug) {
           console.log('✅ ESM module loaded from cache:', cacheKey);
         }
-        
+
         return {
           success: true,
           component: cached.component,
@@ -80,16 +80,16 @@ export class ESMExecutor {
 
       // Resolve imports in the code
       const resolvedCode = await this.resolveImports(code, options);
-      
+
       // Create blob URL for the module
       const moduleUrl = this.createModuleUrl(resolvedCode);
-      
+
       // Import the module with timeout
       const module = await this.importWithTimeout(moduleUrl, options.timeout);
-      
+
       // Extract component from module
       const component = this.extractComponent(module);
-      
+
       if (!component) {
         throw new Error('No valid React component found in module');
       }
@@ -100,7 +100,7 @@ export class ESMExecutor {
       }
 
       const loadTime = performance.now() - startTime;
-      
+
       if (options.debug) {
         console.log(`✅ ESM module loaded successfully in ${loadTime.toFixed(2)}ms`);
       }
@@ -117,11 +117,11 @@ export class ESMExecutor {
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      
+
       if (options.debug) {
         console.error('❌ ESM execution failed:', errorMessage);
       }
-      
+
       return {
         success: false,
         error: errorMessage,
@@ -139,43 +139,40 @@ export class ESMExecutor {
   private isESMModule(code: string): boolean {
     // Check for ESM syntax patterns
     const esmPatterns = [
-      /^import\s+/m,                          // import statements
-      /^export\s+default/m,                   // default export
-      /^export\s+{/m,                        // named exports
-      /^export\s+(const|let|var|function|class)/m,  // export declarations
+      /^import\s+/m, // import statements
+      /^export\s+default/m, // default export
+      /^export\s+{/m, // named exports
+      /^export\s+(const|let|var|function|class)/m, // export declarations
     ];
-    
-    return esmPatterns.some(pattern => pattern.test(code));
+
+    return esmPatterns.some((pattern) => pattern.test(code));
   }
 
   /**
    * Resolve imports in the code
    */
-  private async resolveImports(
-    code: string,
-    options: ESMExecutionOptions
-  ): Promise<string> {
+  private async resolveImports(code: string, options: ESMExecutionOptions): Promise<string> {
     let resolvedCode = code;
-    
+
     // Pattern to match import statements
     const importPattern = /import\s+(?:(.+?)\s+from\s+)?['"]([@\w\-\/\.]+)['"]/g;
     const matches = [...code.matchAll(importPattern)];
-    
+
     for (const match of matches) {
       const [fullMatch, importClause, moduleSpecifier] = match;
-      
+
       // Resolve the module URL
       const resolvedUrl = this.resolveModuleUrl(moduleSpecifier);
-      
+
       // Only replace if we actually resolved to a different URL
       // This allows import maps to handle React modules unchanged
       if (resolvedUrl !== moduleSpecifier) {
-        const newImport = importClause 
+        const newImport = importClause
           ? `import ${importClause} from '${resolvedUrl}'`
           : `import '${resolvedUrl}'`;
-        
+
         resolvedCode = resolvedCode.replace(fullMatch, newImport);
-        
+
         if (options.debug) {
           console.log(`📦 Resolved import: ${moduleSpecifier} → ${resolvedUrl}`);
         }
@@ -183,7 +180,7 @@ export class ESMExecutor {
         console.log(`📦 No resolution needed: ${moduleSpecifier}`);
       }
     }
-    
+
     return resolvedCode;
   }
 
@@ -192,17 +189,17 @@ export class ESMExecutor {
    */
   private resolveModuleUrl(specifier: string): string {
     // Handle different types of imports
-    
+
     // 1. Already a full URL
     if (specifier.startsWith('http://') || specifier.startsWith('https://')) {
       return specifier;
     }
-    
+
     // 2. Relative imports (keep as-is for blob URLs)
     if (specifier.startsWith('./') || specifier.startsWith('../')) {
       return specifier;
     }
-    
+
     // 3. Core React modules - import maps don't work in blob URLs, so resolve directly to shims
     // These shims export the singleton React instance from window.React
     // Use full URLs to ensure proper resolution from blob URL contexts
@@ -216,11 +213,11 @@ export class ESMExecutor {
     if (specifier === 'react/jsx-runtime') {
       return `${baseUrl}/shims/react-jsx-runtime.js`;
     }
-    
+
     // 4. Other node modules / bare imports - use ESM CDN
     // Note: We used to have explicit mappings here, but now our default logic
     // handles all packages consistently with ?external=react,react-dom
-    
+
     // Default: Use ESM.sh for all other packages
     // ESM.sh handles both scoped (@org/pkg) and regular packages (pkg or pkg/subpath)
     // Always use external=react,react-dom to prevent any potential React duplication
@@ -234,39 +231,36 @@ export class ESMExecutor {
   private createModuleUrl(code: string): string {
     const blob = new Blob([code], { type: 'application/javascript' });
     const url = URL.createObjectURL(blob);
-    
+
     // Track blob URLs for cleanup
     this.blobUrls.add(url);
-    
+
     return url;
   }
 
   /**
    * Import module with timeout
    */
-  private async importWithTimeout(
-    url: string,
-    timeout: number = 5000
-  ): Promise<any> {
+  private async importWithTimeout(url: string, timeout: number = 5000): Promise<any> {
     // Check if already importing this URL
     if (this.pendingImports.has(url)) {
       return this.pendingImports.get(url);
     }
-    
+
     const importPromise = import(/* @vite-ignore */ url);
-    
+
     // Store pending import
     this.pendingImports.set(url, importPromise);
-    
+
     try {
       // Race between import and timeout
       const module = await Promise.race([
         importPromise,
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Module import timeout')), timeout)
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Module import timeout')), timeout),
         ),
       ]);
-      
+
       return module;
     } finally {
       // Clean up pending import
@@ -282,21 +276,20 @@ export class ESMExecutor {
     if (module.default && typeof module.default === 'function') {
       return module.default;
     }
-    
+
     // Check for named export 'Component'
     if (module.Component && typeof module.Component === 'function') {
       return module.Component;
     }
-    
+
     // Check for any function export
     for (const key in module) {
-      if (typeof module[key] === 'function' && 
-          key !== '__esModule' && 
-          /^[A-Z]/.test(key)) { // React component naming convention
+      if (typeof module[key] === 'function' && key !== '__esModule' && /^[A-Z]/.test(key)) {
+        // React component naming convention
         return module[key];
       }
     }
-    
+
     return null;
   }
 
@@ -306,12 +299,12 @@ export class ESMExecutor {
   private extractDependencies(code: string): string[] {
     const importPattern = /import\s+.*?\s+from\s+['"]([@\w\-\/\.]+)['"]/g;
     const dependencies: string[] = [];
-    
+
     let match;
     while ((match = importPattern.exec(code)) !== null) {
       dependencies.push(match[1]);
     }
-    
+
     return [...new Set(dependencies)]; // Remove duplicates
   }
 
@@ -323,7 +316,7 @@ export class ESMExecutor {
     let hash = 0;
     for (let i = 0; i < code.length; i++) {
       const char = code.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash; // Convert to 32-bit integer
     }
     return `esm-${Math.abs(hash).toString(36)}`;
@@ -332,20 +325,16 @@ export class ESMExecutor {
   /**
    * Add module to cache
    */
-  private addToCache(
-    key: string,
-    url: string,
-    component: React.ComponentType
-  ): void {
+  private addToCache(key: string, url: string, component: React.ComponentType): void {
     const entry: ModuleCacheEntry = {
       url,
       component,
       timestamp: Date.now(),
       hits: 0,
     };
-    
+
     this.moduleCache.set(key, entry);
-    
+
     // Limit cache size
     if (this.moduleCache.size > 50) {
       this.pruneCache();
@@ -357,20 +346,20 @@ export class ESMExecutor {
    */
   private pruneCache(): void {
     const entries = Array.from(this.moduleCache.entries());
-    
+
     // Sort by least recently used
     entries.sort((a, b) => {
-      const scoreA = a[1].timestamp + (a[1].hits * 1000000);
-      const scoreB = b[1].timestamp + (b[1].hits * 1000000);
+      const scoreA = a[1].timestamp + a[1].hits * 1000000;
+      const scoreB = b[1].timestamp + b[1].hits * 1000000;
       return scoreA - scoreB;
     });
-    
+
     // Remove oldest 25%
     const toRemove = Math.floor(entries.length * 0.25);
     for (let i = 0; i < toRemove; i++) {
       const [key, entry] = entries[i];
       this.moduleCache.delete(key);
-      
+
       // Also revoke blob URL if it exists
       if (this.blobUrls.has(entry.url)) {
         URL.revokeObjectURL(entry.url);
@@ -387,7 +376,7 @@ export class ESMExecutor {
     for (const url of this.blobUrls) {
       URL.revokeObjectURL(url);
     }
-    
+
     this.blobUrls.clear();
     this.moduleCache.clear();
     this.pendingImports.clear();
@@ -401,13 +390,13 @@ export class ESMExecutor {
     if (this.isESMModule(legacyCode)) {
       return legacyCode;
     }
-    
+
     // Extract the component definition
     const componentMatch = legacyCode.match(/const\s+Component\s*=\s*([\s\S]+)/);
     if (!componentMatch) {
       throw new Error('Could not find Component definition in legacy code');
     }
-    
+
     // Build ESM module - using standard imports that will be resolved by import maps
     const esmCode = `
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
@@ -416,7 +405,7 @@ ${legacyCode}
 
 export default Component;
 `;
-    
+
     return esmCode.trim();
   }
 
@@ -432,7 +421,7 @@ export default Component;
     for (const entry of this.moduleCache.values()) {
       totalHits += entry.hits;
     }
-    
+
     return {
       size: this.moduleCache.size,
       hits: totalHits,

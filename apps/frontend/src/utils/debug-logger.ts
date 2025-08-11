@@ -275,23 +275,38 @@ class DebugLogger {
    */
   private interceptConsole() {
     console.log = (...args) => {
-      this.addLog('log', args.map((a) => (typeof a === 'object' ? JSON.stringify(a) : a)).join(' '));
+      this.addLog(
+        'log',
+        args.map((a) => (typeof a === 'object' ? JSON.stringify(a) : a)).join(' '),
+      );
     };
 
     console.error = (...args) => {
-      this.addLog('error', args.map((a) => (typeof a === 'object' ? JSON.stringify(a) : a)).join(' '));
+      this.addLog(
+        'error',
+        args.map((a) => (typeof a === 'object' ? JSON.stringify(a) : a)).join(' '),
+      );
     };
 
     console.warn = (...args) => {
-      this.addLog('warn', args.map((a) => (typeof a === 'object' ? JSON.stringify(a) : a)).join(' '));
+      this.addLog(
+        'warn',
+        args.map((a) => (typeof a === 'object' ? JSON.stringify(a) : a)).join(' '),
+      );
     };
 
     console.info = (...args) => {
-      this.addLog('info', args.map((a) => (typeof a === 'object' ? JSON.stringify(a) : a)).join(' '));
+      this.addLog(
+        'info',
+        args.map((a) => (typeof a === 'object' ? JSON.stringify(a) : a)).join(' '),
+      );
     };
 
     console.debug = (...args) => {
-      this.addLog('debug', args.map((a) => (typeof a === 'object' ? JSON.stringify(a) : a)).join(' '));
+      this.addLog(
+        'debug',
+        args.map((a) => (typeof a === 'object' ? JSON.stringify(a) : a)).join(' '),
+      );
     };
   }
 

@@ -60,8 +60,17 @@ const TextCustomizer: React.FC<TextCustomizerProps> = ({ state, onUpdateState, o
       }}
       onClick={(e) => e.stopPropagation()}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-        <h4 style={{ margin: 0, fontSize: '14px', fontWeight: '600', color: '#111827' }}>Text Formatting</h4>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '12px',
+        }}
+      >
+        <h4 style={{ margin: 0, fontSize: '14px', fontWeight: '600', color: '#111827' }}>
+          Text Formatting
+        </h4>
         <button
           onClick={onClose}
           style={{
@@ -75,7 +84,14 @@ const TextCustomizer: React.FC<TextCustomizerProps> = ({ state, onUpdateState, o
             justifyContent: 'center',
           }}
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
             <path d="M18 6L6 18" />
             <path d="M6 6l12 12" />
           </svg>
@@ -84,7 +100,9 @@ const TextCustomizer: React.FC<TextCustomizerProps> = ({ state, onUpdateState, o
 
       {/* Font Size */}
       <div style={{ marginBottom: '16px' }}>
-        <label style={{ fontSize: '12px', color: '#6b7280', marginBottom: '6px', display: 'block' }}>
+        <label
+          style={{ fontSize: '12px', color: '#6b7280', marginBottom: '6px', display: 'block' }}
+        >
           Font Size
         </label>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -97,15 +115,17 @@ const TextCustomizer: React.FC<TextCustomizerProps> = ({ state, onUpdateState, o
             onChange={(e) => onUpdateState({ ...state, fontSize: parseInt(e.target.value) })}
             style={{ flex: 1 }}
           />
-          <div style={{
-            minWidth: '45px',
-            padding: '4px 8px',
-            background: '#f3f4f6',
-            borderRadius: '4px',
-            fontSize: '12px',
-            textAlign: 'center',
-            fontWeight: '500',
-          }}>
+          <div
+            style={{
+              minWidth: '45px',
+              padding: '4px 8px',
+              background: '#f3f4f6',
+              borderRadius: '4px',
+              fontSize: '12px',
+              textAlign: 'center',
+              fontWeight: '500',
+            }}
+          >
             {state.fontSize || 16}px
           </div>
         </div>
@@ -113,7 +133,9 @@ const TextCustomizer: React.FC<TextCustomizerProps> = ({ state, onUpdateState, o
 
       {/* Font Family */}
       <div style={{ marginBottom: '16px' }}>
-        <label style={{ fontSize: '12px', color: '#6b7280', marginBottom: '6px', display: 'block' }}>
+        <label
+          style={{ fontSize: '12px', color: '#6b7280', marginBottom: '6px', display: 'block' }}
+        >
           Font Family
         </label>
         <select
@@ -139,7 +161,9 @@ const TextCustomizer: React.FC<TextCustomizerProps> = ({ state, onUpdateState, o
 
       {/* Font Weight */}
       <div style={{ marginBottom: '16px' }}>
-        <label style={{ fontSize: '12px', color: '#6b7280', marginBottom: '6px', display: 'block' }}>
+        <label
+          style={{ fontSize: '12px', color: '#6b7280', marginBottom: '6px', display: 'block' }}
+        >
           Font Weight
         </label>
         <div style={{ display: 'flex', gap: '4px' }}>
@@ -167,14 +191,18 @@ const TextCustomizer: React.FC<TextCustomizerProps> = ({ state, onUpdateState, o
 
       {/* Text Alignment */}
       <div style={{ marginBottom: '16px' }}>
-        <label style={{ fontSize: '12px', color: '#6b7280', marginBottom: '6px', display: 'block' }}>
+        <label
+          style={{ fontSize: '12px', color: '#6b7280', marginBottom: '6px', display: 'block' }}
+        >
           Text Alignment
         </label>
         <div style={{ display: 'flex', gap: '4px' }}>
           {textAlignments.map((align) => (
             <button
               key={align.value}
-              onClick={() => onUpdateState({ ...state, textAlign: align.value as 'left' | 'center' | 'right' })}
+              onClick={() =>
+                onUpdateState({ ...state, textAlign: align.value as 'left' | 'center' | 'right' })
+              }
               style={{
                 flex: 1,
                 padding: '8px',
@@ -189,7 +217,14 @@ const TextCustomizer: React.FC<TextCustomizerProps> = ({ state, onUpdateState, o
               }}
               title={align.name}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
                 <path d={align.icon} />
               </svg>
             </button>
@@ -199,10 +234,19 @@ const TextCustomizer: React.FC<TextCustomizerProps> = ({ state, onUpdateState, o
 
       {/* Text Color */}
       <div style={{ marginBottom: '8px' }}>
-        <label style={{ fontSize: '12px', color: '#6b7280', marginBottom: '6px', display: 'block' }}>
+        <label
+          style={{ fontSize: '12px', color: '#6b7280', marginBottom: '6px', display: 'block' }}
+        >
           Text Color
         </label>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px', marginBottom: '8px' }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(4, 1fr)',
+            gap: '4px',
+            marginBottom: '8px',
+          }}
+        >
           {textColors.map((color) => (
             <button
               key={color.value}

@@ -50,23 +50,6 @@ const NativeComponentsToolbar: React.FC<NativeComponentsToolbarProps> = ({
       ),
     },
     {
-      type: 'shape-square',
-      label: 'Square',
-      shortcut: 'Q',
-      icon: (
-        <svg
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-        >
-          <rect x="4" y="4" width="16" height="16" rx="2" />
-        </svg>
-      ),
-    },
-    {
       type: 'shape-triangle',
       label: 'Triangle',
       shortcut: 'G',
@@ -168,6 +151,7 @@ const NativeComponentsToolbar: React.FC<NativeComponentsToolbarProps> = ({
         {/* All tools as direct buttons */}
         {allButtons.map((button) => (
           <button
+            type="button"
             key={button.type}
             onClick={() => handleButtonClick(button)}
             disabled={isCreating}

@@ -27,23 +27,12 @@ interface TextNodeProps extends NodeProps {
 const TextNode = ({ id, data, selected = false }: TextNodeProps) => {
   const { state, presentationMode, onDelete, onUpdateState } = data;
   const [isEditing, setIsEditing] = useState(false);
-  const [tempText, setTempText] = useState(state.text || 'Text');
   const [showCustomizer, setShowCustomizer] = useState(false);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-
-  // Auto-focus and select text when editing starts
-  useEffect(() => {
-    if (isEditing && textAreaRef.current) {
-      textAreaRef.current.focus();
-      textAreaRef.current.select();
-      // Auto-resize textarea to fit content
-      adjustTextAreaHeight();
-    }
-  }, [
-    isEditing, // Auto-resize textarea to fit content
-    adjustTextAreaHeight,
-  ]);
+  
+  const [tempText, setTempText] = useState(state.text || 'Text');
+  
 
   // Adjust textarea height based on content
   const adjustTextAreaHeight = () => {
@@ -52,6 +41,24 @@ const TextNode = ({ id, data, selected = false }: TextNodeProps) => {
       textAreaRef.current.style.height = `${textAreaRef.current.scrollHeight}px`;
     }
   };
+
+  // Note: We don't sync tempText with state.text like in some other components
+  // because it interferes with typing. StickyNote doesn't have this sync either.
+
+  // Auto-focus and select text when editing starts (only once)
+  const hasInitializedEditingRef = useRef(false);
+  useEffect(() => {
+    if (isEditing && textAreaRef.current && !hasInitializedEditingRef.current) {
+      textAreaRef.current.focus();
+      textAreaRef.current.select();
+      hasInitializedEditingRef.current = true;
+      // Auto-resize textarea to fit content
+      adjustTextAreaHeight();
+    } else if (!isEditing) {
+      // Reset the flag when editing ends
+      hasInitializedEditingRef.current = false;
+    }
+  }, [isEditing]);
 
   const handleTextSubmit = () => {
     setIsEditing(false);
@@ -70,7 +77,8 @@ const TextNode = ({ id, data, selected = false }: TextNodeProps) => {
   };
 
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setTempText(e.target.value);
+    const newValue = e.target.value;
+    setTempText(newValue);
     adjustTextAreaHeight();
   };
 
@@ -203,6 +211,7 @@ const TextNode = ({ id, data, selected = false }: TextNodeProps) => {
         >
           {/* Text formatting button */}
           <button
+            type="button"
             onClick={() => setShowCustomizer(!showCustomizer)}
             style={{
               background: showCustomizer ? '#eef2ff' : 'transparent',
@@ -235,6 +244,7 @@ const TextNode = ({ id, data, selected = false }: TextNodeProps) => {
 
           {/* Lock button */}
           <button
+            type="button"
             onClick={() => onUpdateState?.(id, { ...state, locked: true })}
             style={{
               background: 'transparent',
@@ -267,6 +277,7 @@ const TextNode = ({ id, data, selected = false }: TextNodeProps) => {
           {/* Delete button */}
           {onDelete && (
             <button
+              type="button"
               onClick={() => onDelete(id)}
               style={{
                 background: 'transparent',

@@ -66,13 +66,14 @@ const ShapeNode = ({ id, data, selected = false }: ShapeNodeProps) => {
       case 'rectangle':
         return (
           <rect
-            x="0"
-            y="0"
-            width="100%"
-            height="100%"
+            x="2"
+            y="2"
+            width="96"
+            height="96"
             fill={fillColor}
             stroke={strokeColor}
             strokeWidth={strokeWidth}
+            vectorEffect="non-scaling-stroke"
             rx="8"
             ry="8"
           />
@@ -81,13 +82,14 @@ const ShapeNode = ({ id, data, selected = false }: ShapeNodeProps) => {
       case 'square':
         return (
           <rect
-            x="0"
-            y="0"
-            width="100%"
-            height="100%"
+            x="2"
+            y="2"
+            width="96"
+            height="96"
             fill={fillColor}
             stroke={strokeColor}
             strokeWidth={strokeWidth}
+            vectorEffect="non-scaling-stroke"
             rx="8"
             ry="8"
           />
@@ -96,11 +98,11 @@ const ShapeNode = ({ id, data, selected = false }: ShapeNodeProps) => {
       case 'triangle':
         return (
           <polygon
-            points="50,10 90,90 10,90"
+            points="50,5 95,85 5,85"
             fill={fillColor}
             stroke={strokeColor}
             strokeWidth={strokeWidth}
-            transform="scale(1.8) translate(-22, -22)"
+            vectorEffect="non-scaling-stroke"
           />
         );
 
@@ -145,6 +147,8 @@ const ShapeNode = ({ id, data, selected = false }: ShapeNodeProps) => {
       <svg
         width="100%"
         height="100%"
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
         style={{
           position: 'absolute',
           top: 0,
@@ -233,6 +237,7 @@ const ShapeNode = ({ id, data, selected = false }: ShapeNodeProps) => {
         >
           {/* Customize button */}
           <button
+            type="button"
             onClick={() => setShowCustomizer(!showCustomizer)}
             style={{
               background: showCustomizer ? '#eef2ff' : 'transparent',
@@ -264,6 +269,7 @@ const ShapeNode = ({ id, data, selected = false }: ShapeNodeProps) => {
 
           {/* Lock button */}
           <button
+            type="button"
             onClick={() => onUpdateState?.(id, { ...state, locked: true })}
             style={{
               background: 'transparent',
@@ -296,6 +302,7 @@ const ShapeNode = ({ id, data, selected = false }: ShapeNodeProps) => {
           {/* Delete button */}
           {onDelete && (
             <button
+              type="button"
               onClick={() => onDelete(id)}
               style={{
                 background: 'transparent',

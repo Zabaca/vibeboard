@@ -1,17 +1,20 @@
 import {
   addEdge,
+  applyEdgeChanges,
+  applyNodeChanges,
   Background,
   type Connection,
   Controls,
   type Edge,
+  type EdgeChanges,
   MiniMap,
   type Node,
+  type NodeChanges,
   type NodeProps,
   Panel,
   ReactFlow,
   type ReactFlowInstance,
-  useEdgesState,
-  useNodesState,
+  useReactFlow,
 } from '@xyflow/react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import '@xyflow/react/dist/style.css';
@@ -57,8 +60,24 @@ const nodeTypes = {
 };
 
 const ReactFlowCanvas: React.FC = () => {
-  const [nodes, setNodes, onNodesChange] = useNodesState<Node<ComponentNodeData>>([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+  const [nodes, setNodes] = useState<Node<ComponentNodeData>[]>([]);
+  const [edges, setEdges] = useState<Edge[]>([]);
+  
+  // Simplified onNodesChange handler - let React Flow handle everything normally
+  const onNodesChange = useCallback((changes: NodeChanges) => {
+    // console.log('🔧 [DEBUG] onNodesChange:', changes.length, 'changes');
+    setNodes((nds) => applyNodeChanges(changes, nds));
+  }, []);
+
+  // Custom onEdgesChange handler using applyEdgeChanges for consistency
+  const onEdgesChange = useCallback((changes: EdgeChanges) => {
+    setEdges((eds) => applyEdgeChanges(changes, eds));
+  }, []);
+
+  // onConnect handler for edge creation
+  const onConnect = useCallback((params: Connection) => {
+    setEdges((eds) => addEdge(params, eds));
+  }, []);
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [showGenerationDialog, setShowGenerationDialog] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
@@ -120,6 +139,9 @@ const ReactFlowCanvas: React.FC = () => {
 
   // Initialize the component pipeline for processing components
   const [componentPipeline] = useState(() => new ComponentPipeline());
+  
+  // Track if we've loaded from storage to prevent race conditions
+  const [hasLoadedFromStorage, setHasLoadedFromStorage] = useState(false);
 
   // Helper function to check if paste should be ignored (input focused)
   const shouldIgnorePaste = useCallback((target: EventTarget | null): boolean => {
@@ -446,39 +468,48 @@ const ReactFlowCanvas: React.FC = () => {
         defaultState.shapeType = subType as 'rectangle' | 'triangle' | 'square';
       }
 
-      // Create native component node data
-      const nativeNodeData: NativeComponentNode = {
+      // Create native component node data compatible with ComponentNodeData
+      const nativeNodeData: ComponentNodeData = {
         id: nodeId,
-        componentType: 'native',
+        name: `${type.charAt(0).toUpperCase() + type.slice(1)} component`,
+        description: `${type.charAt(0).toUpperCase() + type.slice(1)} component`,
+        originalCode: '', // Native components don't have code
+        source: 'native' as const,
+        
+        // Native component specific fields
+        componentType: 'native' as const,
         nativeType: type,
         state: defaultState,
-        source: 'native',
-        originalCode: '',
-        compiledCode: undefined,
-        description: `${type.charAt(0).toUpperCase() + type.slice(1)} component`,
+        
+        // UI handlers
+        presentationMode,
+        onDelete: handleDeleteComponent,
+        onUpdateState: handleNativeComponentStateUpdate,
       };
 
-      // Create the node with handler functions
-      const newNode: Node = {
+      // Create the React Flow node with our custom type
+      const newNode: Node<ComponentNodeData> = {
         id: nodeId,
-        type,
+        type: 'aiComponent', // Use our ComponentNode for consistent appearance
         position: viewportCenter,
-        width: type === 'sticky' ? 200 : 150,
-        height: type === 'sticky' ? 200 : 150,
+        data: nativeNodeData,
+        draggable: true,
+        selectable: true,
+        deletable: true,
+        // Set initial dimensions for native components
+        width: type === 'sticky' ? 200 : 180,
+        height: type === 'sticky' ? 160 : 120,
         style: {
-          width: type === 'sticky' ? 200 : 150,
-          height: type === 'sticky' ? 200 : 150,
+          width: type === 'sticky' ? '200px' : '180px',
+          height: type === 'sticky' ? '160px' : '120px',
         },
-        data: {
-          ...nativeNodeData,
-          presentationMode,
-          onDelete: handleDeleteComponent,
-          onUpdateState: handleNativeComponentStateUpdate,
-        },
+        // Add these properties that React Flow expects for drag initialization
+        selected: false,
       };
 
-      setNodes((nds) => [...nds, newNode as Node<ComponentNodeData>]);
-      posthogService.trackComponentInteraction('edit', nodeId);
+      console.log('🔧 [DEBUG] Adding native component:', nodeId, 'selected:', newNode.selected);
+      setNodes((nds) => [...nds, newNode]);
+      posthogService.trackComponentInteraction('create', nodeId);
     },
     [
       setNodes,
@@ -623,6 +654,10 @@ const ReactFlowCanvas: React.FC = () => {
         },
         width: 400,
         height: 400,
+        draggable: true,
+        selectable: true,
+        deletable: true,
+        selected: false, // Explicitly set selected to false to prevent undefined issues
         style: {
           width: 400,
           height: 400,
@@ -1135,6 +1170,9 @@ const ReactFlowCanvas: React.FC = () => {
 
   // Load saved nodes from storage on mount
   useEffect(() => {
+    // Only load once to prevent race conditions with node creation
+    if (hasLoadedFromStorage) return;
+    
     const loadStoredData = async () => {
       try {
         const [savedNodes, savedEdges] = await Promise.all([
@@ -1158,9 +1196,10 @@ const ReactFlowCanvas: React.FC = () => {
               ...node.data,
               presentationMode,
               onDelete: handleDeleteComponent,
-              // Add native component specific callbacks
-              ...(node.type && ['shape', 'text', 'sticky'].includes(node.type)
+              // Add component specific callbacks based on componentType in data
+              ...(node.data?.componentType === 'native'
                 ? {
+                    // Native component specific callbacks
                     onUpdateState: handleNativeComponentStateUpdate,
                   }
                 : {
@@ -1178,8 +1217,13 @@ const ReactFlowCanvas: React.FC = () => {
         if (savedEdges.length > 0) {
           setEdges(savedEdges);
         }
+        
+        // Mark as loaded to prevent future loads
+        setHasLoadedFromStorage(true);
       } catch (error) {
         console.error('Failed to load saved data:', error);
+        // Still mark as loaded even if there was an error
+        setHasLoadedFromStorage(true);
       }
     };
 
@@ -1191,6 +1235,7 @@ const ReactFlowCanvas: React.FC = () => {
     // Warm up cache with library components in background
     componentPipeline.warmCacheWithLibraryComponents();
   }, [
+    hasLoadedFromStorage,
     setNodes,
     setEdges,
     handleDeleteComponent,
@@ -1240,13 +1285,6 @@ const ReactFlowCanvas: React.FC = () => {
     });
   }, [edges]);
 
-  const onConnect = useCallback(
-    (params: Connection) => {
-      setEdges((eds) => addEdge(params, eds));
-    },
-    [setEdges],
-  );
-
   const handleGenerateClick = useCallback(() => {
     setShowGenerationDialog(true);
   }, []);
@@ -1281,6 +1319,9 @@ const ReactFlowCanvas: React.FC = () => {
         },
         width: 400,
         height: 400,
+        draggable: true,
+        selectable: true,
+        deletable: true,
         // Add style for proper sizing - this fixes draggability
         style: {
           width: 400,
@@ -1367,6 +1408,10 @@ const ReactFlowCanvas: React.FC = () => {
         },
         width: 400,
         height: 400,
+        draggable: true,
+        selectable: true,
+        deletable: true,
+        selected: false, // Explicitly set selected to false to prevent undefined issues
         style: {
           width: 400,
           height: 400,
@@ -1432,6 +1477,9 @@ const ReactFlowCanvas: React.FC = () => {
           position: viewportCenter,
           width: 400,
           height: 400,
+          draggable: true,
+          selectable: true,
+          deletable: true,
           // Good default size, but user can resize freely
           style: {
             width: 400,
@@ -1451,8 +1499,13 @@ const ReactFlowCanvas: React.FC = () => {
           },
         };
 
-        console.log('🆕 Adding new generated component to canvas:', newNode.id);
-        setNodes((nds) => [...nds, newNode]);
+        console.log('🔧 [DEBUG] Adding AI generated component node:', { nodeId: newNode.id, newNode });
+        setNodes((nds) => {
+          console.log('🔧 [DEBUG] Current nodes before AI add:', nds.length, nds.map(n => n.id));
+          const newNodes = [...nds, newNode];
+          console.log('🔧 [DEBUG] New nodes after AI add:', newNodes.length, newNodes.map(n => n.id));
+          return newNodes;
+        });
 
         // Track successful generation
         const generationTime = performance.now() - startTime;
@@ -1519,6 +1572,9 @@ const ReactFlowCanvas: React.FC = () => {
           position: viewportCenter,
           width: 400,
           height: 400,
+          draggable: true,
+          selectable: true,
+          deletable: true,
           style: {
             width: 400,
             height: 400,
@@ -1589,10 +1645,24 @@ const ReactFlowCanvas: React.FC = () => {
         onConnect={onConnect}
         nodeTypes={nodeTypes}
         onNodeContextMenu={handleNodeContextMenu}
-        fitView
+        fitView={false}
         defaultViewport={{ x: 0, y: 0, zoom: 1 }}
+        panOnDrag={false}  // Disable pane dragging to avoid conflicts
+        nodesDraggable={true}  // Explicitly enable node dragging
+        nodesConnectable={true} // Enable node connections
+        elementsSelectable={true} // Enable selection
         onInit={(instance) => {
+          console.log('🔧 [DEBUG] ReactFlow initialized:', instance);
           reactFlowInstance.current = instance;
+        }}
+        onNodeClick={(event, node) => {
+          console.log('🔧 [DEBUG] Node clicked:', { nodeId: node.id, node });
+        }}
+        onNodeDrag={(event, node) => {
+          console.log('🔧 [DEBUG] Node being dragged:', node.id);
+        }}
+        onNodeDragStop={(event, node) => {
+          console.log('🔧 [DEBUG] Node drag stopped:', node.id);
         }}
       >
         <Background color="#aaa" gap={16} />
@@ -2183,6 +2253,38 @@ const ReactFlowCanvas: React.FC = () => {
         onCreateComponent={handleCreateNativeComponent}
         isCreating={isGenerating}
       />
+
+      {/* TEST BUTTON: Add a default React Flow node to test dragging */}
+      <div style={{ position: 'fixed', top: '20px', right: '20px', zIndex: 10 }}>
+        <button
+          onClick={() => {
+            const testNodeId = `test-${Date.now()}`;
+            const testNode: Node = {
+              id: testNodeId,
+              type: 'default', // Use React Flow's built-in default node
+              position: { x: 300, y: 300 },
+              data: { label: 'Test Draggable Node' },
+              draggable: true,
+              selectable: true,
+              deletable: true,
+            };
+            console.log('🧪 Creating test default node:', testNode);
+            setNodes((nds) => [...nds, testNode]);
+          }}
+          style={{
+            background: '#ef4444',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            padding: '8px 16px',
+            cursor: 'pointer',
+            fontSize: '12px',
+            fontWeight: '600',
+          }}
+        >
+          TEST: Add Default Node
+        </button>
+      </div>
 
       {showGenerationDialog && (
         <GenerationDialog

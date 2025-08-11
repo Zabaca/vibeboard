@@ -1,5 +1,5 @@
+import React, { useCallback, useMemo, useRef } from 'react';
 import { Handle, type NodeProps, NodeResizer, Position } from '@xyflow/react';
-import { useCallback, useMemo, useRef } from 'react';
 import type { UnifiedComponentNode } from '../types/component.types.ts';
 import {
   captureAndCopyToClipboard,
@@ -8,12 +8,20 @@ import {
 } from '../utils/screenshotUtils.ts';
 import { AsyncComponentLoader } from './AsyncComponentLoader.tsx';
 import GeneratedApp from './GeneratedApp.tsx';
+import ShapeNode from './native/ShapeNode.tsx';
+import TextNode from './native/TextNode.tsx';
+import StickyNote from './native/StickyNote.tsx';
 
 interface ComponentNodeData extends UnifiedComponentNode {
   // Legacy fields for backward compatibility
   code?: string; // Will be mapped to originalCode
   prompt?: string; // Will be mapped to metadata.prompt
   generationTime?: number; // Will be mapped to metadata.generationTime
+
+  // Native component fields (for compatibility with native components)
+  componentType?: 'native' | 'ai';
+  nativeType?: import('../types/native-component.types.ts').NativeComponentType;
+  state?: import('../types/native-component.types.ts').ComponentState;
 
   // UI-specific fields
   presentationMode?: boolean;
@@ -22,6 +30,7 @@ interface ComponentNodeData extends UnifiedComponentNode {
   onDuplicate?: (nodeData: ComponentNodeData) => void;
   onCompilationComplete?: (nodeId: string, compiledCode: string, hash: string) => void;
   onCaptureScreenshot?: (nodeId: string, screenshotResult: ScreenshotResult) => void;
+  onUpdateState?: (nodeId: string, newState: import('../types/native-component.types.ts').ComponentState) => void;
 
   // Index signature for React Flow compatibility
   [key: string]: unknown;
@@ -29,12 +38,69 @@ interface ComponentNodeData extends UnifiedComponentNode {
 
 type ComponentNodeProps = NodeProps;
 
-const ComponentNode = ({ id, data, selected = false }: ComponentNodeProps) => {
+const ComponentNodeImpl = ({ id, data, selected = false }: ComponentNodeProps) => {
+  // console.log('🔧 [DEBUG] ComponentNode render:', { id, selected });
+  
   const nodeData = data as ComponentNodeData;
-  const componentRef = useRef<HTMLDivElement>(null);
-  const contentRef = useRef<HTMLDivElement>(null); // Ref for just the component content
+  
+  // Simple render without complex logic for testing
+  if (!nodeData) {
+    return (
+      <div style={{
+        width: '100%',
+        height: '100%',
+        padding: '20px',
+        border: '2px solid #ccc',
+        borderRadius: '8px',
+        backgroundColor: 'white',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+        No data
+      </div>
+    );
+  }
 
-  // Support both legacy and new data structure
+  // Render native components using proper native component renderers
+  if (nodeData.componentType === 'native') {
+    const nativeProps = {
+      id,
+      data: nodeData,
+      selected,
+    };
+
+    switch (nodeData.nativeType) {
+      case 'shape':
+        return <ShapeNode key={id} {...nativeProps} />;
+      case 'text':
+        return <TextNode key={id} {...nativeProps} />;
+      case 'sticky':
+        return <StickyNote key={id} {...nativeProps} />;
+      default:
+        return (
+          <div style={{
+            width: '100%',
+            height: '100%',
+            padding: '20px',
+            border: selected ? '3px solid #6366f1' : '2px solid #ccc',
+            borderRadius: '8px',
+            backgroundColor: 'white',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'move'
+          }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '18px', marginBottom: '8px' }}>❓</div>
+              <div style={{ fontSize: '14px', color: '#666' }}>Unknown native type: {nodeData.nativeType}</div>
+            </div>
+          </div>
+        );
+    }
+  }
+
+  // For AI components, we need the complex logic
   const code = nodeData.code || nodeData.compiledCode || nodeData.originalCode;
   const prompt = nodeData.prompt || nodeData.metadata?.prompt || nodeData.description;
   const generationTime = nodeData.generationTime || nodeData.metadata?.generationTime;
@@ -301,6 +367,13 @@ const ComponentNode = ({ id, data, selected = false }: ComponentNodeProps) => {
 
   // Render function to avoid conditional early returns
   const renderContent = () => {
+    // console.log('🔧 [DEBUG] ComponentNode renderContent called:', { 
+    //   id, 
+    //   presentationMode, 
+    //   hasGeneratedApp: !!generatedAppComponent,
+    //   nodeDataKeys: Object.keys(nodeData || {})
+    // });
+    
     // In presentation mode, show only the component
     if (presentationMode) {
       return (
@@ -744,11 +817,43 @@ const ComponentNode = ({ id, data, selected = false }: ComponentNodeProps) => {
     );
   };
 
-  // Main component return - always calls renderContent()
+  // For AI components, fall back to the complex render
+  // console.log('🔧 [DEBUG] ComponentNode returning complex render for id:', id);  
   return renderContent();
 };
 
-// Temporarily disable memo to debug existing component rendering issues
+// Create memoized version with custom comparison
+const ComponentNode = React.memo(ComponentNodeImpl, (prevProps, nextProps) => {
+  // Custom comparison function to prevent unnecessary re-renders
+  if (prevProps.id !== nextProps.id || prevProps.selected !== nextProps.selected) {
+    return false;
+  }
+  
+  // Deep comparison of data object properties that matter for rendering
+  const prevData = prevProps.data as ComponentNodeData;
+  const nextData = nextProps.data as ComponentNodeData;
+  
+  if (!prevData && !nextData) return true;
+  if (!prevData || !nextData) return false;
+  
+  // Compare the key fields that affect rendering
+  const prevCode = prevData.code || prevData.compiledCode || prevData.originalCode;
+  const nextCode = nextData.code || nextData.compiledCode || nextData.originalCode;
+  const prevPrompt = prevData.prompt || prevData.metadata?.prompt || prevData.description;
+  const nextPrompt = nextData.prompt || nextData.metadata?.prompt || nextData.description;
+  
+  return (
+    prevCode === nextCode &&
+    prevPrompt === nextPrompt &&
+    prevData.presentationMode === nextData.presentationMode &&
+    prevData.componentType === nextData.componentType &&
+    prevData.nativeType === nextData.nativeType &&
+    // For native components, also compare the state object
+    (prevData.componentType !== 'native' || 
+     JSON.stringify(prevData.state) === JSON.stringify(nextData.state))
+  );
+});
+
 export default ComponentNode;
 
 // TODO: Re-enable memo after fixing rendering issue

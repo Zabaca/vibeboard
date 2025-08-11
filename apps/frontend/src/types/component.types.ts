@@ -114,6 +114,31 @@ export interface UnifiedComponentNode {
 }
 
 /**
+ * Vision metadata for screenshots and AI analysis
+ */
+export interface VisionMetadata {
+  screenshot?: {
+    dataUrl: string;
+    format: 'webp' | 'png' | 'jpeg';
+    capturedAt: number;
+    sizeKB: number;
+    dimensions?: {
+      width: number;
+      height: number;
+    };
+  };
+  visionAnalysis?: {
+    analysis: string;
+    analyzedAt: number;
+    prompt: string;
+    model: string;
+    confidence?: number;
+  };
+  version?: number; // Track vision metadata version for migration/cleanup
+  lastUpdated?: number; // Track when vision data was last modified
+}
+
+/**
  * Metadata that can vary based on component source
  */
 export interface ComponentMetadata {
@@ -142,6 +167,11 @@ export interface ComponentMetadata {
   packageVersion?: string;
   lastFetched?: number;
   etag?: string;
+
+  /**
+   * Vision enhancement metadata
+   */
+  vision?: VisionMetadata;
 }
 
 /**

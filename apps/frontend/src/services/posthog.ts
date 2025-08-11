@@ -58,14 +58,14 @@ class PostHogService {
   }
 
   // Track custom events
-  track(event: string, properties?: Record<string, any>) {
+  track(event: string, properties?: Record<string, unknown>) {
     if (this.initialized) {
       posthog.capture(event, properties);
     }
   }
 
   // Identify user
-  identify(userId: string, properties?: Record<string, any>) {
+  identify(userId: string, properties?: Record<string, unknown>) {
     if (this.initialized) {
       posthog.identify(userId, properties);
     }
@@ -99,7 +99,7 @@ class PostHogService {
   }
 
   // Track errors
-  trackError(error: string, context?: Record<string, any>) {
+  trackError(error: string, context?: Record<string, unknown>) {
     this.track('error_occurred', {
       error_message: error,
       ...context,
@@ -116,7 +116,7 @@ class PostHogService {
   }
 
   // Set user properties
-  setUserProperties(properties: Record<string, any>) {
+  setUserProperties(properties: Record<string, unknown>) {
     if (this.initialized) {
       posthog.people.set(properties);
     }

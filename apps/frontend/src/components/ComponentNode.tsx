@@ -1,8 +1,9 @@
-import { memo, useMemo } from 'react';
+import { useMemo, useRef, useCallback } from 'react';
 import { Handle, Position, NodeResizer, type NodeProps } from '@xyflow/react';
 import GeneratedApp from './GeneratedApp.tsx';
 import { AsyncComponentLoader } from './AsyncComponentLoader.tsx';
 import type { UnifiedComponentNode } from '../types/component.types.ts';
+import { captureAndCopyToClipboard, getOptimalScreenshotOptions, type ScreenshotResult } from '../utils/screenshotUtils.ts';
 
 interface ComponentNodeData extends UnifiedComponentNode {
   // Legacy fields for backward compatibility
@@ -16,6 +17,7 @@ interface ComponentNodeData extends UnifiedComponentNode {
   onRegenerate?: (appId: string, prompt: string, currentCode?: string) => void;
   onDuplicate?: (nodeData: ComponentNodeData) => void;
   onCompilationComplete?: (nodeId: string, compiledCode: string, hash: string) => void;
+  onCaptureScreenshot?: (nodeId: string, screenshotResult: ScreenshotResult) => void;
   
   // Index signature for React Flow compatibility
   [key: string]: unknown;
@@ -25,14 +27,16 @@ type ComponentNodeProps = NodeProps;
 
 const ComponentNode = ({ id, data, selected = false }: ComponentNodeProps) => {
   const nodeData = data as ComponentNodeData;
+  const componentRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null); // Ref for just the component content
   
   // Support both legacy and new data structure
   const code = nodeData.code || nodeData.compiledCode || nodeData.originalCode;
   const prompt = nodeData.prompt || nodeData.metadata?.prompt || nodeData.description;
   const generationTime = nodeData.generationTime || nodeData.metadata?.generationTime;
-  const { presentationMode, onDelete, onRegenerate, onDuplicate, onCompilationComplete } = nodeData;
-  
-  // Create a UnifiedComponentNode from the data
+  const { presentationMode, onDelete, onRegenerate, onDuplicate, onCompilationComplete, onCaptureScreenshot } = nodeData;
+
+  // Create a UnifiedComponentNode from the data (moved before screenshot callback)
   const unifiedComponent = useMemo(() => {
     // Early check for data
     if (!nodeData) {
@@ -65,6 +69,158 @@ const ComponentNode = ({ id, data, selected = false }: ComponentNodeProps) => {
     };
     return component;
   }, [nodeData, id, prompt, generationTime]);
+
+  // Screenshot capture functionality (now after unifiedComponent is defined)  
+  const captureScreenshot = useCallback(async (scenario: 'component' | 'preview' | 'thumbnail' = 'component'): Promise<ScreenshotResult | null> => {
+    // Try different capture strategies
+    let elementToCapture = null;
+    let captureStrategy = '';
+    
+    // Strategy 1: Try to capture just the rendered component content
+    if (contentRef.current && contentRef.current.children.length > 0) {
+      elementToCapture = contentRef.current;
+      captureStrategy = 'content area only';
+      console.log('📋 Using content area capture strategy');
+    }
+    // Strategy 2: Try to find the actual component inside contentRef
+    else if (contentRef.current) {
+      const componentDiv = contentRef.current.querySelector('div[style], div[class]');
+      if (componentDiv && componentDiv instanceof HTMLElement) {
+        elementToCapture = componentDiv;
+        captureStrategy = 'inner component div';
+        console.log('🎯 Found inner component div in content area');
+      }
+    }
+    // Strategy 3: Fallback to full component
+    if (!elementToCapture) {
+      elementToCapture = componentRef.current;
+      captureStrategy = 'full component fallback';
+      console.log('⚠️ Using fallback: full component');
+    }
+    
+    if (!elementToCapture) {
+      console.warn('ComponentNode: No component element available for screenshot');
+      return {
+        success: false,
+        error: 'Component element not found',
+        capturedAt: Date.now(),
+      };
+    }
+
+    // Debug: log what we're about to capture
+    console.log('🎯 Capturing screenshot of:', {
+      captureStrategy,
+      elementSize: `${elementToCapture.offsetWidth}x${elementToCapture.offsetHeight}`,
+      elementPosition: {
+        top: elementToCapture.offsetTop,
+        left: elementToCapture.offsetLeft,
+      },
+      hasChildren: elementToCapture.children.length,
+      innerHTML: elementToCapture.innerHTML.length > 200 ? 
+        elementToCapture.innerHTML.substring(0, 200) + '...' : 
+        elementToCapture.innerHTML,
+      childrenInfo: Array.from(elementToCapture.children).map(child => ({
+        tagName: child.tagName,
+        className: child.className,
+        textContent: child.textContent?.substring(0, 30) + '...',
+        offsetSize: `${(child as HTMLElement).offsetWidth}x${(child as HTMLElement).offsetHeight}`,
+      })),
+      computedStyle: {
+        display: getComputedStyle(elementToCapture).display,
+        visibility: getComputedStyle(elementToCapture).visibility,
+        overflow: getComputedStyle(elementToCapture).overflow,
+        backgroundColor: getComputedStyle(elementToCapture).backgroundColor,
+        transform: getComputedStyle(elementToCapture).transform,
+      },
+      textContent: elementToCapture.textContent?.substring(0, 100) + '...',
+    });
+    
+    // Also inspect the DOM tree structure
+    console.log('🔍 DOM structure:', {
+      componentRef: componentRef.current?.tagName,
+      componentRefChildren: componentRef.current ? Array.from(componentRef.current.children).map(c => c.tagName + '.' + c.className) : [],
+      contentRef: contentRef.current?.tagName,
+      contentRefChildren: contentRef.current ? Array.from(contentRef.current.children).map(c => c.tagName + '.' + c.className) : [],
+    });
+
+    // Handle edge case: component is not ready/loaded
+    if (!code && !unifiedComponent.compiledCode && !unifiedComponent.originalCode) {
+      console.warn('ComponentNode: No component code available for screenshot');
+      return {
+        success: false,
+        error: 'Component has no code to capture',
+        capturedAt: Date.now(),
+      };
+    }
+
+    // Handle edge case: component is in loading state
+    const isLoading = elementToCapture.querySelector('[data-loading="true"]') || 
+                     elementToCapture.textContent?.includes('Loading') ||
+                     elementToCapture.textContent?.includes('No component generated yet');
+
+    if (isLoading && scenario !== 'thumbnail') {
+      console.warn('ComponentNode: Component is in loading state, capturing anyway');
+    }
+
+    try {
+      // Wait a bit for any CSS animations/transitions to complete
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      const options = getOptimalScreenshotOptions(scenario);
+      
+      // For loading/error states, use smaller dimensions
+      if (isLoading) {
+        options.maxWidth = 400;
+        options.maxHeight = 300;
+        options.quality = 0.7;
+      }
+
+      const result = await captureAndCopyToClipboard(elementToCapture, {
+        ...options,
+        debug: true, // Enable debugging to see what's happening
+        // Use white background for better contrast with loading states
+        backgroundColor: isLoading ? '#f9fafb' : '#ffffff',
+        // dom-to-image specific options
+        useCORS: true,
+        scale: 1, // Ensure 1:1 scale
+      });
+
+      // Add metadata about capture context
+      if (result.success) {
+        const captureMetadata = {
+          componentId: id,
+          scenario,
+          hasCode: !!code,
+          isLoading,
+          presentationMode: !!presentationMode,
+          capturedElement: 'full',
+        };
+        
+        console.log('📸 Screenshot captured:', captureMetadata);
+        
+        if (onCaptureScreenshot) {
+          onCaptureScreenshot(id, {
+            ...result,
+            // Add context metadata (not part of ScreenshotResult interface but can be extended)
+          });
+        }
+      } else {
+        console.error('❌ Screenshot capture failed:', result.error);
+      }
+
+      return result;
+    } catch (error) {
+      console.error('ComponentNode screenshot capture failed:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Screenshot capture failed',
+        capturedAt: Date.now(),
+      };
+    }
+  }, [id, onCaptureScreenshot, code, unifiedComponent, presentationMode]);
+
+  // Expose screenshot capture method to parent components
+  const captureComponentScreenshot = useCallback(() => captureScreenshot('component'), [captureScreenshot]);
   
   // Memoize the GeneratedApp component to prevent re-renders unless data changes
   const generatedAppComponent = useMemo(() => {
@@ -110,7 +266,7 @@ const ComponentNode = ({ id, data, selected = false }: ComponentNodeProps) => {
           onCompilationComplete(id, compiledCode, hash) : undefined}
       />
     );
-  }, [unifiedComponent, code, presentationMode, onCompilationComplete, id]);
+  }, [unifiedComponent, code, presentationMode, onCompilationComplete, id, nodeData]);
 
   // Render function to avoid conditional early returns
   const renderContent = () => {
@@ -118,6 +274,7 @@ const ComponentNode = ({ id, data, selected = false }: ComponentNodeProps) => {
     if (presentationMode) {
       return (
         <div
+          ref={componentRef}
           style={{
             width: '100%',
             height: '100%',
@@ -126,12 +283,15 @@ const ComponentNode = ({ id, data, selected = false }: ComponentNodeProps) => {
           }}
         >
           {generatedAppComponent ? (
-            <div style={{ 
-              width: '100%', 
-              height: '100%',
-              // Override the white background in GeneratedApp
-              backgroundColor: 'transparent',
-            }}>
+            <div 
+              data-component-content="true"
+              style={{ 
+                width: '100%', 
+                height: '100%',
+                // Override the white background in GeneratedApp
+                backgroundColor: 'transparent',
+              }}
+            >
               {generatedAppComponent}
             </div>
           ) : (
@@ -155,6 +315,7 @@ const ComponentNode = ({ id, data, selected = false }: ComponentNodeProps) => {
     // Normal mode with full chrome
     return (
     <div
+      ref={componentRef}
       style={{
         width: '100%',
         height: '100%',
@@ -284,6 +445,43 @@ const ComponentNode = ({ id, data, selected = false }: ComponentNodeProps) => {
           marginLeft: '8px',
           marginTop: '6px',
         }}>
+          {/* Screenshot capture button */}
+          <button
+            className="nodrag"
+            onClick={(e) => {
+              e.stopPropagation();
+              captureComponentScreenshot();
+            }}
+            style={{
+              background: 'transparent',
+              color: '#6b7280',
+              border: 'none',
+              borderRadius: '6px',
+              padding: '6px',
+              fontSize: '12px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '28px',
+              height: '28px',
+              transition: 'all 0.15s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(16, 185, 129, 0.1)';
+              e.currentTarget.style.color = '#10b981';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.color = '#6b7280';
+            }}
+            title="Capture Screenshot"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+              <circle cx="12" cy="13" r="4" />
+            </svg>
+          </button>
           {onRegenerate && (
             <button
               className="nodrag"
@@ -404,6 +602,8 @@ const ComponentNode = ({ id, data, selected = false }: ComponentNodeProps) => {
 
       {/* AI Component Content */}
       <div 
+        ref={contentRef} // Ref for screenshot capture
+        data-component-content="true"
         className="nodrag" // Prevent dragging when interacting with AI component
         style={{ 
           flex: 1, 
@@ -457,28 +657,30 @@ const ComponentNode = ({ id, data, selected = false }: ComponentNodeProps) => {
   return renderContent();
 };
 
-// Memo with custom comparison to prevent unnecessary re-renders
-// Only re-render when code, prompt, or presentationMode changes
-export default memo(ComponentNode, (prevProps, nextProps) => {
-  // Check if data exists
-  if (!prevProps.data && !nextProps.data) return true;
-  if (!prevProps.data || !nextProps.data) return false;
-  
-  const prevData = prevProps.data as unknown as ComponentNodeData;
-  const nextData = nextProps.data as unknown as ComponentNodeData;
-  
-  // Check both legacy and new fields for changes
-  const prevCode = prevData.code || prevData.compiledCode || prevData.originalCode;
-  const nextCode = nextData.code || nextData.compiledCode || nextData.originalCode;
-  const prevPrompt = prevData.prompt || prevData.metadata?.prompt || prevData.description;
-  const nextPrompt = nextData.prompt || nextData.metadata?.prompt || nextData.description;
-  
-  // Only re-render if these specific properties change
-  return prevCode === nextCode &&
-         prevPrompt === nextPrompt &&
-         prevData.presentationMode === nextData.presentationMode &&
-         prevProps.selected === nextProps.selected;
-});
+// Temporarily disable memo to debug existing component rendering issues
+export default ComponentNode;
+
+// TODO: Re-enable memo after fixing rendering issue
+// export default memo(ComponentNode, (prevProps, nextProps) => {
+//   // Check if data exists
+//   if (!prevProps.data && !nextProps.data) return true;
+//   if (!prevProps.data || !nextProps.data) return false;
+//   
+//   const prevData = prevProps.data as unknown as ComponentNodeData;
+//   const nextData = nextProps.data as unknown as ComponentNodeData;
+//   
+//   // Check both legacy and new fields for changes
+//   const prevCode = prevData.code || prevData.compiledCode || prevData.originalCode;
+//   const nextCode = nextData.code || nextData.compiledCode || nextData.originalCode;
+//   const prevPrompt = prevData.prompt || prevData.metadata?.prompt || prevData.description;
+//   const nextPrompt = nextData.prompt || nextData.metadata?.prompt || nextData.description;
+//   
+//   // Only re-render if these specific properties change
+//   return prevCode === nextCode &&
+//          prevPrompt === nextPrompt &&
+//          prevData.presentationMode === nextData.presentationMode &&
+//          prevProps.selected === nextProps.selected;
+// });
 
 // Export the data type for use in other components
 export type { ComponentNodeData };

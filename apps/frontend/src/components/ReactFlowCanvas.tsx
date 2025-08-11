@@ -27,7 +27,8 @@ import { ComponentPipeline } from '../services/ComponentPipeline.ts';
 import { getCompiledComponent } from '../data/compiledComponents.generated.ts';
 import { storageService } from '../services/StorageService.ts';
 import { posthogService } from '../services/posthog.ts';
-import type { UnifiedComponentNode } from '../types/component.types.ts';
+import type { UnifiedComponentNode, VisionMetadata } from '../types/component.types.ts';
+import type { ScreenshotResult } from '../utils/screenshotUtils.ts';
 import type { NativeComponentType, NativeComponentNode, ComponentState } from '../types/native-component.types.ts';
 import { defaultComponentStates } from '../types/native-component.types.ts';
 import ShapeNode from './native/ShapeNode.tsx';
@@ -37,7 +38,6 @@ import NativeComponentsToolbar from './native/NativeComponentsToolbar.tsx';
 import NativeComponentContextMenu from './native/NativeComponentContextMenu.tsx';
 
 // Define nodeTypes outside of component to prevent re-renders
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const nodeTypes = {
   aiComponent: ComponentNode,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -81,9 +81,10 @@ const ReactFlowCanvas: React.FC = () => {
     // In development, get from env or localStorage
     const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
     
+    
     if (isProduction) {
       // Production: API key is handled by Netlify Function
-      return new CerebrasService('');
+      return new CerebrasService('', true); // Enable vision
     }
     
     // Development: Get API key from environment variable or prompt user
@@ -92,10 +93,10 @@ const ReactFlowCanvas: React.FC = () => {
       const key = prompt('Please enter your Cerebras API key:');
       if (key) {
         localStorage.setItem('cerebras_api_key', key);
-        return new CerebrasService(key);
+        return new CerebrasService(key, true); // Enable vision
       }
     }
-    return new CerebrasService(apiKey);
+    return new CerebrasService(apiKey, true); // Enable vision
   });
 
   // Initialize the component pipeline for processing components
@@ -138,6 +139,84 @@ const ReactFlowCanvas: React.FC = () => {
       })
     );
   }, [setNodes]);
+
+  // Handle screenshot capture from ComponentNode
+  const handleScreenshotCapture = useCallback((nodeId: string, result: ScreenshotResult) => {
+    console.log('📸 Screenshot captured for node:', nodeId, result);
+    
+    if (!result.success) {
+      console.error('Failed to capture screenshot:', result.error);
+      return;
+    }
+
+    // Update the node's vision metadata with the screenshot
+    setNodes((nds) =>
+      nds.map((node) => {
+        if (node.id === nodeId) {
+          const nodeData = node.data as ComponentNodeData;
+          
+          // Create vision metadata structure with version tracking
+          const visionMetadata: VisionMetadata = {
+            screenshot: {
+              dataUrl: result.dataUrl || '',
+              format: result.format || 'png',
+              capturedAt: result.capturedAt,
+              sizeKB: result.sizeKB || 0,
+              dimensions: result.dimensions,
+            },
+            // Vision analysis will be added later when edit modal triggers analysis
+            visionAnalysis: nodeData.metadata?.vision?.visionAnalysis,
+            version: 1, // Initialize version for new vision data
+            lastUpdated: Date.now(),
+          };
+          
+          return {
+            ...node,
+            data: {
+              ...nodeData,
+              metadata: {
+                ...nodeData.metadata,
+                vision: visionMetadata,
+              },
+            },
+          };
+        }
+        return node;
+      })
+    );
+    
+    // Save to storage after updating
+    const updatedNodes = nodes.map((node) => {
+      if (node.id === nodeId) {
+        const nodeData = node.data as ComponentNodeData;
+        return {
+          ...node,
+          data: {
+            ...nodeData,
+            metadata: {
+              ...nodeData.metadata,
+              vision: {
+                screenshot: {
+                  dataUrl: result.dataUrl || '',
+                  format: result.format || 'png',
+                  capturedAt: result.capturedAt,
+                  sizeKB: result.sizeKB || 0,
+                  dimensions: result.dimensions,
+                },
+                visionAnalysis: nodeData.metadata?.vision?.visionAnalysis,
+              },
+            },
+          },
+        };
+      }
+      return node;
+    });
+    
+    storageService.saveNodes(updatedNodes);
+    storageService.saveEdges(edges);
+    posthogService.track('screenshot_captured', { nodeId });
+  }, [setNodes, nodes, edges]);
+
 
   // Define handlers first before using them in useEffect
   const handleDeleteComponent = useCallback((nodeId: string) => {
@@ -256,17 +335,22 @@ const ReactFlowCanvas: React.FC = () => {
   }, [editDialog, setNodes, componentPipeline, presentationMode]);
 
   // Regenerate component with new prompt
-  const handleRegenerateWithPrompt = useCallback(async (refinementPrompt: string, currentCode: string) => {
+  const handleRegenerateWithPrompt = useCallback(async (refinementPrompt: string, currentCode: string, screenshotDataUrl?: string) => {
     const { nodeId, prompt: originalPrompt } = editDialog;
     setIsGenerating(true);
     setGenerationError(null);
     
     try {
-      // Combine original prompt, current code, and refinement request
+      // Create basic prompt - vision analysis will be handled by backend
       const combinedPrompt = `Original request: ${originalPrompt}\n\nCurrent code:\n\`\`\`javascript\n${currentCode}\n\`\`\`\n\nRequested adjustments: ${refinementPrompt}`;
       
-      // Generate new component with AI using the combined context
-      const result = await cerebrasService.generateComponent(combinedPrompt);
+      // Log if we have screenshot data to send to backend
+      if (screenshotDataUrl) {
+        console.log('✨ Screenshot available for backend vision analysis');
+      }
+      
+      // Generate new component with AI - backend will handle vision analysis if screenshot is provided
+      const result = await cerebrasService.generateComponent(combinedPrompt, screenshotDataUrl);
       
       if (!result.success || !result.code) {
         throw new Error(result.error || 'Failed to generate component');
@@ -308,6 +392,21 @@ const ReactFlowCanvas: React.FC = () => {
               code: processedComponent.compiledCode || processedComponent.originalCode,
               prompt: originalPrompt, // Keep the original prompt
               generationTime: result.generationTime || 0,
+              // Update vision metadata if analysis was performed during regeneration
+              metadata: {
+                ...processedComponent.metadata,
+                vision: result.visionAnalysis ? {
+                  screenshot: node.data.metadata?.vision?.screenshot, // Keep existing screenshot
+                  visionAnalysis: {
+                    analysis: result.visionAnalysis,
+                    analyzedAt: Date.now(),
+                    prompt: refinementPrompt,
+                    model: 'llama-4-maverick', // Default model used by cerebras service
+                  },
+                  version: (node.data.metadata?.vision?.version || 0) + 1, // Increment version
+                  lastUpdated: Date.now(),
+                } : node.data.metadata?.vision, // Keep existing vision data if no new analysis
+              },
             };
             return {
               ...node,
@@ -328,6 +427,48 @@ const ReactFlowCanvas: React.FC = () => {
       setIsGenerating(false);
     }
   }, [editDialog, cerebrasService, setNodes, componentPipeline, presentationMode]);
+
+  // Get component element for screenshot capture
+  const getComponentElement = useCallback((nodeId: string): HTMLElement | null => {
+    // Find the component element in the React Flow canvas
+    const nodeElement = document.querySelector(`[data-id="${nodeId}"]`);
+    if (!nodeElement) {
+      console.warn(`Node element not found for ID: ${nodeId}`);
+      return null;
+    }
+    
+    // Look for the component content within the node
+    const componentContent = nodeElement.querySelector('[data-component-content]') as HTMLElement;
+    if (componentContent) {
+      return componentContent;
+    }
+    
+    // Fallback to the entire node element
+    return nodeElement as HTMLElement;
+  }, []);
+
+  // Handle vision metadata updates from the edit dialog
+  const handleVisionMetadataUpdate = useCallback((nodeId: string, visionMetadata: VisionMetadata) => {
+    setNodes((nds) =>
+      nds.map((node) => {
+        if (node.id === nodeId) {
+          const nodeData = node.data as ComponentNodeData;
+          return {
+            ...node,
+            data: {
+              ...nodeData,
+              metadata: {
+                ...nodeData.metadata,
+                vision: visionMetadata,
+              },
+            },
+          };
+        }
+        return node;
+      })
+    );
+    console.log('✅ Vision metadata updated for node:', nodeId);
+  }, [setNodes]);
 
   const handleCancelEdit = useCallback(() => {
     setEditDialog({ isOpen: false, nodeId: '', prompt: '', code: '' });
@@ -641,6 +782,7 @@ const ReactFlowCanvas: React.FC = () => {
                 onRegenerate: handleRegenerateComponent,
                 onDuplicate: handleDuplicateComponent,
                 onCompilationComplete: handleCompilationComplete,
+                onCaptureScreenshot: handleScreenshotCapture,
               }),
             } as ComponentNodeData,
           }));
@@ -732,6 +874,7 @@ const ReactFlowCanvas: React.FC = () => {
       onRegenerate: handleRegenerateComponent,
       onDuplicate: handleDuplicateComponent,
       onCompilationComplete: handleCompilationComplete,
+      onCaptureScreenshot: handleScreenshotCapture,
     };
 
     const viewportCenter = getViewportCenter();
@@ -1483,6 +1626,11 @@ const ReactFlowCanvas: React.FC = () => {
         onCancel={handleCancelEdit}
         isGenerating={isGenerating}
         getNodeCode={getNodeCode}
+        getComponentElement={getComponentElement}
+        visionMetadata={editDialog.nodeId ? 
+          nodes.find(n => n.id === editDialog.nodeId)?.data?.metadata?.vision : undefined
+        }
+        onVisionMetadataUpdate={handleVisionMetadataUpdate}
       />
 
       {/* Component Library Dialog */}

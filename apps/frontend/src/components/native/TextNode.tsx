@@ -1,7 +1,6 @@
-// @ts-nocheck
 import React, { memo, useState, useRef, useEffect } from 'react';
 import { Handle, Position, NodeResizer, type NodeProps } from '@xyflow/react';
-import type { NativeComponentNode, ComponentState } from '../../types/native-component.types.ts';
+import type { ComponentState } from '../../types/native-component.types.ts';
 import TextCustomizer from './TextCustomizer.tsx';
 
 interface TextNodeData {
@@ -16,12 +15,17 @@ interface TextNodeData {
   presentationMode?: boolean;
   onDelete?: (nodeId: string) => void;
   onUpdateState?: (nodeId: string, newState: ComponentState) => void;
+  
+  // Index signature for React Flow compatibility
+  [key: string]: unknown;
 }
 
-type TextNodeProps = NodeProps<Record<string, unknown>>;
+interface TextNodeProps extends NodeProps {
+  data: TextNodeData;
+}
 
 const TextNode = ({ id, data, selected = false }: TextNodeProps) => {
-  const { state, presentationMode, onDelete, onUpdateState } = data as TextNodeData;
+  const { state, presentationMode, onDelete, onUpdateState } = data;
   const [isEditing, setIsEditing] = useState(false);
   const [tempText, setTempText] = useState(state.text || 'Text');
   const [showCustomizer, setShowCustomizer] = useState(false);

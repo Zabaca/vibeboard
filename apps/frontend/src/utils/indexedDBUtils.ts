@@ -115,7 +115,7 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
   /**
    * Initialize the IndexedDB database with required object stores
    */
-  async initialize(): Promise<boolean> {
+  initialize(): Promise<boolean> {
     if (!this.isSupported()) {
       console.warn('IndexedDB not supported in this browser');
       return false;
@@ -183,7 +183,7 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
   /**
    * Save image data to IndexedDB
    */
-  async saveImage(
+  saveImage(
     imageData: Omit<ImageStorageData, 'id' | 'createdAt' | 'lastAccessed'>,
   ): Promise<string> {
     if (!this.db) {
@@ -223,7 +223,7 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
   /**
    * Get image data from IndexedDB
    */
-  async getImage(imageId: string): Promise<ImageStorageData | null> {
+  getImage(imageId: string): Promise<ImageStorageData | null> {
     if (!this.db) {
       throw new Error('Database not initialized');
     }
@@ -264,7 +264,7 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
   /**
    * Delete image from IndexedDB
    */
-  async deleteImage(imageId: string): Promise<boolean> {
+  deleteImage(imageId: string): Promise<boolean> {
     if (!this.db) {
       throw new Error('Database not initialized');
     }
@@ -292,7 +292,7 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
   /**
    * List all images in storage
    */
-  async listImages(): Promise<ImageStorageData[]> {
+  listImages(): Promise<ImageStorageData[]> {
     if (!this.db) {
       throw new Error('Database not initialized');
     }
@@ -345,7 +345,7 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
   /**
    * Save complete canvas data
    */
-  async saveCanvas(canvas: Omit<CanvasData, 'id' | 'createdAt' | 'lastModified'>): Promise<string> {
+  saveCanvas(canvas: Omit<CanvasData, 'id' | 'createdAt' | 'lastModified'>): Promise<string> {
     if (!this.db) {
       throw new Error('Database not initialized');
     }
@@ -384,7 +384,7 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
   /**
    * Get canvas data
    */
-  async getCanvas(canvasId: string = 'current'): Promise<CanvasData | null> {
+  getCanvas(canvasId: string = 'current'): Promise<CanvasData | null> {
     if (!this.db) {
       throw new Error('Database not initialized');
     }
@@ -460,7 +460,7 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
   /**
    * Delete canvas data
    */
-  async deleteCanvas(canvasId: string): Promise<boolean> {
+  deleteCanvas(canvasId: string): Promise<boolean> {
     if (!this.db) {
       throw new Error('Database not initialized');
     }
@@ -488,7 +488,7 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
   /**
    * List all canvases
    */
-  async listCanvases(): Promise<CanvasData[]> {
+  listCanvases(): Promise<CanvasData[]> {
     if (!this.db) {
       throw new Error('Database not initialized');
     }
@@ -691,7 +691,7 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
   /**
    * Get migration info from settings
    */
-  async getMigrationInfo(): Promise<{ version: string; migratedAt: number } | null> {
+  getMigrationInfo(): Promise<{ version: string; migratedAt: number } | null> {
     if (!this.db) {
       return null;
     }
@@ -745,7 +745,7 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
   /**
    * Optimize image by compressing it (placeholder for now)
    */
-  async optimizeImage(
+  optimizeImage(
     imageData: ArrayBuffer,
     _format: string,
     maxSizeKB: number = this.MAX_IMAGE_SIZE_KB,

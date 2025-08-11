@@ -339,9 +339,11 @@ The component should be a complete, working React component that incorporates bo
   }
 
   private processESMCode(code: string): string {
+    let processedCode = code;
+    
     // Check if the code contains JSX (looking for < followed by capital letter or lowercase HTML elements)
     const hasJSX =
-      /<[A-Z]|<(div|span|button|input|form|h[1-6]|p|a|ul|li|table|tbody|tr|td|th)/g.test(code);
+      /<[A-Z]|<(div|span|button|input|form|h[1-6]|p|a|ul|li|table|tbody|tr|td|th)/g.test(processedCode);
 
     if (hasJSX) {
       // If JSX is present, we need to transpile it
@@ -356,31 +358,31 @@ The component should be a complete, working React component that incorporates bo
     }
 
     // Ensure the code has proper imports
-    if (!code.includes('import React')) {
+    if (!processedCode.includes('import React')) {
       // Add React import at the beginning
       const hooks = [];
-      if (code.includes('useState')) {
+      if (processedCode.includes('useState')) {
         hooks.push('useState');
       }
-      if (code.includes('useEffect')) {
+      if (processedCode.includes('useEffect')) {
         hooks.push('useEffect');
       }
-      if (code.includes('useRef')) {
+      if (processedCode.includes('useRef')) {
         hooks.push('useRef');
       }
-      if (code.includes('useMemo')) {
+      if (processedCode.includes('useMemo')) {
         hooks.push('useMemo');
       }
-      if (code.includes('useCallback')) {
+      if (processedCode.includes('useCallback')) {
         hooks.push('useCallback');
       }
 
       const hooksImport = hooks.length > 0 ? `, { ${hooks.join(', ')} }` : '';
-      code = `import React${hooksImport} from 'react';\n\n${code}`;
+      processedCode = `import React${hooksImport} from 'react';\n\n${processedCode}`;
     }
 
     // Ensure the code has a default export
-    if (!code.includes('export default')) {
+    if (!processedCode.includes('export default')) {
       // Try to find the main component name
       const patterns = [
         /const\s+(\w+)\s*=\s*\(\)\s*=>/, // Arrow function
@@ -389,19 +391,19 @@ The component should be a complete, working React component that incorporates bo
       ];
 
       for (const pattern of patterns) {
-        const match = code.match(pattern);
+        const match = processedCode.match(pattern);
         if (match) {
           // Add export default at the end
-          code += `\n\nexport default ${match[1]};`;
+          processedCode += `\n\nexport default ${match[1]};`;
           break;
         }
       }
     }
 
     // Remove any legacy Component assignment
-    code = code.replace(/const\s+Component\s*=\s*\w+;?/g, '');
+    processedCode = processedCode.replace(/const\s+Component\s*=\s*\w+;?/g, '');
 
-    return code.trim();
+    return processedCode.trim();
   }
 }
 

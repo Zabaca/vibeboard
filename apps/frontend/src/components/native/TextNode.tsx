@@ -1,5 +1,5 @@
 import { Handle, type NodeProps, NodeResizer, Position } from '@xyflow/react';
-import React, { memo, useEffect, useRef, useState } from 'react';
+import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
 import type { ComponentState } from '../../types/native-component.types.ts';
 import TextCustomizer from './TextCustomizer.tsx';
 
@@ -35,12 +35,12 @@ const TextNode = ({ id, data, selected = false }: TextNodeProps) => {
   
 
   // Adjust textarea height based on content
-  const adjustTextAreaHeight = () => {
+  const adjustTextAreaHeight = useCallback(() => {
     if (textAreaRef.current) {
       textAreaRef.current.style.height = 'auto';
       textAreaRef.current.style.height = `${textAreaRef.current.scrollHeight}px`;
     }
-  };
+  }, []);
 
   // Note: We don't sync tempText with state.text like in some other components
   // because it interferes with typing. StickyNote doesn't have this sync either.
@@ -58,7 +58,7 @@ const TextNode = ({ id, data, selected = false }: TextNodeProps) => {
       // Reset the flag when editing ends
       hasInitializedEditingRef.current = false;
     }
-  }, [isEditing]);
+  }, [isEditing, adjustTextAreaHeight]);
 
   const handleTextSubmit = () => {
     setIsEditing(false);

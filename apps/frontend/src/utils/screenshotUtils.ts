@@ -239,11 +239,11 @@ export async function compressCanvasImage(
 /**
  * Resize canvas while maintaining aspect ratio
  */
-export async function resizeCanvas(
+export function resizeCanvas(
   sourceCanvas: HTMLCanvasElement,
   maxWidth: number,
   maxHeight: number,
-): Promise<HTMLCanvasElement> {
+): HTMLCanvasElement {
   const { width: originalWidth, height: originalHeight } = sourceCanvas;
 
   // Calculate new dimensions maintaining aspect ratio
@@ -494,7 +494,7 @@ export function getOptimalScreenshotOptions(
 /**
  * Convert WebP data URL to PNG for clipboard compatibility
  */
-async function convertWebPToPngForClipboard(dataUrl: string): Promise<string> {
+function convertWebPToPngForClipboard(dataUrl: string): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {

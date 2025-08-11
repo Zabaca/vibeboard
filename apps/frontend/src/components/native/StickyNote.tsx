@@ -1,5 +1,5 @@
 import { Handle, type NodeProps, NodeResizer, Position } from '@xyflow/react';
-import React, { memo, useEffect, useRef, useState } from 'react';
+import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
 import type { ComponentState } from '../../types/native-component.types.ts';
 
 interface StickyNoteData {
@@ -65,7 +65,7 @@ const StickyNote = ({ id, data, selected = false }: StickyNoteProps) => {
   const colorScheme = stickyColors[(state.stickyColor as keyof typeof stickyColors) || 'yellow'];
 
   // Adjust textarea height based on content
-  const adjustTextAreaHeight = () => {
+  const adjustTextAreaHeight = useCallback(() => {
     if (textAreaRef.current) {
       textAreaRef.current.style.height = 'auto';
       const newHeight = Math.max(100, textAreaRef.current.scrollHeight);
@@ -77,7 +77,7 @@ const StickyNote = ({ id, data, selected = false }: StickyNoteProps) => {
         containerRef.current.style.minHeight = `${newHeight + padding}px`;
       }
     }
-  };
+  }, [state.locked]);
 
   // Auto-focus and adjust height when editing starts
   useEffect(() => {

@@ -306,7 +306,7 @@ export const AsyncComponentLoader: React.FC<AsyncComponentLoaderProps> = ({
         setTimeout(loadComponent, delay);
       }
     }
-  }, [code, moduleUrl, debug]);
+  }, [code, moduleUrl, debug, cache, onError, onLoad]);
 
   // Effect to load component when code or moduleUrl changes
   useEffect(() => {
@@ -314,7 +314,7 @@ export const AsyncComponentLoader: React.FC<AsyncComponentLoaderProps> = ({
       loadAttempts.current = 0;
       loadComponent();
     }
-  }, [loadComponent]);
+  }, [loadComponent, code, moduleUrl]);
 
   // Retry function
   const retry = () => {

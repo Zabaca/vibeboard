@@ -1,5 +1,5 @@
 import { Handle, type NodeProps, NodeResizer, Position } from '@xyflow/react';
-import React, { memo, useEffect, useRef, useState } from 'react';
+import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
 import type { ComponentState } from '../../types/native-component.types.ts';
 import ShapeCustomizer from './ShapeCustomizer.tsx';
 
@@ -19,6 +19,126 @@ interface ShapeNodeData {
 
 type ShapeNodeProps = NodeProps;
 
+// Extracted control buttons component to reduce complexity
+const ShapeControlButtons: React.FC<{
+  selected: boolean;
+  showCustomizer: boolean;
+  onCustomizerToggle: () => void;
+  onLockToggle: () => void;
+  onDelete?: () => void;
+}> = ({ selected, showCustomizer, onCustomizerToggle, onLockToggle, onDelete }) => (
+  <div
+    className="nodrag"
+    style={{
+      position: 'absolute',
+      top: '-32px',
+      right: '0',
+      display: selected ? 'flex' : 'none',
+      gap: '4px',
+      background: 'white',
+      padding: '4px',
+      borderRadius: '6px',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+    }}
+  >
+    <button
+      type="button"
+      onClick={onCustomizerToggle}
+      style={{
+        background: showCustomizer ? '#eef2ff' : 'transparent',
+        color: showCustomizer ? '#6366f1' : '#6b7280',
+        border: 'none',
+        borderRadius: '4px',
+        padding: '4px',
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '24px',
+        height: '24px',
+      }}
+      title="Customize shape"
+    >
+      <svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      >
+        <circle cx="12" cy="12" r="3" />
+        <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1" />
+      </svg>
+    </button>
+
+    <button
+      type="button"
+      onClick={onLockToggle}
+      style={{
+        background: 'transparent',
+        color: '#6b7280',
+        border: 'none',
+        borderRadius: '4px',
+        padding: '4px',
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '24px',
+        height: '24px',
+      }}
+      title="Lock shape"
+    >
+      <svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      >
+        <rect x="5" y="11" width="14" height="11" rx="2" ry="2" />
+        <path d="M7 11V7a5 5 0 0110 0v4" />
+      </svg>
+    </button>
+
+    {onDelete && (
+      <button
+        type="button"
+        onClick={onDelete}
+        style={{
+          background: 'transparent',
+          color: '#ef4444',
+          border: 'none',
+          borderRadius: '4px',
+          padding: '4px',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: '24px',
+          height: '24px',
+        }}
+        title="Delete shape"
+      >
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
+          <path d="M3 6h18" />
+          <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6" />
+          <path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+        </svg>
+      </button>
+    )}
+  </div>
+);
+
 const ShapeNode = ({ id, data, selected = false }: ShapeNodeProps) => {
   const shapeData = data as unknown as ShapeNodeData;
   const { state, presentationMode, onDelete, onUpdateState } = shapeData;
@@ -35,14 +155,14 @@ const ShapeNode = ({ id, data, selected = false }: ShapeNodeProps) => {
     }
   }, [isEditingText]);
 
-  const handleTextSubmit = () => {
+  const handleTextSubmit = useCallback(() => {
     setIsEditingText(false);
     if (onUpdateState && tempText !== (state as unknown as { text?: string }).text) {
       onUpdateState(id as string, { ...state, text: tempText });
     }
-  };
+  }, [onUpdateState, id, state, tempText]);
 
-  const handleTextKeyDown = (e: React.KeyboardEvent) => {
+  const handleTextKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       handleTextSubmit();
@@ -51,10 +171,26 @@ const ShapeNode = ({ id, data, selected = false }: ShapeNodeProps) => {
       setTempText(state.text || '');
       setIsEditingText(false);
     }
-  };
+  }, [handleTextSubmit, state.text]);
+
+  const handleLockToggle = useCallback(() => {
+    if (onUpdateState) {
+      onUpdateState(id, { ...state, locked: !state.locked });
+    }
+  }, [onUpdateState, id, state]);
+
+  const handleTextEdit = useCallback(() => {
+    if (!(presentationMode || state.locked)) {
+      setIsEditingText(true);
+    }
+  }, [presentationMode, state.locked]);
+
+  const handleCustomizerToggle = useCallback(() => {
+    setShowCustomizer(!showCustomizer);
+  }, [showCustomizer]);
 
   // Render different shapes based on shapeType
-  const renderShape = () => {
+  const renderShape = useCallback(() => {
     const {
       shapeType = 'rectangle',
       fillColor = '#ffffff',
@@ -64,21 +200,6 @@ const ShapeNode = ({ id, data, selected = false }: ShapeNodeProps) => {
 
     switch (shapeType) {
       case 'rectangle':
-        return (
-          <rect
-            x="2"
-            y="2"
-            width="96"
-            height="96"
-            fill={fillColor}
-            stroke={strokeColor}
-            strokeWidth={strokeWidth}
-            vectorEffect="non-scaling-stroke"
-            rx="8"
-            ry="8"
-          />
-        );
-
       case 'square':
         return (
           <rect
@@ -109,7 +230,7 @@ const ShapeNode = ({ id, data, selected = false }: ShapeNodeProps) => {
       default:
         return null;
     }
-  };
+  }, [state]);
 
   return (
     <div
@@ -198,7 +319,7 @@ const ShapeNode = ({ id, data, selected = false }: ShapeNodeProps) => {
           />
         ) : (
           <div
-            onDoubleClick={() => !(presentationMode || state.locked) && setIsEditingText(true)}
+            onDoubleClick={handleTextEdit}
             style={{
               textAlign: state.textAlign || 'center',
               fontSize: state.fontSize || 16,

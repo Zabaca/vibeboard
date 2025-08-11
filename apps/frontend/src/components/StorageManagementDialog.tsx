@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { storageService } from '../services/StorageService.ts';
 import { indexedDBUtils } from '../utils/indexedDBUtils.ts';
 
@@ -23,7 +23,7 @@ const StorageManagementDialog: React.FC<StorageManagementDialogProps> = ({ isOpe
   const [isLoading, setIsLoading] = useState(false);
   const [isCleaningUp, setIsCleaningUp] = useState(false);
 
-  const loadStorageInfo = async (): Promise<void> => {
+  const loadStorageInfo = useCallback(async (): Promise<void> => {
     setIsLoading(true);
     try {
       const stats = await storageService.getEnhancedStorageStats();
@@ -62,7 +62,7 @@ const StorageManagementDialog: React.FC<StorageManagementDialogProps> = ({ isOpe
       console.error('Failed to load storage info:', error);
     }
     setIsLoading(false);
-  };
+  }, []);
 
   const handleCleanup = async (): Promise<void> => {
     setIsCleaningUp(true);

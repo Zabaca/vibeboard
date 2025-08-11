@@ -7,9 +7,11 @@
     "dev": "vite",
     "build": "pnpm compile:components && tsc -b && vite build",
     "typecheck": "tsc -b",
-    "lint": "biome lint .",
+    "lint": "biome check . --apply",
+    "lint:check": "biome lint .",
     "format": "biome format . --write",
-    "check": "biome check . --apply",
+    "format:check": "biome format .",
+    "check": "pnpm typecheck && pnpm lint:check",
     "preview": "vite preview",
     "compile:components": "npx tsx scripts/compile-components.js"
   },

@@ -84,7 +84,7 @@ class PostHogService {
 
   // Track component interaction
   trackComponentInteraction(
-    action: 'edit' | 'delete' | 'duplicate' | 'regenerate',
+    action: 'create' | 'edit' | 'delete' | 'duplicate' | 'regenerate',
     componentId: string,
   ) {
     this.track('component_interaction', {

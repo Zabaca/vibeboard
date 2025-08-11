@@ -271,22 +271,24 @@ export class ESMExecutor {
   /**
    * Extract React component from module
    */
-  private extractComponent(module: Record<string, unknown>): React.ComponentType | null {
+  private extractComponent(module: unknown): React.ComponentType | null {
+    const mod = module as Record<string, unknown>;
+    
     // Check for default export
-    if (module.default && typeof module.default === 'function') {
-      return module.default;
+    if (mod.default && typeof mod.default === 'function') {
+      return mod.default as React.ComponentType;
     }
 
     // Check for named export 'Component'
-    if (module.Component && typeof module.Component === 'function') {
-      return module.Component;
+    if (mod.Component && typeof mod.Component === 'function') {
+      return mod.Component as React.ComponentType;
     }
 
     // Check for any function export
-    for (const key in module) {
-      if (typeof module[key] === 'function' && key !== '__esModule' && /^[A-Z]/.test(key)) {
+    for (const key in mod) {
+      if (typeof mod[key] === 'function' && key !== '__esModule' && /^[A-Z]/.test(key)) {
         // React component naming convention
-        return module[key];
+        return mod[key] as React.ComponentType;
       }
     }
 

@@ -202,6 +202,10 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
 
     return new Promise((resolve, reject) => {
       const transaction = this.db?.transaction([this.STORES.IMAGES], 'readwrite');
+      if (!transaction) {
+        reject(new Error('Database transaction failed'));
+        return;
+      }
       const store = transaction.objectStore(this.STORES.IMAGES);
       const request = store.add(storageData);
 
@@ -226,6 +230,10 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
 
     return new Promise((resolve, reject) => {
       const transaction = this.db?.transaction([this.STORES.IMAGES], 'readwrite');
+      if (!transaction) {
+        reject(new Error('Database transaction failed'));
+        return;
+      }
       const store = transaction.objectStore(this.STORES.IMAGES);
       const request = store.get(imageId);
 
@@ -263,6 +271,10 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
 
     return new Promise((resolve, reject) => {
       const transaction = this.db?.transaction([this.STORES.IMAGES], 'readwrite');
+      if (!transaction) {
+        reject(new Error('Database transaction failed'));
+        return;
+      }
       const store = transaction.objectStore(this.STORES.IMAGES);
       const request = store.delete(imageId);
 
@@ -287,6 +299,10 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
 
     return new Promise((resolve, reject) => {
       const transaction = this.db?.transaction([this.STORES.IMAGES], 'readonly');
+      if (!transaction) {
+        reject(new Error('Database transaction failed'));
+        return;
+      }
       const store = transaction.objectStore(this.STORES.IMAGES);
       const request = store.getAll();
 
@@ -347,6 +363,10 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
 
     return new Promise((resolve, reject) => {
       const transaction = this.db?.transaction([this.STORES.CANVAS], 'readwrite');
+      if (!transaction) {
+        reject(new Error('Database transaction failed'));
+        return;
+      }
       const store = transaction.objectStore(this.STORES.CANVAS);
       const request = store.put(canvasData);
 
@@ -372,6 +392,10 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
     return new Promise((resolve, reject) => {
       try {
         const transaction = this.db?.transaction([this.STORES.CANVAS], 'readonly');
+        if (!transaction) {
+          reject(new Error('Database transaction failed'));
+          return;
+        }
         const store = transaction.objectStore(this.STORES.CANVAS);
         const request = store.get(canvasId);
 
@@ -413,8 +437,12 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
       lastModified: Date.now(),
     };
 
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const transaction = this.db?.transaction([this.STORES.CANVAS], 'readwrite');
+      if (!transaction) {
+        reject(new Error('Database transaction failed'));
+        return;
+      }
       const store = transaction.objectStore(this.STORES.CANVAS);
       const request = store.put(updated);
 
@@ -437,8 +465,12 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
       throw new Error('Database not initialized');
     }
 
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const transaction = this.db?.transaction([this.STORES.CANVAS], 'readwrite');
+      if (!transaction) {
+        reject(new Error('Database transaction failed'));
+        return;
+      }
       const store = transaction.objectStore(this.STORES.CANVAS);
       const request = store.delete(canvasId);
 
@@ -463,6 +495,10 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
 
     return new Promise((resolve, reject) => {
       const transaction = this.db?.transaction([this.STORES.CANVAS], 'readonly');
+      if (!transaction) {
+        reject(new Error('Database transaction failed'));
+        return;
+      }
       const store = transaction.objectStore(this.STORES.CANVAS);
       const request = store.getAll();
 
@@ -662,6 +698,10 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
 
     return new Promise((resolve) => {
       const transaction = this.db?.transaction([this.STORES.SETTINGS], 'readonly');
+      if (!transaction) {
+        resolve(null);
+        return;
+      }
       const store = transaction.objectStore(this.STORES.SETTINGS);
       const request = store.get('migrationInfo');
 

@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo, useRef } from 'react';
 import { Handle, type NodeProps, NodeResizer, Position } from '@xyflow/react';
 import type { UnifiedComponentNode } from '../types/component.types.ts';
+import { defaultComponentStates } from '../types/native-component.types.ts';
 import {
   captureAndCopyToClipboard,
   getOptimalScreenshotOptions,
@@ -68,19 +69,55 @@ const ComponentNodeImpl = ({ id, data, selected = false }: ComponentNodeProps) =
 
   // Render native components using proper native component renderers
   if (nodeData.componentType === 'native') {
+    // Create a properly typed data object for native components
+    const nativeData = {
+      ...nodeData,
+      componentType: 'native' as const,
+    };
+
     const nativeProps = {
       id,
-      data: nodeData,
+      data: nativeData,
       selected,
+      type: 'native',
+      dragging: false,
+      draggable: true,
+      selectable: true,
+      deletable: true,
+      zIndex: 0,
+      isConnectable: false,
+      positionAbsoluteX: 0,
+      positionAbsoluteY: 0,
     };
 
     switch (nodeData.nativeType) {
-      case 'shape':
-        return <ShapeNode key={id} {...nativeProps} />;
-      case 'text':
-        return <TextNode key={id} {...nativeProps} />;
-      case 'sticky':
-        return <StickyNote key={id} {...nativeProps} />;
+      case 'shape': {
+        const shapeData = { 
+          ...nativeData, 
+          nativeType: 'shape' as const,
+          source: 'native' as const,
+          state: nativeData.state || defaultComponentStates.shape
+        };
+        return <ShapeNode key={id} {...nativeProps} data={shapeData} />;
+      }
+      case 'text': {
+        const textData = { 
+          ...nativeData, 
+          nativeType: 'text' as const,
+          source: 'native' as const,
+          state: nativeData.state || defaultComponentStates.text
+        };
+        return <TextNode key={id} {...nativeProps} data={textData} />;
+      }
+      case 'sticky': {
+        const stickyData = { 
+          ...nativeData, 
+          nativeType: 'sticky' as const,
+          source: 'native' as const,
+          state: nativeData.state || defaultComponentStates.sticky
+        };
+        return <StickyNote key={id} {...nativeProps} data={stickyData} />;
+      }
       default:
         return (
           <div style={{

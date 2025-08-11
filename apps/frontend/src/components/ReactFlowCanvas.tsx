@@ -6,15 +6,14 @@ import {
   type Connection,
   Controls,
   type Edge,
-  type EdgeChanges,
+  type EdgeChange,
   MiniMap,
   type Node,
-  type NodeChanges,
+  type NodeChange,
   type NodeProps,
   Panel,
   ReactFlow,
   type ReactFlowInstance,
-  useReactFlow,
 } from '@xyflow/react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import '@xyflow/react/dist/style.css';
@@ -53,10 +52,10 @@ import StorageManagementDialog from './StorageManagementDialog.tsx';
 // Define nodeTypes outside of component to prevent re-renders
 const nodeTypes = {
   aiComponent: ComponentNode,
-  shape: ShapeNode as React.ComponentType<NodeProps>,
-  text: TextNode as React.ComponentType<NodeProps>,
-  sticky: StickyNote as React.ComponentType<NodeProps>,
-  image: ImageNode as React.ComponentType<NodeProps>,
+  shape: ShapeNode as unknown as React.ComponentType<NodeProps>,
+  text: TextNode as unknown as React.ComponentType<NodeProps>,
+  sticky: StickyNote as unknown as React.ComponentType<NodeProps>,
+  image: ImageNode as unknown as React.ComponentType<NodeProps>,
 };
 
 const ReactFlowCanvas: React.FC = () => {
@@ -65,12 +64,12 @@ const ReactFlowCanvas: React.FC = () => {
   
   // Optimized onNodesChange handler - apply all changes for visual feedback
   // React.memo in ComponentNode prevents unnecessary component re-renders during drag
-  const onNodesChange = useCallback((changes: NodeChanges) => {
-    setNodes((nds) => applyNodeChanges(changes, nds));
+  const onNodesChange = useCallback((changes: NodeChange[]) => {
+    setNodes((nds) => applyNodeChanges(changes, nds) as Node<ComponentNodeData>[]);
   }, []);
 
   // Custom onEdgesChange handler using applyEdgeChanges for consistency
-  const onEdgesChange = useCallback((changes: EdgeChanges) => {
+  const onEdgesChange = useCallback((changes: EdgeChange[]) => {
     setEdges((eds) => applyEdgeChanges(changes, eds));
   }, []);
 
@@ -1655,16 +1654,16 @@ const ReactFlowCanvas: React.FC = () => {
           console.log('🔧 [DEBUG] ReactFlow initialized:', instance);
           reactFlowInstance.current = instance;
         }}
-        onNodeClick={(event, node) => {
+        onNodeClick={(_event, node) => {
           console.log('🔧 [DEBUG] Node clicked:', { nodeId: node.id, node });
         }}
-        onNodeDragStart={(event, node) => {
+        onNodeDragStart={(_event, _node) => {
           // Drag started - visual updates handled by React Flow
         }}
-        onNodeDrag={(event, node) => {
+        onNodeDrag={(_event, _node) => {
           // Visual position updates handled by React Flow
         }}
-        onNodeDragStop={(event, node) => {
+        onNodeDragStop={(_event, _node) => {
           // Drag completed - final position applied via onNodesChange
         }}
       >

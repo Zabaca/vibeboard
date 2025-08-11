@@ -366,11 +366,11 @@ export class CDNModuleLoader {
           document.head.appendChild(script);
 
           // Get the module from global
-          const moduleExports = (window as Record<string, unknown>)[globalName];
+          const moduleExports = (window as unknown as Record<string, unknown>)[globalName];
 
           // Clean up
           document.head.removeChild(script);
-          delete (window as Record<string, unknown>)[globalName];
+          delete (window as unknown as Record<string, unknown>)[globalName];
 
           if (options.debug) {
             console.log('  Module from global:', typeof moduleExports);
@@ -380,11 +380,11 @@ export class CDNModuleLoader {
           if (typeof moduleExports === 'function') {
             return moduleExports;
           }
-          if (moduleExports && typeof moduleExports.nanoid === 'function') {
-            return moduleExports.nanoid;
+          if (moduleExports && typeof (moduleExports as any).nanoid === 'function') {
+            return (moduleExports as any).nanoid;
           }
-          if (moduleExports && typeof moduleExports.default === 'function') {
-            return moduleExports.default;
+          if (moduleExports && typeof (moduleExports as any).default === 'function') {
+            return (moduleExports as any).default;
           }
 
           return moduleExports;

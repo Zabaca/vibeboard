@@ -387,7 +387,7 @@ Relate your visual analysis to the code structure when making recommendations.`
     const analysis = data.choices[0].message.content;
 
     // Calculate token usage if available
-    let tokensUsed: number | undefined;
+    let tokensUsed: { total: number; imageTokens: number; textTokens: number } | undefined;
     if (data.usage) {
       const totalTokens = data.usage.total_tokens;
       const promptTokens = data.usage.prompt_tokens;

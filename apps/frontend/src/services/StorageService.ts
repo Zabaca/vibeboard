@@ -21,20 +21,20 @@ import type {
 import type { NativeComponentNode } from '../types/native-component.types.ts';
 import { indexedDBUtils } from '../utils/indexedDBUtils.ts';
 
-// Zod schemas for validation
-const _storageVersionInfoSchema = z.object({
-  version: z.string(),
-  appVersion: z.string(),
-  compilerVersion: z.string(),
-  migratedAt: z.number().optional(),
-});
+// Zod schemas for validation (currently unused but kept for future use)
+// const storageVersionInfoSchema = z.object({
+//   version: z.string(),
+//   appVersion: z.string(),
+//   compilerVersion: z.string(),
+//   migratedAt: z.number().optional(),
+// });
 
-const _compressedDataSchema = z.object({
-  compressed: z.boolean(),
-  data: z.string(),
-  originalSize: z.number(),
-  compressedSize: z.number(),
-});
+// const compressedDataSchema = z.object({
+//   compressed: z.boolean(),
+//   data: z.string(),
+//   originalSize: z.number(),
+//   compressedSize: z.number(),
+// });
 
 const positionSchema = z.object({
   x: z.number(),
@@ -74,13 +74,13 @@ const exportedCanvasSchema = z.object({
     .optional(),
 });
 
-const _storageDataSchema = z.object({
-  version: z.string(),
-  timestamp: z.number(),
-  nodeCount: z.number().optional(),
-  nodes: z.array(exportedNodeSchema).optional(),
-  edges: z.array(edgeSchema).optional(),
-});
+// const storageDataSchema = z.object({
+//   version: z.string(),
+//   timestamp: z.number(),
+//   nodeCount: z.number().optional(),
+//   nodes: z.array(exportedNodeSchema).optional(),
+//   edges: z.array(edgeSchema).optional(),
+// });
 
 const storageStatsSchema = z.object({
   nodeCount: z.number().optional(),
@@ -90,12 +90,12 @@ const storageStatsSchema = z.object({
   totalSize: z.number().optional(),
 });
 
-interface StorageVersionInfo {
-  version: string;
-  appVersion: string;
-  compilerVersion: string;
-  migratedAt?: number;
-}
+// interface StorageVersionInfo {
+//   version: string;
+//   appVersion: string;
+//   compilerVersion: string;
+//   migratedAt?: number;
+// }
 
 interface CompressedData {
   compressed: boolean;

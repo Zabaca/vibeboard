@@ -372,8 +372,8 @@ export default debugLogger;
 
 // Also expose globally for console access
 if (typeof window !== 'undefined') {
-  (window as Record<string, unknown>).debugLogger = debugLogger;
-  (window as Record<string, unknown>).debug = {
+  (window as unknown as Record<string, unknown>).debugLogger = debugLogger;
+  (window as unknown as Record<string, unknown>).debug = {
     enable: () => debugLogger.enableOnScreenLogging(),
     disable: () => debugLogger.disableOnScreenLogging(),
     copy: () => debugLogger.copyLogsToClipboard(),

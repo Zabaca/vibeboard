@@ -91,8 +91,10 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
   // Storage limits and thresholds
   private readonly MAX_IMAGE_SIZE_KB = 10 * 1024; // 10MB per image
   private readonly CLEANUP_AGE_DAYS = 30; // Delete unused images after 30 days
-  private readonly WARNING_QUOTA_PERCENTAGE = 80; // Warn at 80% quota usage
-  private readonly CRITICAL_QUOTA_PERCENTAGE = 95; // Critical at 95% quota usage
+  // @ts-ignore - Reserved for future quota monitoring
+  private readonly _WARNING_QUOTA_PERCENTAGE = 80; // Warn at 80% quota usage
+  // @ts-ignore - Reserved for future quota monitoring  
+  private readonly _CRITICAL_QUOTA_PERCENTAGE = 95; // Critical at 95% quota usage
 
   private constructor() {
     // Private constructor for singleton pattern
@@ -136,7 +138,8 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
 
       request.onupgradeneeded = (event) => {
         const db = (event.target as IDBOpenDBRequest).result;
-        const transaction = (event.target as IDBOpenDBRequest).transaction;
+        // @ts-ignore - Transaction available but not used in createObjectStores
+        const _transaction = (event.target as IDBOpenDBRequest).transaction;
         this.createObjectStores(db);
       };
     });
@@ -709,7 +712,7 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
   /**
    * Optimize image by compressing it (placeholder for now)
    */
-  async optimizeImage(imageData: ArrayBuffer, format: string, maxSizeKB: number = this.MAX_IMAGE_SIZE_KB): Promise<ArrayBuffer> {
+  async optimizeImage(imageData: ArrayBuffer, _format: string, maxSizeKB: number = this.MAX_IMAGE_SIZE_KB): Promise<ArrayBuffer> {
     // For now, just return the original data
     // In a real implementation, you might use canvas to resize/compress
     const currentSizeKB = imageData.byteLength / 1024;

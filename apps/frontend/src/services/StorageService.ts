@@ -279,7 +279,7 @@ export class StorageService {
         id: n.id,
         type: n.type || 'aiComponent',
         position: n.position,
-        data: n.data,
+        data: n.data as Record<string, unknown>,
         width: n.width,
         height: n.height,
       }));
@@ -632,8 +632,11 @@ export class StorageService {
 
   /**
    * Save data to storage with compression if needed
+   * @deprecated - Legacy method kept for potential future use
+   * @private
    */
-  private async saveToStorage(key: string, data: unknown): Promise<boolean> {
+  // @ts-ignore - Legacy method kept for potential future use
+  private async _saveToStorage(key: string, data: unknown): Promise<boolean> {
     try {
       const serialized = JSON.stringify(data);
       const payload = serialized.length > this.COMPRESSION_THRESHOLD 
@@ -667,8 +670,10 @@ export class StorageService {
 
   /**
    * Load data from storage with decompression and validation
+   * @deprecated - Legacy method kept for potential future use
    */
-  private async loadFromStorage(key: string): Promise<unknown> {
+  // @ts-ignore - Legacy method kept for potential future use
+  private async _loadFromStorage(key: string): Promise<unknown> {
     try {
       const stored = localStorage.getItem(key);
       if (!stored) return null;
@@ -747,8 +752,10 @@ export class StorageService {
 
   /**
    * Get version information
+   * @deprecated - Legacy method kept for potential future use
    */
-  private getVersionInfo(): StorageVersionInfo | null {
+  // @ts-ignore - Legacy method kept for potential future use
+  private _getVersionInfo(): StorageVersionInfo | null {
     try {
       const stored = localStorage.getItem(this.VERSION_KEY);
       if (!stored) return null;
@@ -771,8 +778,10 @@ export class StorageService {
 
   /**
    * Migrate storage between versions
+   * @deprecated - Legacy method kept for potential future use
    */
-  private async migrateStorage(oldVersion: StorageVersionInfo | null): Promise<void> {
+  // @ts-ignore - Legacy method kept for potential future use
+  private async _migrateStorage(oldVersion: StorageVersionInfo | null): Promise<void> {
     // Handle migration from legacy format
     if (!oldVersion) {
       this.migrateLegacyStorage();

@@ -34,6 +34,7 @@ import { defaultComponentStates } from '../types/native-component.types.ts';
 import ShapeNode from './native/ShapeNode.tsx';
 import TextNode from './native/TextNode.tsx';
 import StickyNote from './native/StickyNote.tsx';
+import ImageNode from './native/ImageNode.tsx';
 import NativeComponentsToolbar from './native/NativeComponentsToolbar.tsx';
 import NativeComponentContextMenu from './native/NativeComponentContextMenu.tsx';
 import StorageManagementDialog from './StorageManagementDialog.tsx';
@@ -47,6 +48,8 @@ const nodeTypes = {
   text: TextNode as React.ComponentType<any>,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   sticky: StickyNote as React.ComponentType<any>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  image: ImageNode as React.ComponentType<any>,
 };
 
 const ReactFlowCanvas: React.FC = () => {

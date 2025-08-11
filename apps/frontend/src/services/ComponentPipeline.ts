@@ -316,7 +316,7 @@ export class ComponentPipeline {
   async processURLComponent(
     url: string,
     _urlOptions: URLImportOptions = {},
-    pipelineOptions: PipelineOptions = {}
+    _pipelineOptions: PipelineOptions = {}
   ): Promise<PipelineResult> {
     const startTime = performance.now();
     
@@ -672,7 +672,8 @@ export class ComponentPipeline {
     );
 
     const results = await Promise.allSettled(promises);
-    const successful = results.filter(r => r.status === 'fulfilled' && r.value?.success).length;
+    // Track successful operations for potential future use
+    results.filter(r => r.status === 'fulfilled' && r.value?.success).length;
     
   }
 

@@ -8,7 +8,7 @@ import type { UnifiedComponentNode } from './component.types.ts';
 /**
  * Types of native components available in the whiteboard
  */
-export type NativeComponentType = 'shape' | 'text' | 'sticky';
+export type NativeComponentType = 'shape' | 'text' | 'sticky' | 'image';
 
 /**
  * State interface for native component-specific properties
@@ -35,6 +35,23 @@ export interface ComponentState {
   // Sticky-specific state
   stickyColor?: 'yellow' | 'pink' | 'blue' | 'green';
   padding?: number;
+  
+  // Image-specific state
+  imageId?: string;       // Reference to IndexedDB stored image
+  blobUrl?: string;      // Runtime blob URL for display (not persisted)
+  alt?: string;          // Alt text for accessibility
+  format?: string;       // 'png', 'jpeg', 'webp', etc.
+  sizeKB?: number;       // File size in KB
+  dimensions?: {
+    width: number;
+    height: number;
+    aspectRatio: number;
+  };
+  metadata?: {
+    pastedAt: number;
+    originalSize?: { width: number; height: number };
+    compressed: boolean; // Whether image was optimized
+  };
 }
 
 /**
@@ -102,5 +119,14 @@ export const defaultComponentStates: Record<NativeComponentType, ComponentState>
     padding: 16,
     locked: false,
     layer: 0,
+  },
+  image: {
+    alt: 'Pasted image',
+    locked: false,
+    layer: 0,
+    metadata: {
+      pastedAt: Date.now(),
+      compressed: false,
+    },
   },
 };

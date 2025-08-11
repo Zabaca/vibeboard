@@ -1,5 +1,5 @@
-import React, { memo, useState, useRef, useEffect } from 'react';
-import { Handle, Position, NodeResizer, type NodeProps } from '@xyflow/react';
+import { Handle, type NodeProps, NodeResizer, Position } from '@xyflow/react';
+import React, { memo, useEffect, useRef, useState } from 'react';
 import type { ComponentState } from '../../types/native-component.types.ts';
 
 interface StickyNoteData {
@@ -86,7 +86,7 @@ const StickyNote = ({ id, data, selected = false }: StickyNoteProps) => {
       adjustTextAreaHeight();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isEditing]);
+  }, [isEditing, adjustTextAreaHeight]);
 
   const handleTextSubmit = () => {
     setIsEditing(false);
@@ -110,13 +110,13 @@ const StickyNote = ({ id, data, selected = false }: StickyNoteProps) => {
   };
 
   const startEditing = () => {
-    if (!presentationMode && !state.locked) {
+    if (!(presentationMode || state.locked)) {
       setIsEditing(true);
     }
   };
 
   const cycleColor = () => {
-    if (!presentationMode && !state.locked && onUpdateState) {
+    if (!(presentationMode || state.locked) && onUpdateState) {
       const colors = Object.keys(stickyColors) as Array<keyof typeof stickyColors>;
       const currentIndex = colors.indexOf(state.stickyColor || 'yellow');
       const nextIndex = (currentIndex + 1) % colors.length;
@@ -229,13 +229,13 @@ const StickyNote = ({ id, data, selected = false }: StickyNoteProps) => {
                 fontFamily: state.fontFamily || 'Inter, system-ui, sans-serif',
                 fontWeight: '400',
                 color: colorScheme.text,
-                cursor: !presentationMode && !state.locked ? 'text' : 'default',
+                cursor: presentationMode || state.locked ? 'default' : 'text',
                 userSelect: presentationMode ? 'text' : 'none',
                 whiteSpace: 'pre-wrap',
                 wordBreak: 'break-word',
                 lineHeight: 1.6,
               }}
-              title={!presentationMode && !state.locked ? 'Click to edit note' : undefined}
+              title={presentationMode || state.locked ? undefined : 'Click to edit note'}
             >
               {state.text || 'Click to add note...'}
             </div>
@@ -244,7 +244,7 @@ const StickyNote = ({ id, data, selected = false }: StickyNoteProps) => {
       </div>
 
       {/* Control buttons - only show if not in presentation mode and not locked */}
-      {!presentationMode && !state.locked && selected && (
+      {!(presentationMode || state.locked) && selected && (
         <div
           className="nodrag"
           style={{

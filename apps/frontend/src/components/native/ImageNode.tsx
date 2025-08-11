@@ -1,5 +1,5 @@
-import { memo, useState, useRef, useCallback, useEffect } from 'react';
-import { Handle, Position, NodeResizer, type NodeProps } from '@xyflow/react';
+import { Handle, type NodeProps, NodeResizer, Position } from '@xyflow/react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import type { ComponentState } from '../../types/native-component.types.ts';
 
 interface ImageNodeData {
@@ -75,7 +75,9 @@ const ImageNode = ({ id, data, selected = false }: ImageNodeProps) => {
 
   // Save image to local device
   const handleSaveImage = useCallback(async () => {
-    if (!state.blobUrl) return;
+    if (!state.blobUrl) {
+      return;
+    }
 
     try {
       // Create download link
@@ -92,7 +94,9 @@ const ImageNode = ({ id, data, selected = false }: ImageNodeProps) => {
 
   // Copy image to clipboard
   const handleCopyImage = useCallback(async () => {
-    if (!state.blobUrl) return;
+    if (!state.blobUrl) {
+      return;
+    }
 
     try {
       if (!navigator.clipboard) {
@@ -125,14 +129,20 @@ const ImageNode = ({ id, data, selected = false }: ImageNodeProps) => {
 
   // Format file size for display
   const formatFileSize = useCallback((sizeKB?: number): string => {
-    if (!sizeKB) return 'Unknown size';
-    if (sizeKB < 1024) return `${sizeKB} KB`;
+    if (!sizeKB) {
+      return 'Unknown size';
+    }
+    if (sizeKB < 1024) {
+      return `${sizeKB} KB`;
+    }
     return `${(sizeKB / 1024).toFixed(1)} MB`;
   }, []);
 
   // Format dimensions for display
   const formatDimensions = useCallback((dimensions?: ComponentState['dimensions']): string => {
-    if (!dimensions) return 'Unknown dimensions';
+    if (!dimensions) {
+      return 'Unknown dimensions';
+    }
     return `${dimensions.width} × ${dimensions.height}`;
   }, []);
 
@@ -272,7 +282,7 @@ const ImageNode = ({ id, data, selected = false }: ImageNodeProps) => {
         )}
 
         {/* Fallback when no image */}
-        {!state.blobUrl && !error && (
+        {!(state.blobUrl || error) && (
           <div
             style={{
               display: 'flex',
@@ -336,7 +346,7 @@ const ImageNode = ({ id, data, selected = false }: ImageNodeProps) => {
       )}
 
       {/* Control buttons - only show if not in presentation mode and not locked */}
-      {!presentationMode && !state.locked && selected && (
+      {!(presentationMode || state.locked) && selected && (
         <div
           className="nodrag"
           style={{

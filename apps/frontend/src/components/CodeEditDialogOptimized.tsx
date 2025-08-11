@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import CodeEditorSimple from './CodeEditorSimple.tsx';
-import { codeEditDialogStyles } from './CodeEditDialog.styles.ts';
-import { captureElementScreenshot } from '../utils/screenshotUtils.ts';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { VisionMetadata } from '../types/component.types.ts';
+import { captureElementScreenshot } from '../utils/screenshotUtils.ts';
+import { codeEditDialogStyles } from './CodeEditDialog.styles.ts';
+import CodeEditorSimple from './CodeEditorSimple.tsx';
 
 interface CodeEditDialogOptimizedProps {
   isOpen: boolean;
@@ -287,7 +287,7 @@ const VisionMetadataSection = React.memo(
             overflow: 'hidden',
           }}
         >
-          {!hasVisionData && !isCapturingScreenshot && !isAnalyzing && (
+          {!(hasVisionData || isCapturingScreenshot || isAnalyzing) && (
             <div
               style={{
                 padding: '16px',
@@ -637,12 +637,12 @@ const CodeEditDialogOptimized: React.FC<CodeEditDialogOptimizedProps> = ({
         setIsAnalyzing(false);
       }
     },
-    [nodeCode],
+    [nodeCode, nodeId, onVisionMetadataUpdate],
   );
 
   // Capture screenshot of component
   const captureComponentScreenshot = useCallback(async () => {
-    if (!nodeId || !getComponentElement) {
+    if (!(nodeId && getComponentElement)) {
       console.warn('Cannot capture screenshot: missing nodeId or getComponentElement function');
       return;
     }
@@ -698,7 +698,13 @@ const CodeEditDialogOptimized: React.FC<CodeEditDialogOptimizedProps> = ({
     } finally {
       setIsCapturingScreenshot(false);
     }
-  }, [nodeId, getComponentElement, currentVisionMetadata, performVisionAnalysis]);
+  }, [
+    nodeId,
+    getComponentElement,
+    currentVisionMetadata,
+    performVisionAnalysis,
+    onVisionMetadataUpdate,
+  ]);
 
   // Reset state and capture screenshot when modal opens
   useEffect(() => {
@@ -733,7 +739,7 @@ const CodeEditDialogOptimized: React.FC<CodeEditDialogOptimizedProps> = ({
         }
       }
     }
-  }, [nodeCode, isOpen, nodeId, visionMetadata]); // Added visionMetadata to deps
+  }, [nodeCode, isOpen, nodeId, visionMetadata, captureComponentScreenshot, getComponentElement]); // Added visionMetadata to deps
 
   // Vision analysis is now handled by the backend during regeneration
 
@@ -763,7 +769,9 @@ const CodeEditDialogOptimized: React.FC<CodeEditDialogOptimizedProps> = ({
 
   const handleMouseMove = useCallback(
     (e: MouseEvent) => {
-      if (!isResizing || !contentRef.current) return;
+      if (!(isResizing && contentRef.current)) {
+        return;
+      }
 
       const content = contentRef.current;
       const rect = content.getBoundingClientRect();
@@ -789,9 +797,11 @@ const CodeEditDialogOptimized: React.FC<CodeEditDialogOptimizedProps> = ({
         document.removeEventListener('mouseup', handleMouseUp);
       };
     }
-  }, [isResizing, handleMouseMove]);
+  }, [isResizing, handleMouseMove, handleMouseUp]);
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   return (
     <>

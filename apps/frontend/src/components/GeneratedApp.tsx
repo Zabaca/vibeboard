@@ -190,7 +190,9 @@ const GeneratedApp = ({
   // Intersection Observer to detect when component enters viewport (lazy rendering)
   useEffect(() => {
     const container = containerRef.current;
-    if (!container) return;
+    if (!container) {
+      return;
+    }
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -250,7 +252,7 @@ const GeneratedApp = ({
 
   useEffect(() => {
     // Only process component if it has been rendered (lazy transpilation) or is in viewport
-    if (!isInViewport && !hasBeenRendered) {
+    if (!(isInViewport || hasBeenRendered)) {
       return;
     }
 
@@ -539,18 +541,18 @@ ${code || component?.originalCode || ''}`;
           </svg>
         </div>
         <div style={{ fontSize: '14px', fontWeight: '500' }}>
-          {!hasBeenRendered && !isInViewport
-            ? 'Component ready...'
-            : isProcessing
+          {hasBeenRendered || isInViewport
+            ? isProcessing
               ? 'Processing component...'
-              : 'Initializing component...'}
+              : 'Initializing component...'
+            : 'Component ready...'}
         </div>
         <div style={{ fontSize: '12px', marginTop: '4px', opacity: 0.7 }}>
-          {!hasBeenRendered && !isInViewport
-            ? 'Will transpile when visible (lazy loading)'
-            : component?.compiledCode
+          {hasBeenRendered || isInViewport
+            ? component?.compiledCode
               ? 'Loading pre-compiled component'
-              : 'Transpiling JSX to JavaScript'}
+              : 'Transpiling JSX to JavaScript'
+            : 'Will transpile when visible (lazy loading)'}
         </div>
       </div>
     );

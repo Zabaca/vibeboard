@@ -1,6 +1,6 @@
 // AI-generated dashboard component with potential issues
 const DashboardMetrics = () => {
-  const [metrics, setMetrics] = useState([
+  const [metrics, _setMetrics] = useState([
     { name: 'Revenue', value: 45678.9, color: '#10b981' },
     { name: 'Users', value: 1234, color: '#6366f1' },
     { name: 'Conversion', value: 23.5, color: '#f59e0b' },
@@ -99,4 +99,4 @@ const DashboardMetrics = () => {
   );
 };
 
-const Component = DashboardMetrics;
+const _Component = DashboardMetrics;

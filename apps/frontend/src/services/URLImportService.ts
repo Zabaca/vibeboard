@@ -1,4 +1,4 @@
-import type { URLImportOptions, UnifiedComponentNode } from '../types/component.types.ts';
+import type { UnifiedComponentNode, URLImportOptions } from '../types/component.types.ts';
 
 /**
  * URLImportService
@@ -147,12 +147,12 @@ export class URLImportService {
       const supportedExtensions = ['.js', '.jsx', '.ts', '.tsx', '.mjs', '.esm.js'];
       const hasValidExtension = supportedExtensions.some((ext) => pathname.endsWith(ext));
 
-      if (!hasValidExtension && !pathname.includes('esm.sh') && !pathname.includes('skypack')) {
+      if (!(hasValidExtension || pathname.includes('esm.sh') || pathname.includes('skypack'))) {
         console.warn(`URL ${url} may not contain a valid JavaScript module`);
       }
 
       return { valid: true };
-    } catch (error) {
+    } catch (_error) {
       return { valid: false, error: 'Invalid URL format' };
     }
   }
@@ -281,7 +281,7 @@ export class URLImportService {
       (url.includes('esm.sh') || url.includes('skypack.dev') || url.includes('jsdelivr'))
     ) {
       // For known CDNs, just check it's not obviously wrong
-      return !code.includes('404') && !code.includes('Not Found') && code.length > 50;
+      return !(code.includes('404') || code.includes('Not Found')) && code.length > 50;
     }
 
     // Check for common patterns in JavaScript/React code

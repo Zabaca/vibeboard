@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { storageService } from '../services/StorageService.ts';
 import { indexedDBUtils } from '../utils/indexedDBUtils.ts';
 
@@ -27,7 +27,7 @@ const StorageManagementDialog: React.FC<StorageManagementDialogProps> = ({ isOpe
     if (isOpen) {
       loadStorageInfo();
     }
-  }, [isOpen]);
+  }, [isOpen, loadStorageInfo]);
 
   const loadStorageInfo = async (): Promise<void> => {
     setIsLoading(true);
@@ -106,18 +106,22 @@ const StorageManagementDialog: React.FC<StorageManagementDialogProps> = ({ isOpe
   };
 
   const formatBytes = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) {
+      return '0 Bytes';
+    }
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+    return `${parseFloat((bytes / k ** i).toFixed(2))} ${sizes[i]}`;
   };
 
   const formatDate = (timestamp: number): string => {
     return new Date(timestamp).toLocaleString();
   };
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   return (
     <div

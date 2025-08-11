@@ -5,11 +5,11 @@
  * This improves runtime performance by avoiding transpilation on first use
  */
 
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import * as Babel from '@babel/standalone';
 import { prebuiltComponents } from '../src/data/prebuiltComponents.ts';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -73,12 +73,12 @@ function compileComponents() {
   const endTime = Date.now();
   const compilationTime = endTime - startTime;
 
-  console.log(`\n✨ Compilation complete!`);
+  console.log('\n✨ Compilation complete!');
   console.log(`  - Compiled: ${compiledComponents.length}/${prebuiltComponents.length} components`);
   console.log(`  - Time: ${compilationTime}ms`);
 
   if (errors.length > 0) {
-    console.log(`\n⚠️  Errors encountered:`);
+    console.log('\n⚠️  Errors encountered:');
     for (const error of errors) {
       console.log(`  - ${error.name}: ${error.error}`);
     }
@@ -90,9 +90,9 @@ function compileComponents() {
 
   try {
     fs.writeFileSync(outputPath, output);
-    console.log(`\n📝 Generated compiledComponents.generated.ts`);
+    console.log('\n📝 Generated compiledComponents.generated.ts');
   } catch (error) {
-    console.error(`\n❌ Failed to write output file:`, error);
+    console.error('\n❌ Failed to write output file:', error);
     process.exit(1);
   }
 

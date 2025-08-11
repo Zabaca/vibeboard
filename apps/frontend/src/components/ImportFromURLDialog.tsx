@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { ComponentPipeline } from '../services/ComponentPipeline.ts';
 import { URLImportService } from '../services/URLImportService.ts';
 import type { UnifiedComponentNode } from '../types/component.types.ts';
@@ -110,10 +110,10 @@ export const ImportFromURLDialog: React.FC<ImportFromURLDialogProps> = ({
         const validExtensions = ['.js', '.jsx', '.ts', '.tsx', '.mjs', '.esm.js'];
         const hasValidExtension = validExtensions.some((ext) => pathname.endsWith(ext));
 
-        if (!hasValidExtension && !pathname.includes('esm.sh') && !pathname.includes('skypack')) {
-          setValidationMessage('ℹ️ URL may not contain a valid JavaScript module');
-        } else {
+        if (hasValidExtension || pathname.includes('esm.sh') || pathname.includes('skypack')) {
           setValidationMessage('✅ URL appears valid');
+        } else {
+          setValidationMessage('ℹ️ URL may not contain a valid JavaScript module');
         }
 
         return true;
@@ -126,7 +126,7 @@ export const ImportFromURLDialog: React.FC<ImportFromURLDialogProps> = ({
   );
 
   const handleImport = useCallback(async () => {
-    if (!url || !validateUrl(url)) {
+    if (!(url && validateUrl(url))) {
       setError('Please enter a valid URL');
       return;
     }
@@ -198,7 +198,9 @@ export const ImportFromURLDialog: React.FC<ImportFromURLDialogProps> = ({
     }
   }, [url, validateUrl]);
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   return (
     <>
@@ -285,7 +287,6 @@ export const ImportFromURLDialog: React.FC<ImportFromURLDialogProps> = ({
               borderRadius: '6px',
               boxSizing: 'border-box',
             }}
-            autoFocus
           />
           {validationMessage && (
             <div

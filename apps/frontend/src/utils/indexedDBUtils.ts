@@ -93,10 +93,6 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
   // Storage limits and thresholds
   private readonly MAX_IMAGE_SIZE_KB = 10 * 1024; // 10MB per image
   private readonly CLEANUP_AGE_DAYS = 30; // Delete unused images after 30 days
-  // @ts-ignore - Reserved for future quota monitoring
-  private readonly _WARNING_QUOTA_PERCENTAGE = 80; // Warn at 80% quota usage
-  // @ts-ignore - Reserved for future quota monitoring
-  private readonly _CRITICAL_QUOTA_PERCENTAGE = 95; // Critical at 95% quota usage
 
   private constructor() {
     // Private constructor for singleton pattern
@@ -153,30 +149,30 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
   private createObjectStores(db: IDBDatabase): void {
     try {
       // Images store - for storing compressed image data
-      if (!db.objectStoreNames.contains(this.STORES.IMAGES)) {
+      if (db.objectStoreNames.contains(this.STORES.IMAGES)) {
+      } else {
         const imageStore = db.createObjectStore(this.STORES.IMAGES, {
           keyPath: 'id',
         });
         imageStore.createIndex('createdAt', 'createdAt', { unique: false });
         imageStore.createIndex('lastAccessed', 'lastAccessed', { unique: false });
         imageStore.createIndex('format', 'format', { unique: false });
-      } else {
       }
 
       // Canvas store - for storing complete canvas data (nodes, edges, etc.)
-      if (!db.objectStoreNames.contains(this.STORES.CANVAS)) {
+      if (db.objectStoreNames.contains(this.STORES.CANVAS)) {
+      } else {
         const canvasStore = db.createObjectStore(this.STORES.CANVAS, {
           keyPath: 'id',
         });
         canvasStore.createIndex('lastModified', 'lastModified', { unique: false });
         canvasStore.createIndex('name', 'name', { unique: false });
-      } else {
       }
 
       // Settings store - for storing application settings and migration info
-      if (!db.objectStoreNames.contains(this.STORES.SETTINGS)) {
-        db.createObjectStore(this.STORES.SETTINGS, { keyPath: 'key' });
+      if (db.objectStoreNames.contains(this.STORES.SETTINGS)) {
       } else {
+        db.createObjectStore(this.STORES.SETTINGS, { keyPath: 'key' });
       }
     } catch (error) {
       console.error('❌ Failed to create object stores:', error);
@@ -205,7 +201,7 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
     };
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction([this.STORES.IMAGES], 'readwrite');
+      const transaction = this.db?.transaction([this.STORES.IMAGES], 'readwrite');
       const store = transaction.objectStore(this.STORES.IMAGES);
       const request = store.add(storageData);
 
@@ -229,7 +225,7 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
     }
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction([this.STORES.IMAGES], 'readwrite');
+      const transaction = this.db?.transaction([this.STORES.IMAGES], 'readwrite');
       const store = transaction.objectStore(this.STORES.IMAGES);
       const request = store.get(imageId);
 
@@ -266,7 +262,7 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
     }
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction([this.STORES.IMAGES], 'readwrite');
+      const transaction = this.db?.transaction([this.STORES.IMAGES], 'readwrite');
       const store = transaction.objectStore(this.STORES.IMAGES);
       const request = store.delete(imageId);
 
@@ -290,7 +286,7 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
     }
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction([this.STORES.IMAGES], 'readonly');
+      const transaction = this.db?.transaction([this.STORES.IMAGES], 'readonly');
       const store = transaction.objectStore(this.STORES.IMAGES);
       const request = store.getAll();
 
@@ -350,7 +346,7 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
     };
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction([this.STORES.CANVAS], 'readwrite');
+      const transaction = this.db?.transaction([this.STORES.CANVAS], 'readwrite');
       const store = transaction.objectStore(this.STORES.CANVAS);
       const request = store.put(canvasData);
 
@@ -375,7 +371,7 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
 
     return new Promise((resolve, reject) => {
       try {
-        const transaction = this.db!.transaction([this.STORES.CANVAS], 'readonly');
+        const transaction = this.db?.transaction([this.STORES.CANVAS], 'readonly');
         const store = transaction.objectStore(this.STORES.CANVAS);
         const request = store.get(canvasId);
 
@@ -418,7 +414,7 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
     };
 
     return new Promise((resolve) => {
-      const transaction = this.db!.transaction([this.STORES.CANVAS], 'readwrite');
+      const transaction = this.db?.transaction([this.STORES.CANVAS], 'readwrite');
       const store = transaction.objectStore(this.STORES.CANVAS);
       const request = store.put(updated);
 
@@ -442,7 +438,7 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
     }
 
     return new Promise((resolve) => {
-      const transaction = this.db!.transaction([this.STORES.CANVAS], 'readwrite');
+      const transaction = this.db?.transaction([this.STORES.CANVAS], 'readwrite');
       const store = transaction.objectStore(this.STORES.CANVAS);
       const request = store.delete(canvasId);
 
@@ -466,7 +462,7 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
     }
 
     return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction([this.STORES.CANVAS], 'readonly');
+      const transaction = this.db?.transaction([this.STORES.CANVAS], 'readonly');
       const store = transaction.objectStore(this.STORES.CANVAS);
       const request = store.getAll();
 
@@ -665,7 +661,7 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
     }
 
     return new Promise((resolve) => {
-      const transaction = this.db!.transaction([this.STORES.SETTINGS], 'readonly');
+      const transaction = this.db?.transaction([this.STORES.SETTINGS], 'readonly');
       const store = transaction.objectStore(this.STORES.SETTINGS);
       const request = store.get('migrationInfo');
 

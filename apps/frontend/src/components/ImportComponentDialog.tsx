@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 interface ImportComponentDialogProps {
   isOpen: boolean;
@@ -31,7 +31,9 @@ const ImportComponentDialog: React.FC<ImportComponentDialogProps> = ({
     }
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   const handleSubmit = () => {
     if (componentCode.trim()) {
@@ -345,7 +347,7 @@ export default function MyComponent() {
                   Processing...
                 </>
               ) : (
-                <>📥 Import Component</>
+                '📥 Import Component'
               )}
             </button>
           </div>

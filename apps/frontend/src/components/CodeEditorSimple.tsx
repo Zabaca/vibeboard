@@ -1,9 +1,9 @@
-import React, { useEffect, useRef } from 'react';
-import { EditorView, keymap } from '@codemirror/view';
-import { EditorState } from '@codemirror/state';
-import { javascript } from '@codemirror/lang-javascript';
-import { oneDark } from '@codemirror/theme-one-dark';
 import { defaultKeymap } from '@codemirror/commands';
+import { javascript } from '@codemirror/lang-javascript';
+import { EditorState } from '@codemirror/state';
+import { oneDark } from '@codemirror/theme-one-dark';
+import { EditorView, keymap } from '@codemirror/view';
+import React, { useEffect, useRef } from 'react';
 
 interface CodeEditorSimpleProps {
   value: string;
@@ -31,7 +31,9 @@ const CodeEditorSimple: React.FC<CodeEditorSimpleProps> = ({
   }, [onChange]);
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!containerRef.current) {
+      return;
+    }
 
     // Create the editor state with minimal extensions
     const startState = EditorState.create({

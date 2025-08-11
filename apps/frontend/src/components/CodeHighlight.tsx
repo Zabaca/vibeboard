@@ -9,7 +9,9 @@ interface PrismGlobal {
 let prismPromise: Promise<PrismGlobal> | null = null;
 
 const loadPrism = async () => {
-  if (prismPromise) return prismPromise;
+  if (prismPromise) {
+    return prismPromise;
+  }
 
   prismPromise = new Promise((resolve) => {
     // Check if already loaded
@@ -84,7 +86,7 @@ const CodeHighlight: React.FC<CodeHighlightProps> = ({
     };
 
     highlight();
-  }, [code, language]);
+  }, []);
 
   return (
     <pre

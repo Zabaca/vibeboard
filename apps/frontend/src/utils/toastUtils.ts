@@ -48,7 +48,6 @@ function getToastIcon(type: ToastOptions['type']): string {
       return '❌';
     case 'warning':
       return '⚠️';
-    case 'info':
     default:
       return 'ℹ️';
   }
@@ -65,7 +64,6 @@ function getToastColors(type: ToastOptions['type']): { bg: string; border: strin
       return { bg: 'rgba(239, 68, 68, 0.1)', border: '#ef4444', text: '#dc2626' };
     case 'warning':
       return { bg: 'rgba(245, 158, 11, 0.1)', border: '#f59e0b', text: '#d97706' };
-    case 'info':
     default:
       return { bg: 'rgba(59, 130, 246, 0.1)', border: '#3b82f6', text: '#2563eb' };
   }

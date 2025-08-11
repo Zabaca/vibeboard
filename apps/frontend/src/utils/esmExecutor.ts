@@ -155,7 +155,7 @@ export class ESMExecutor {
     let resolvedCode = code;
 
     // Pattern to match import statements
-    const importPattern = /import\s+(?:(.+?)\s+from\s+)?['"]([@\w\-\/\.]+)['"]/g;
+    const importPattern = /import\s+(?:(.+?)\s+from\s+)?['"]([@\w\-/.]+)['"]/g;
     const matches = [...code.matchAll(importPattern)];
 
     for (const match of matches) {
@@ -297,7 +297,7 @@ export class ESMExecutor {
    * Extract dependencies from code
    */
   private extractDependencies(code: string): string[] {
-    const importPattern = /import\s+.*?\s+from\s+['"]([@\w\-\/\.]+)['"]/g;
+    const importPattern = /import\s+.*?\s+from\s+['"]([@\w\-/.]+)['"]/g;
     const dependencies: string[] = [];
 
     let match;

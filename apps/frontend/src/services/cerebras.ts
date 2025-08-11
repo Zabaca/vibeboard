@@ -1,5 +1,5 @@
-import VisionService, { type VisionAnalysisRequest } from './vision.ts';
 import { posthogService } from './posthog.ts';
+import VisionService, { type VisionAnalysisRequest } from './vision.ts';
 
 interface GenerationResult {
   success: boolean;
@@ -61,7 +61,7 @@ class CerebrasService {
           if (visionResult.success && visionResult.analysis) {
             visionAnalysis = visionResult.analysis;
             visionUsed = true;
-            console.log('✅ Vision analysis completed:', visionProcessingTime + 's');
+            console.log('✅ Vision analysis completed:', `${visionProcessingTime}s`);
 
             // Track successful vision analysis
             posthogService.track('vision_analysis_completed', {
@@ -122,7 +122,7 @@ class CerebrasService {
       };
 
       if (isLocalhost) {
-        headers['Authorization'] = `Bearer ${this.apiKey}`;
+        headers.Authorization = `Bearer ${this.apiKey}`;
       }
 
       const response = await fetch(this.baseURL, {
@@ -341,7 +341,7 @@ The component should be a complete, working React component that incorporates bo
   private processESMCode(code: string): string {
     // Check if the code contains JSX (looking for < followed by capital letter or lowercase HTML elements)
     const hasJSX =
-      /<[A-Z]|\<(div|span|button|input|form|h[1-6]|p|a|ul|li|table|tbody|tr|td|th)/g.test(code);
+      /<[A-Z]|<(div|span|button|input|form|h[1-6]|p|a|ul|li|table|tbody|tr|td|th)/g.test(code);
 
     if (hasJSX) {
       // If JSX is present, we need to transpile it
@@ -359,11 +359,21 @@ The component should be a complete, working React component that incorporates bo
     if (!code.includes('import React')) {
       // Add React import at the beginning
       const hooks = [];
-      if (code.includes('useState')) hooks.push('useState');
-      if (code.includes('useEffect')) hooks.push('useEffect');
-      if (code.includes('useRef')) hooks.push('useRef');
-      if (code.includes('useMemo')) hooks.push('useMemo');
-      if (code.includes('useCallback')) hooks.push('useCallback');
+      if (code.includes('useState')) {
+        hooks.push('useState');
+      }
+      if (code.includes('useEffect')) {
+        hooks.push('useEffect');
+      }
+      if (code.includes('useRef')) {
+        hooks.push('useRef');
+      }
+      if (code.includes('useMemo')) {
+        hooks.push('useMemo');
+      }
+      if (code.includes('useCallback')) {
+        hooks.push('useCallback');
+      }
 
       const hooksImport = hooks.length > 0 ? `, { ${hooks.join(', ')} }` : '';
       code = `import React${hooksImport} from 'react';\n\n${code}`;

@@ -1,5 +1,5 @@
-import React, { memo, useState, useRef, useEffect } from 'react';
-import { Handle, Position, NodeResizer, type NodeProps } from '@xyflow/react';
+import { Handle, type NodeProps, NodeResizer, Position } from '@xyflow/react';
+import React, { memo, useEffect, useRef, useState } from 'react';
 import type { ComponentState } from '../../types/native-component.types.ts';
 import TextCustomizer from './TextCustomizer.tsx';
 
@@ -40,7 +40,10 @@ const TextNode = ({ id, data, selected = false }: TextNodeProps) => {
       // Auto-resize textarea to fit content
       adjustTextAreaHeight();
     }
-  }, [isEditing]);
+  }, [
+    isEditing, // Auto-resize textarea to fit content
+    adjustTextAreaHeight,
+  ]);
 
   // Adjust textarea height based on content
   const adjustTextAreaHeight = () => {
@@ -72,7 +75,7 @@ const TextNode = ({ id, data, selected = false }: TextNodeProps) => {
   };
 
   const startEditing = () => {
-    if (!presentationMode && !state.locked) {
+    if (!(presentationMode || state.locked)) {
       setIsEditing(true);
     }
   };
@@ -160,7 +163,7 @@ const TextNode = ({ id, data, selected = false }: TextNodeProps) => {
               fontWeight: state.fontWeight || '400',
               textAlign: state.textAlign || 'left',
               color: state.textColor || '#111827',
-              cursor: !presentationMode && !state.locked ? 'text' : 'default',
+              cursor: presentationMode || state.locked ? 'default' : 'text',
               userSelect: presentationMode ? 'text' : 'none',
               whiteSpace: 'pre-wrap',
               wordBreak: 'break-word',
@@ -175,7 +178,7 @@ const TextNode = ({ id, data, selected = false }: TextNodeProps) => {
                   : '1px solid transparent',
               transition: 'all 0.2s ease',
             }}
-            title={!presentationMode && !state.locked ? 'Click to edit text' : undefined}
+            title={presentationMode || state.locked ? undefined : 'Click to edit text'}
           >
             {state.text || 'Text'}
           </div>
@@ -183,7 +186,7 @@ const TextNode = ({ id, data, selected = false }: TextNodeProps) => {
       </div>
 
       {/* Control buttons - only show if not in presentation mode and not locked */}
-      {!presentationMode && !state.locked && selected && (
+      {!(presentationMode || state.locked) && selected && (
         <div
           className="nodrag"
           style={{

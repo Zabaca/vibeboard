@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 interface PromptEditDialogProps {
   isOpen: boolean;
@@ -29,7 +29,9 @@ const PromptEditDialog: React.FC<PromptEditDialogProps> = ({
     }
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
@@ -260,7 +262,7 @@ const PromptEditDialog: React.FC<PromptEditDialogProps> = ({
                   Regenerating...
                 </>
               ) : (
-                <>🔄 Regenerate</>
+                '🔄 Regenerate'
               )}
             </button>
           </div>

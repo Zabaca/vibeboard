@@ -199,4 +199,4 @@ const DashboardCharts = () => {
   );
 };
 
-const Component = DashboardCharts;
+const _Component = DashboardCharts;

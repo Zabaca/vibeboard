@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { AsyncComponentLoader } from './AsyncComponentLoader.tsx';
 import { esmExecutor } from '../utils/esmExecutor.ts';
+import { AsyncComponentLoader } from './AsyncComponentLoader.tsx';
 
 /**
  * Test component for ESM loading functionality
@@ -560,7 +560,7 @@ export default AIGeneratedCounter;`;
             debug={true}
             cache={true}
             onLoad={(result) => {
-              addTestResult(`✅ Component loaded successfully!`);
+              addTestResult('✅ Component loaded successfully!');
               if (result.metadata) {
                 addTestResult(`   Load time: ${result.metadata.loadTime.toFixed(2)}ms`);
               }
@@ -577,7 +577,7 @@ export default AIGeneratedCounter;`;
             debug={true}
             cache={true}
             onLoad={(result) => {
-              addTestResult(`✅ ESM code executed successfully!`);
+              addTestResult('✅ ESM code executed successfully!');
               if (result.metadata) {
                 addTestResult(`   Load time: ${result.metadata.loadTime.toFixed(2)}ms`);
                 addTestResult(`   Module size: ${result.metadata.moduleSize} bytes`);
@@ -604,7 +604,7 @@ export default AIGeneratedCounter;`;
             debug={true}
             cache={false}
             onLoad={(result) => {
-              addTestResult(`✅ AI-generated ESM component loaded successfully!`);
+              addTestResult('✅ AI-generated ESM component loaded successfully!');
               if (result.metadata) {
                 addTestResult(`   Load time: ${result.metadata.loadTime.toFixed(2)}ms`);
                 addTestResult(`   Module size: ${result.metadata.moduleSize} bytes`);
@@ -626,7 +626,7 @@ export default AIGeneratedCounter;`;
               debug={true}
               cache={true}
               onLoad={(result) => {
-                addTestResult(`✅ Direct CDN import successful!`);
+                addTestResult('✅ Direct CDN import successful!');
                 addTestResult(`   URL: ${currentTest}`);
                 addTestResult(
                   `   Load method: ${result.metadata?.loadTime === 0 ? 'Direct import (no blob)' : 'Fetch + blob method'}`,
@@ -638,7 +638,7 @@ export default AIGeneratedCounter;`;
               onError={(error) => {
                 addTestResult(`❌ Direct CDN import failed: ${error.message}`);
                 addTestResult(`   URL: ${currentTest}`);
-                addTestResult(`   Try checking the CDN URL or adding ?external=react flag`);
+                addTestResult('   Try checking the CDN URL or adding ?external=react flag');
               }}
             />
           )}
@@ -650,8 +650,8 @@ export default AIGeneratedCounter;`;
             debug={true}
             cache={true}
             onLoad={(result) => {
-              addTestResult(`✅ React Icons demo component loaded successfully!`);
-              addTestResult(`   This component dynamically imports react-icons from esm.sh`);
+              addTestResult('✅ React Icons demo component loaded successfully!');
+              addTestResult('   This component dynamically imports react-icons from esm.sh');
               if (result.metadata) {
                 addTestResult(`   Load time: ${result.metadata.loadTime?.toFixed(2) || 0}ms`);
               }
@@ -668,9 +668,9 @@ export default AIGeneratedCounter;`;
             debug={true}
             cache={true}
             onLoad={(result) => {
-              addTestResult(`✅ Lucide React icons loaded successfully!`);
-              addTestResult(`   Published NPM package via esm.sh CDN`);
-              addTestResult(`   Using external React to avoid conflicts`);
+              addTestResult('✅ Lucide React icons loaded successfully!');
+              addTestResult('   Published NPM package via esm.sh CDN');
+              addTestResult('   Using external React to avoid conflicts');
               if (result.metadata) {
                 addTestResult(`   Load time: ${result.metadata.loadTime?.toFixed(2) || 0}ms`);
               }
@@ -687,9 +687,9 @@ export default AIGeneratedCounter;`;
             debug={true}
             cache={true}
             onLoad={(result) => {
-              addTestResult(`✅ React Feather icons loaded successfully!`);
-              addTestResult(`   Popular NPM package (287+ icons)`);
-              addTestResult(`   Loaded from esm.sh with external React`);
+              addTestResult('✅ React Feather icons loaded successfully!');
+              addTestResult('   Popular NPM package (287+ icons)');
+              addTestResult('   Loaded from esm.sh with external React');
               if (result.metadata) {
                 addTestResult(`   Load time: ${result.metadata.loadTime?.toFixed(2) || 0}ms`);
               }
@@ -706,9 +706,9 @@ export default AIGeneratedCounter;`;
             debug={true}
             cache={true}
             onLoad={(result) => {
-              addTestResult(`✅ Production-style component loaded!`);
-              addTestResult(`   Top-level import - no useEffect`);
-              addTestResult(`   Icons immediately available`);
+              addTestResult('✅ Production-style component loaded!');
+              addTestResult('   Top-level import - no useEffect');
+              addTestResult('   Icons immediately available');
               addTestResult(`   This is how you'd use it in production`);
               if (result.metadata) {
                 addTestResult(
@@ -728,9 +728,9 @@ export default AIGeneratedCounter;`;
             debug={true}
             cache={true}
             onLoad={(result) => {
-              addTestResult(`✅ Confetti Button component loaded successfully!`);
-              addTestResult(`   canvas-confetti library loaded from jsdelivr CDN`);
-              addTestResult(`   Click the button to trigger confetti animation!`);
+              addTestResult('✅ Confetti Button component loaded successfully!');
+              addTestResult('   canvas-confetti library loaded from jsdelivr CDN');
+              addTestResult('   Click the button to trigger confetti animation!');
               if (result.metadata) {
                 addTestResult(`   Load time: ${result.metadata.loadTime?.toFixed(2) || 0}ms`);
               }

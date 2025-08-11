@@ -10,26 +10,26 @@
  * - Fallback to localStorage for compatibility
  */
 
+import type { Edge, Node } from '@xyflow/react';
 import { z } from 'zod';
 import type {
-  UnifiedComponentNode,
   ExportedCanvas,
   ExportedNode,
   StorageStats,
+  UnifiedComponentNode,
 } from '../types/component.types.ts';
 import type { NativeComponentNode } from '../types/native-component.types.ts';
-import type { Node, Edge } from '@xyflow/react';
 import { indexedDBUtils } from '../utils/indexedDBUtils.ts';
 
 // Zod schemas for validation
-const storageVersionInfoSchema = z.object({
+const _storageVersionInfoSchema = z.object({
   version: z.string(),
   appVersion: z.string(),
   compilerVersion: z.string(),
   migratedAt: z.number().optional(),
 });
 
-const compressedDataSchema = z.object({
+const _compressedDataSchema = z.object({
   compressed: z.boolean(),
   data: z.string(),
   originalSize: z.number(),
@@ -74,7 +74,7 @@ const exportedCanvasSchema = z.object({
     .optional(),
 });
 
-const storageDataSchema = z.object({
+const _storageDataSchema = z.object({
   version: z.string(),
   timestamp: z.number(),
   nodeCount: z.number().optional(),
@@ -250,7 +250,7 @@ export class StorageService {
     try {
       const canvas = await indexedDBUtils.getCanvas();
 
-      if (!canvas || !canvas.nodes) {
+      if (!canvas?.nodes) {
         console.log('No canvas data found in IndexedDB');
         return [];
       }
@@ -364,7 +364,7 @@ export class StorageService {
     try {
       const canvas = await indexedDBUtils.getCanvas();
 
-      if (!canvas || !canvas.edges) {
+      if (!canvas?.edges) {
         return [];
       }
 
@@ -636,88 +636,6 @@ export class StorageService {
   }
 
   /**
-   * Save data to storage with compression if needed
-   * @deprecated - Legacy method kept for potential future use
-   * @private
-   */
-  // @ts-ignore - Legacy method kept for potential future use
-  private async _saveToStorage(key: string, data: unknown): Promise<boolean> {
-    try {
-      const serialized = JSON.stringify(data);
-      const payload =
-        serialized.length > this.COMPRESSION_THRESHOLD
-          ? await this.compressData(serialized)
-          : {
-              compressed: false,
-              data: serialized,
-              originalSize: serialized.length,
-              compressedSize: serialized.length,
-            };
-
-      localStorage.setItem(key, JSON.stringify(payload));
-      return true;
-    } catch (error) {
-      // Handle storage quota exceeded
-      if (error instanceof DOMException && error.code === 22) {
-        console.warn('localStorage quota exceeded, attempting cleanup...');
-        await this.cleanupStorage();
-
-        // Try again after cleanup
-        try {
-          const serialized = JSON.stringify(data);
-          const payload = await this.compressData(serialized);
-          localStorage.setItem(key, JSON.stringify(payload));
-          return true;
-        } catch (retryError) {
-          console.error('Storage failed even after cleanup:', retryError);
-          return false;
-        }
-      }
-
-      console.error(`Failed to save to storage (${key}):`, error);
-      return false;
-    }
-  }
-
-  /**
-   * Load data from storage with decompression and validation
-   * @deprecated - Legacy method kept for potential future use
-   */
-  // @ts-ignore - Legacy method kept for potential future use
-  private async _loadFromStorage(key: string): Promise<unknown> {
-    try {
-      const stored = localStorage.getItem(key);
-      if (!stored) return null;
-
-      const rawPayload = JSON.parse(stored);
-
-      // Handle compressed data
-      if (rawPayload.compressed) {
-        const payload = compressedDataSchema.parse(rawPayload);
-        const decompressed = await this.decompressData(payload);
-        return JSON.parse(decompressed);
-      }
-
-      // Handle both new format and legacy direct data
-      const data = rawPayload.data ? JSON.parse(rawPayload.data) : rawPayload;
-
-      // Validate storage data structure for nodes/edges
-      if (key === this.NODES_KEY || key === this.EDGES_KEY) {
-        return storageDataSchema.parse(data);
-      }
-
-      return data;
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        console.error(`Storage validation failed for ${key}:`, error.issues);
-        return null;
-      }
-      console.error(`Failed to load from storage (${key}):`, error);
-      return null;
-    }
-  }
-
-  /**
    * Compress data using built-in compression or simple encoding
    */
   private async compressData(data: string): Promise<CompressedData> {
@@ -733,13 +651,6 @@ export class StorageService {
   }
 
   /**
-   * Decompress data
-   */
-  private async decompressData(payload: CompressedData): Promise<string> {
-    return this.simpleDecompress(payload.data);
-  }
-
-  /**
    * Simple compression using base64 encoding with some optimization
    */
   private simpleCompress(data: string): string {
@@ -747,90 +658,6 @@ export class StorageService {
       return btoa(unescape(encodeURIComponent(data)));
     } catch {
       return data; // Fallback to uncompressed
-    }
-  }
-
-  /**
-   * Simple decompression
-   */
-  private simpleDecompress(data: string): string {
-    try {
-      return decodeURIComponent(escape(atob(data)));
-    } catch {
-      return data; // Fallback to assume uncompressed
-    }
-  }
-
-  /**
-   * Get version information
-   * @deprecated - Legacy method kept for potential future use
-   */
-  // @ts-ignore - Legacy method kept for potential future use
-  private _getVersionInfo(): StorageVersionInfo | null {
-    try {
-      const stored = localStorage.getItem(this.VERSION_KEY);
-      if (!stored) return null;
-      const parsed = JSON.parse(stored);
-      return storageVersionInfoSchema.parse(parsed);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        console.error('Version info validation failed:', error.issues);
-      }
-      return null;
-    }
-  }
-
-  /**
-   * Set version information
-   */
-  private setVersionInfo(versionInfo: StorageVersionInfo): void {
-    localStorage.setItem(this.VERSION_KEY, JSON.stringify(versionInfo));
-  }
-
-  /**
-   * Migrate storage between versions
-   * @deprecated - Legacy method kept for potential future use
-   */
-  // @ts-ignore - Legacy method kept for potential future use
-  private async _migrateStorage(oldVersion: StorageVersionInfo | null): Promise<void> {
-    // Handle migration from legacy format
-    if (!oldVersion) {
-      this.migrateLegacyStorage();
-    }
-
-    // Migrate to IndexedDB if available
-    if (this.indexedDBReady) {
-      // Try to migrate from localStorage automatically
-      await indexedDBUtils.migrateFromLocalStorage();
-      await indexedDBUtils.migrate(oldVersion);
-    }
-
-    // Set new version info
-    this.setVersionInfo({
-      version: this.STORAGE_VERSION,
-      appVersion: this.APP_VERSION,
-      compilerVersion: this.COMPILER_VERSION,
-      migratedAt: Date.now(),
-    });
-  }
-
-  /**
-   * Migrate from legacy localStorage format
-   */
-  private migrateLegacyStorage(): void {
-    try {
-      const legacyNodes = localStorage.getItem('reactflow-nodes');
-      if (legacyNodes) {
-        const nodes = JSON.parse(legacyNodes);
-
-        // Convert to new format and save
-        this.saveNodes(nodes);
-
-        // Remove legacy key
-        localStorage.removeItem('reactflow-nodes');
-      }
-    } catch (error) {
-      console.warn('Failed to migrate legacy storage:', error);
     }
   }
 
@@ -885,7 +712,7 @@ export class StorageService {
       const edgeObj = edge as Record<string, unknown>;
 
       // Validate edge structure
-      if (!edgeObj.id || !edgeObj.source || !edgeObj.target) {
+      if (!(edgeObj.id && edgeObj.source && edgeObj.target)) {
         console.warn('⚠️ Skipping edge with missing required fields:', edge);
         return false;
       }
@@ -895,7 +722,7 @@ export class StorageService {
       const target = String(edgeObj.target);
 
       // Validate edge references existing nodes
-      if (!nodeIds.has(source) || !nodeIds.has(target)) {
+      if (!(nodeIds.has(source) && nodeIds.has(target))) {
         console.warn(`⚠️ Skipping edge ${id} with invalid node references: ${source} -> ${target}`);
         return false;
       }
@@ -922,7 +749,9 @@ export class StorageService {
         version: this.STORAGE_VERSION,
         nodes: Array.isArray(canvas.nodes)
           ? (canvas.nodes as unknown[]).map((node: unknown) => {
-              if (!node || typeof node !== 'object') return node;
+              if (!node || typeof node !== 'object') {
+                return node;
+              }
               const n = node as Record<string, unknown>;
               const nodeData = (n.data as Record<string, unknown>) || {};
 
@@ -974,7 +803,7 @@ export class StorageService {
     let totalSize = 0;
 
     for (const key in localStorage) {
-      if (Object.prototype.hasOwnProperty.call(localStorage, key)) {
+      if (Object.hasOwn(localStorage, key)) {
         totalSize += localStorage[key].length;
       }
     }
@@ -1044,7 +873,9 @@ export class StorageService {
   private loadStorageStats(): Partial<StorageStats> {
     try {
       const stored = localStorage.getItem(this.STATS_KEY);
-      if (!stored) return {};
+      if (!stored) {
+        return {};
+      }
       const parsed = JSON.parse(stored);
       return storageStatsSchema.parse(parsed);
     } catch (error) {

@@ -16,7 +16,7 @@ class PostHogService {
     const apiKey = import.meta.env.VITE_PUBLIC_POSTHOG_KEY;
     const apiHost = import.meta.env.VITE_PUBLIC_POSTHOG_HOST;
 
-    if (!apiKey || !apiHost) {
+    if (!(apiKey && apiHost)) {
       console.warn('PostHog configuration missing');
       return;
     }

@@ -1,5 +1,5 @@
 const GrowthChart = () => {
-  const [revenueData, setRevenueData] = useState([
+  const [revenueData, _setRevenueData] = useState([
     { month: 'Jan', value: 12000 },
     { month: 'Feb', value: 19000 },
     { month: 'Mar', value: 15000 },
@@ -8,7 +8,7 @@ const GrowthChart = () => {
     { month: 'Jun', value: 25000 },
   ]);
 
-  const [userData, setUserData] = useState([
+  const [userData, _setUserData] = useState([
     { month: 'Jan', value: 320 },
     { month: 'Feb', value: 450 },
     { month: 'Mar', value: 580 },
@@ -61,7 +61,7 @@ const GrowthChart = () => {
     transition: 'all 0.3s ease',
   };
 
-  const userBarStyle = {
+  const _userBarStyle = {
     height: '8px',
     backgroundColor: '#10b981',
     borderRadius: '4px',
@@ -147,4 +147,4 @@ const GrowthChart = () => {
   );
 };
 
-const Component = GrowthChart;
+const _Component = GrowthChart;

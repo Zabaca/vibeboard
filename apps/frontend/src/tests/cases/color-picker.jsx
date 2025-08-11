@@ -92,4 +92,4 @@ const ColorPicker = () => {
   );
 };
 
-const Component = ColorPicker;
+const _Component = ColorPicker;

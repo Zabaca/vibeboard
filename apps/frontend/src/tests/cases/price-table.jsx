@@ -220,4 +220,4 @@ const PricingTable = () => {
   );
 };
 
-const Component = PricingTable;
+const _Component = PricingTable;

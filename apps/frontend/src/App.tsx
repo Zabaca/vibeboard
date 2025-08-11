@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
-import ReactFlowCanvas from './components/ReactFlowCanvas';
+import { useEffect, useState } from 'react';
 import { ESMTestComponent } from './components/ESMTestComponent';
+import ReactFlowCanvas from './components/ReactFlowCanvas';
 import { posthogService } from './services/posthog';
 import './App.css';
 

@@ -59,7 +59,9 @@ export class ESMJsxTranspiler {
    * Check if code contains JSX that needs transpilation
    */
   containsJSX(code: string): boolean {
-    if (typeof code !== 'string') return false;
+    if (typeof code !== 'string') {
+      return false;
+    }
 
     // Check for JSX patterns
     const jsxPatterns = [

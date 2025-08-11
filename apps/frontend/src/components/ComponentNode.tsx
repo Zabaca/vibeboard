@@ -1,13 +1,13 @@
-import { useMemo, useRef, useCallback } from 'react';
-import { Handle, Position, NodeResizer, type NodeProps } from '@xyflow/react';
-import GeneratedApp from './GeneratedApp.tsx';
-import { AsyncComponentLoader } from './AsyncComponentLoader.tsx';
+import { Handle, type NodeProps, NodeResizer, Position } from '@xyflow/react';
+import { useCallback, useMemo, useRef } from 'react';
 import type { UnifiedComponentNode } from '../types/component.types.ts';
 import {
   captureAndCopyToClipboard,
   getOptimalScreenshotOptions,
   type ScreenshotResult,
 } from '../utils/screenshotUtils.ts';
+import { AsyncComponentLoader } from './AsyncComponentLoader.tsx';
+import GeneratedApp from './GeneratedApp.tsx';
 
 interface ComponentNodeData extends UnifiedComponentNode {
   // Legacy fields for backward compatibility
@@ -132,12 +132,12 @@ const ComponentNode = ({ id, data, selected = false }: ComponentNodeProps) => {
         hasChildren: elementToCapture.children.length,
         innerHTML:
           elementToCapture.innerHTML.length > 200
-            ? elementToCapture.innerHTML.substring(0, 200) + '...'
+            ? `${elementToCapture.innerHTML.substring(0, 200)}...`
             : elementToCapture.innerHTML,
         childrenInfo: Array.from(elementToCapture.children).map((child) => ({
           tagName: child.tagName,
           className: child.className,
-          textContent: child.textContent?.substring(0, 30) + '...',
+          textContent: `${child.textContent?.substring(0, 30)}...`,
           offsetSize: `${(child as HTMLElement).offsetWidth}x${(child as HTMLElement).offsetHeight}`,
         })),
         computedStyle: {
@@ -147,23 +147,23 @@ const ComponentNode = ({ id, data, selected = false }: ComponentNodeProps) => {
           backgroundColor: getComputedStyle(elementToCapture).backgroundColor,
           transform: getComputedStyle(elementToCapture).transform,
         },
-        textContent: elementToCapture.textContent?.substring(0, 100) + '...',
+        textContent: `${elementToCapture.textContent?.substring(0, 100)}...`,
       });
 
       // Also inspect the DOM tree structure
       console.log('🔍 DOM structure:', {
         componentRef: componentRef.current?.tagName,
         componentRefChildren: componentRef.current
-          ? Array.from(componentRef.current.children).map((c) => c.tagName + '.' + c.className)
+          ? Array.from(componentRef.current.children).map((c) => `${c.tagName}.${c.className}`)
           : [],
         contentRef: contentRef.current?.tagName,
         contentRefChildren: contentRef.current
-          ? Array.from(contentRef.current.children).map((c) => c.tagName + '.' + c.className)
+          ? Array.from(contentRef.current.children).map((c) => `${c.tagName}.${c.className}`)
           : [],
       });
 
       // Handle edge case: component is not ready/loaded
-      if (!code && !unifiedComponent.compiledCode && !unifiedComponent.originalCode) {
+      if (!(code || unifiedComponent.compiledCode || unifiedComponent.originalCode)) {
         console.warn('ComponentNode: No component code available for screenshot');
         return {
           success: false,
@@ -272,7 +272,7 @@ const ComponentNode = ({ id, data, selected = false }: ComponentNodeProps) => {
       return (
         <AsyncComponentLoader
           moduleUrl={unifiedComponent.sourceUrl}
-          presentationMode={presentationMode || false}
+          presentationMode={presentationMode}
           debug={false}
           cache={true}
           fallback={<div style={{ padding: '20px', textAlign: 'center' }}>Loading module...</div>}
@@ -282,12 +282,14 @@ const ComponentNode = ({ id, data, selected = false }: ComponentNodeProps) => {
     }
 
     // Use GeneratedApp for AI-generated code that needs compilation
-    if (!code && !unifiedComponent.compiledCode) return null;
+    if (!(code || unifiedComponent.compiledCode)) {
+      return null;
+    }
     return (
       <GeneratedApp
         key={`generated-app-${id}`}
         component={unifiedComponent}
-        presentationMode={presentationMode || false}
+        presentationMode={presentationMode}
         onCompilationComplete={
           onCompilationComplete
             ? (compiledCode, hash) => onCompilationComplete(id, compiledCode, hash)

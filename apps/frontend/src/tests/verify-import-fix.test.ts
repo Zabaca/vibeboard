@@ -1,8 +1,8 @@
 // @ts-nocheck
 import { assertEquals } from 'jsr:@std/assert';
 import { describe, it } from 'jsr:@std/testing/bdd';
-import { ImportFixer } from '../utils/importFixer.ts';
 import { timerWithMissingImports } from '../test-artifacts/ai-generated-components.ts';
+import { ImportFixer } from '../utils/importFixer.ts';
 
 describe('Import Fix Verification', () => {
   it('should fix missing imports and return correct code', () => {

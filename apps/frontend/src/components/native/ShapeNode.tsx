@@ -1,5 +1,5 @@
-import React, { memo, useState, useRef, useEffect } from 'react';
-import { Handle, Position, NodeResizer, type NodeProps } from '@xyflow/react';
+import { Handle, type NodeProps, NodeResizer, Position } from '@xyflow/react';
+import React, { memo, useEffect, useRef, useState } from 'react';
 import type { ComponentState } from '../../types/native-component.types.ts';
 import ShapeCustomizer from './ShapeCustomizer.tsx';
 
@@ -194,21 +194,21 @@ const ShapeNode = ({ id, data, selected = false }: ShapeNodeProps) => {
           />
         ) : (
           <div
-            onDoubleClick={() => !presentationMode && !state.locked && setIsEditingText(true)}
+            onDoubleClick={() => !(presentationMode || state.locked) && setIsEditingText(true)}
             style={{
               textAlign: state.textAlign || 'center',
               fontSize: state.fontSize || 16,
               fontFamily: state.fontFamily || 'Inter, system-ui, sans-serif',
               fontWeight: state.fontWeight || '400',
               color: state.textColor || '#111827',
-              cursor: !presentationMode && !state.locked ? 'text' : 'default',
+              cursor: presentationMode || state.locked ? 'default' : 'text',
               userSelect: 'none',
               wordBreak: 'break-word',
               overflow: 'hidden',
               width: '100%',
               padding: '4px',
             }}
-            title={!presentationMode && !state.locked ? 'Double-click to edit text' : undefined}
+            title={presentationMode || state.locked ? undefined : 'Double-click to edit text'}
           >
             {state.text || ''}
           </div>
@@ -216,7 +216,7 @@ const ShapeNode = ({ id, data, selected = false }: ShapeNodeProps) => {
       </div>
 
       {/* Control buttons - only show if not in presentation mode and not locked */}
-      {!presentationMode && !state.locked && (
+      {!(presentationMode || state.locked) && (
         <div
           className="nodrag"
           style={{

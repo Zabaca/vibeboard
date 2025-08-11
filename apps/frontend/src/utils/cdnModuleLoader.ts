@@ -35,7 +35,7 @@ export class CDNModuleLoader {
       const code = await this.loadAndBundle(url, options);
 
       if (options.debug) {
-        console.log(`📝 Original code (first 500 chars):`, code.substring(0, 500));
+        console.log('📝 Original code (first 500 chars):', code.substring(0, 500));
       }
 
       // Try different loading strategies based on what the code looks like
@@ -46,9 +46,8 @@ export class CDNModuleLoader {
           this.cache.set(url, module);
         }
         return module;
-      } else {
-        throw new Error('Failed to load module with any strategy');
       }
+      throw new Error('Failed to load module with any strategy');
     } catch (error) {
       if (options.debug) {
         console.error(`❌ Failed to load module from ${url}:`, error);
@@ -85,7 +84,7 @@ export class CDNModuleLoader {
 
     // Make sure the code is still recognized as ESM
     // Add a comment to ensure it's treated as a module
-    if (!code.includes('export') && !code.includes('import')) {
+    if (!(code.includes('export') || code.includes('import'))) {
       rewrittenCode = `// ESM Module\n${rewrittenCode}\nexport default null;`;
     }
 
@@ -243,7 +242,7 @@ export class CDNModuleLoader {
             'global',
             'exports',
             'module',
-            code + '\nreturn (typeof exports !== "undefined" ? exports : {});',
+            `${code}\nreturn (typeof exports !== "undefined" ? exports : {});`,
           );
           const exports = {};
           const module = { exports };

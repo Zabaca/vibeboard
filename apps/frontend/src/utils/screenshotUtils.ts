@@ -131,30 +131,29 @@ export async function captureElementScreenshot(
         capturedAt: Date.now(),
         processingTime: performance.now() - startTime,
       };
-    } else {
-      // For WebP, first get as PNG then convert via canvas
-      const pngDataUrl = await domToImage.toPng(element, domToImageOptions);
-
-      if (debug) {
-        console.log('📸 dom-to-image PNG capture complete, converting to WebP');
-      }
-
-      // Convert PNG to WebP via canvas
-      const canvas = await dataUrlToCanvas(pngDataUrl);
-      const compressionResult = await compressCanvasImage(canvas, {
-        format,
-        quality,
-        maxWidth,
-        maxHeight,
-        debug,
-      });
-
-      return {
-        ...compressionResult,
-        capturedAt: Date.now(),
-        processingTime: performance.now() - startTime,
-      };
     }
+    // For WebP, first get as PNG then convert via canvas
+    const pngDataUrl = await domToImage.toPng(element, domToImageOptions);
+
+    if (debug) {
+      console.log('📸 dom-to-image PNG capture complete, converting to WebP');
+    }
+
+    // Convert PNG to WebP via canvas
+    const canvas = await dataUrlToCanvas(pngDataUrl);
+    const compressionResult = await compressCanvasImage(canvas, {
+      format,
+      quality,
+      maxWidth,
+      maxHeight,
+      debug,
+    });
+
+    return {
+      ...compressionResult,
+      capturedAt: Date.now(),
+      processingTime: performance.now() - startTime,
+    };
   } catch (error) {
     const processingTime = performance.now() - startTime;
     console.error('❌ Screenshot capture failed:', error);
@@ -526,7 +525,7 @@ async function convertWebPToPngForClipboard(dataUrl: string): Promise<string> {
 export async function copyScreenshotToClipboard(dataUrl: string): Promise<boolean> {
   try {
     // Check if clipboard API is available
-    if (!navigator.clipboard || !navigator.clipboard.write) {
+    if (!navigator.clipboard?.write) {
       console.warn('Clipboard API not available');
       return false;
     }
@@ -609,7 +608,7 @@ export function showScreenshotNotification(
  */
 export async function captureScreenUsingDisplayMedia(): Promise<ScreenshotResult> {
   try {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+    if (!navigator.mediaDevices?.getDisplayMedia) {
       throw new Error('Screen capture not supported in this browser');
     }
 

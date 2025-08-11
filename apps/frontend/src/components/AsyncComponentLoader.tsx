@@ -1,6 +1,6 @@
-import React, { Suspense, useState, useEffect, useRef } from 'react';
-import { esmExecutor } from '../utils/esmExecutor.ts';
+import React, { Suspense, useEffect, useRef, useState } from 'react';
 import type { ESMExecutionResult } from '../utils/esmExecutor.ts';
+import { esmExecutor } from '../utils/esmExecutor.ts';
 
 /**
  * AsyncComponentLoader - Handles async loading of ESM components with proper error boundaries
@@ -119,7 +119,7 @@ export const AsyncComponentLoader: React.FC<AsyncComponentLoaderProps> = ({
   // Load component function
   const loadComponent = async () => {
     // Check if we have either code or moduleUrl
-    if (!code && !moduleUrl) {
+    if (!(code || moduleUrl)) {
       setState({
         status: 'error',
         component: null,
@@ -242,7 +242,7 @@ export const AsyncComponentLoader: React.FC<AsyncComponentLoaderProps> = ({
 
           const moduleCode = await response.text();
           if (debug) {
-            console.log('📄 Fetched module code:', moduleCode.substring(0, 200) + '...');
+            console.log('📄 Fetched module code:', `${moduleCode.substring(0, 200)}...`);
           }
 
           // Process through ESM executor to handle React imports properly
@@ -299,7 +299,7 @@ export const AsyncComponentLoader: React.FC<AsyncComponentLoaderProps> = ({
 
       // Auto-retry with exponential backoff
       if (loadAttempts.current < maxRetries) {
-        const delay = Math.pow(2, loadAttempts.current) * 1000;
+        const delay = 2 ** loadAttempts.current * 1000;
         if (debug) {
           console.log(`🔄 Retrying in ${delay}ms (attempt ${loadAttempts.current}/${maxRetries})`);
         }
@@ -314,7 +314,7 @@ export const AsyncComponentLoader: React.FC<AsyncComponentLoaderProps> = ({
       loadAttempts.current = 0;
       loadComponent();
     }
-  }, [code, moduleUrl]);
+  }, [code, moduleUrl, loadComponent]);
 
   // Retry function
   const retry = () => {
@@ -453,7 +453,7 @@ export function useAsyncComponent(
     if (options.autoLoad && code) {
       load();
     }
-  }, [code, options.autoLoad]);
+  }, [code, options.autoLoad, load]);
 
   return {
     ...state,

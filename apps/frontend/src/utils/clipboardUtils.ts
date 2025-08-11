@@ -344,7 +344,7 @@ function isJsonLike(text: string): boolean {
   const trimmed = text.trim();
 
   // Must start with { or [
-  if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
+  if (!(trimmed.startsWith('{') || trimmed.startsWith('['))) {
     return false;
   }
 

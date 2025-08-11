@@ -82,7 +82,7 @@ class VisionService {
 
       // No Authorization header needed - handled by Netlify function
       if (isLocalhost) {
-        headers['Authorization'] = `Bearer ${this.apiKey}`;
+        headers.Authorization = `Bearer ${this.apiKey}`;
       }
 
       const response = await fetch(`${this.baseURL}/openai/v1/models`, {
@@ -348,7 +348,7 @@ Relate your visual analysis to the code structure when making recommendations.`
 
     // No Authorization header needed - handled by Netlify function
     if (isLocalhost) {
-      headers['Authorization'] = `Bearer ${this.apiKey}`;
+      headers.Authorization = `Bearer ${this.apiKey}`;
     }
 
     const requestBody = {
@@ -411,7 +411,9 @@ Relate your visual analysis to the code structure when making recommendations.`
    * Check if an error is retryable
    */
   private isRetryableError(error: Error | null): boolean {
-    if (!error) return false;
+    if (!error) {
+      return false;
+    }
 
     const retryableErrors = [
       'rate_limit_exceeded',
@@ -432,7 +434,7 @@ Relate your visual analysis to the code structure when making recommendations.`
     screenshot: { dataUrl: string; format: 'webp' | 'png' | 'jpeg'; sizeKB: number },
     prompt: string,
   ): VisionMetadata | undefined {
-    if (!analysisResult.success || !analysisResult.analysis) {
+    if (!(analysisResult.success && analysisResult.analysis)) {
       return undefined;
     }
 

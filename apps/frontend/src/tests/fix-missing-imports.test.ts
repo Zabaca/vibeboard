@@ -2,8 +2,8 @@
 import { assertEquals, assertStringIncludes } from 'jsr:@std/assert';
 import { describe, it } from 'jsr:@std/testing/bdd';
 import { ComponentPipeline } from '../services/ComponentPipeline.ts';
-import { ImportFixer } from '../utils/importFixer.ts';
 import { timerWithMissingImports } from '../test-artifacts/ai-generated-components.ts';
+import { ImportFixer } from '../utils/importFixer.ts';
 
 describe('Missing Imports Fix', () => {
   const pipeline = new ComponentPipeline();

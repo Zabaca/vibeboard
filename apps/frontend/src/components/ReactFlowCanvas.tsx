@@ -1,50 +1,50 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
-  ReactFlow,
-  useNodesState,
-  useEdgesState,
   addEdge,
   Background,
-  Controls,
-  MiniMap,
-  Panel,
-  type Node,
-  type Edge,
   type Connection,
+  Controls,
+  type Edge,
+  MiniMap,
+  type Node,
+  Panel,
+  ReactFlow,
   type ReactFlowInstance,
+  useEdgesState,
+  useNodesState,
 } from '@xyflow/react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import '@xyflow/react/dist/style.css';
 
-import CerebrasService from '../services/cerebras.ts';
-import ComponentNode, { type ComponentNodeData } from './ComponentNode.tsx';
-import GenerationDialog from './GenerationDialog.tsx';
-import CodeEditDialogOptimized from './CodeEditDialogOptimized.tsx';
-import ComponentLibrary from './ComponentLibrary.tsx';
-import { ImportFromURLDialog } from './ImportFromURLDialog.tsx';
-import ImportComponentDialog from './ImportComponentDialog.tsx';
+import { getCompiledComponent } from '../data/compiledComponents.generated.ts';
 import { type PrebuiltComponent } from '../data/prebuiltComponents.ts';
 import { ComponentPipeline } from '../services/ComponentPipeline.ts';
-import { getCompiledComponent } from '../data/compiledComponents.generated.ts';
-import { storageService } from '../services/StorageService.ts';
+import CerebrasService from '../services/cerebras.ts';
 import { posthogService } from '../services/posthog.ts';
+import { storageService } from '../services/StorageService.ts';
 import type { UnifiedComponentNode, VisionMetadata } from '../types/component.types.ts';
-import type { ScreenshotResult } from '../utils/screenshotUtils.ts';
 import type {
-  NativeComponentType,
-  NativeComponentNode,
   ComponentState,
+  NativeComponentNode,
+  NativeComponentType,
 } from '../types/native-component.types.ts';
 import { defaultComponentStates } from '../types/native-component.types.ts';
-import ShapeNode from './native/ShapeNode.tsx';
-import TextNode from './native/TextNode.tsx';
-import StickyNote from './native/StickyNote.tsx';
-import ImageNode from './native/ImageNode.tsx';
-import NativeComponentsToolbar from './native/NativeComponentsToolbar.tsx';
-import NativeComponentContextMenu from './native/NativeComponentContextMenu.tsx';
-import StorageManagementDialog from './StorageManagementDialog.tsx';
+import { type ClipboardResult, readClipboard } from '../utils/clipboardUtils.ts';
+import type { ScreenshotResult } from '../utils/screenshotUtils.ts';
+import { showPasteErrorToast, showPasteSuccessToast } from '../utils/toastUtils.ts';
+import CodeEditDialogOptimized from './CodeEditDialogOptimized.tsx';
+import ComponentLibrary from './ComponentLibrary.tsx';
+import ComponentNode, { type ComponentNodeData } from './ComponentNode.tsx';
+import GenerationDialog from './GenerationDialog.tsx';
+import ImportComponentDialog from './ImportComponentDialog.tsx';
+import { ImportFromURLDialog } from './ImportFromURLDialog.tsx';
 import KeyboardShortcutsHelp from './KeyboardShortcutsHelp.tsx';
-import { readClipboard, type ClipboardResult } from '../utils/clipboardUtils.ts';
-import { showPasteSuccessToast, showPasteErrorToast } from '../utils/toastUtils.ts';
+import ImageNode from './native/ImageNode.tsx';
+import NativeComponentContextMenu from './native/NativeComponentContextMenu.tsx';
+import NativeComponentsToolbar from './native/NativeComponentsToolbar.tsx';
+import ShapeNode from './native/ShapeNode.tsx';
+import StickyNote from './native/StickyNote.tsx';
+import TextNode from './native/TextNode.tsx';
+import StorageManagementDialog from './StorageManagementDialog.tsx';
 
 // Define nodeTypes outside of component to prevent re-renders
 const nodeTypes = {
@@ -126,7 +126,9 @@ const ReactFlowCanvas: React.FC = () => {
 
   // Helper function to check if paste should be ignored (input focused)
   const shouldIgnorePaste = useCallback((target: EventTarget | null): boolean => {
-    if (!target || !(target instanceof HTMLElement)) return false;
+    if (!(target && target instanceof HTMLElement)) {
+      return false;
+    }
 
     const element = target as HTMLElement;
     const tagName = element.tagName.toLowerCase();
@@ -257,7 +259,7 @@ const ReactFlowCanvas: React.FC = () => {
   // Create ImageNode with content from paste
   const handleCreateImageNodeWithContent = useCallback(
     async (clipboardResult: ClipboardResult, position: { x: number; y: number }) => {
-      if (!clipboardResult.data || !clipboardResult.metadata) {
+      if (!(clipboardResult.data && clipboardResult.metadata)) {
         throw new Error('Invalid image data from clipboard');
       }
 
@@ -674,7 +676,7 @@ const ReactFlowCanvas: React.FC = () => {
           },
         );
 
-        if (!pipelineResult.success || !pipelineResult.component) {
+        if (!(pipelineResult.success && pipelineResult.component)) {
           throw new Error(pipelineResult.error || 'Failed to process edited code');
         }
 
@@ -740,7 +742,7 @@ const ReactFlowCanvas: React.FC = () => {
         // Generate new component with AI - backend will handle vision analysis if screenshot is provided
         const result = await cerebrasService.generateComponent(combinedPrompt, screenshotDataUrl);
 
-        if (!result.success || !result.code) {
+        if (!(result.success && result.code)) {
           throw new Error(result.error || 'Failed to generate component');
         }
 
@@ -757,7 +759,7 @@ const ReactFlowCanvas: React.FC = () => {
           },
         );
 
-        if (!pipelineResult.success || !pipelineResult.component) {
+        if (!(pipelineResult.success && pipelineResult.component)) {
           throw new Error(pipelineResult.error || 'Failed to process regenerated component');
         }
 
@@ -898,7 +900,9 @@ const ReactFlowCanvas: React.FC = () => {
   const handleDuplicateNode = useCallback(
     (nodeId: string) => {
       const nodeToDuplicate = nodes.find((n) => n.id === nodeId);
-      if (!nodeToDuplicate) return;
+      if (!nodeToDuplicate) {
+        return;
+      }
 
       const newNodeId = `${nodeToDuplicate.type}-${Date.now()}`;
       const newNode: Node<ComponentNodeData> = {
@@ -925,7 +929,9 @@ const ReactFlowCanvas: React.FC = () => {
     (nodeId: string) => {
       setNodes((nds) => {
         const nodeIndex = nds.findIndex((n) => n.id === nodeId);
-        if (nodeIndex === -1) return nds;
+        if (nodeIndex === -1) {
+          return nds;
+        }
 
         const newNodes = [...nds];
         const [node] = newNodes.splice(nodeIndex, 1);
@@ -941,7 +947,9 @@ const ReactFlowCanvas: React.FC = () => {
     (nodeId: string) => {
       setNodes((nds) => {
         const nodeIndex = nds.findIndex((n) => n.id === nodeId);
-        if (nodeIndex === -1) return nds;
+        if (nodeIndex === -1) {
+          return nds;
+        }
 
         const newNodes = [...nds];
         const [node] = newNodes.splice(nodeIndex, 1);
@@ -979,7 +987,7 @@ const ReactFlowCanvas: React.FC = () => {
       }
 
       // Native component shortcuts (single key press)
-      if (!e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey) {
+      if (!(e.ctrlKey || e.metaKey || e.shiftKey || e.altKey)) {
         switch (e.key.toLowerCase()) {
           case 't':
             e.preventDefault();
@@ -1029,7 +1037,7 @@ const ReactFlowCanvas: React.FC = () => {
         canvasElement.removeEventListener('click', handleCanvasFocus);
       }
     };
-  }, [isDevelopment, handleCreateNativeComponent, handleCanvasPaste, shouldIgnorePaste]);
+  }, [handleCreateNativeComponent, handleCanvasPaste, shouldIgnorePaste]);
 
   // Export canvas to JSON file
   const handleExportCanvas = useCallback(async () => {
@@ -1059,7 +1067,9 @@ const ReactFlowCanvas: React.FC = () => {
   const handleImportCanvas = useCallback(
     async (event: React.ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0];
-      if (!file) return;
+      if (!file) {
+        return;
+      }
 
       const reader = new FileReader();
       reader.onload = async (e) => {
@@ -1115,7 +1125,15 @@ const ReactFlowCanvas: React.FC = () => {
       // Reset the input so the same file can be imported again
       event.target.value = '';
     },
-    [setNodes, setEdges, presentationMode, handleDeleteComponent, handleRegenerateComponent],
+    [
+      setNodes,
+      setEdges,
+      presentationMode,
+      handleDeleteComponent,
+      handleRegenerateComponent,
+      handleCompilationComplete,
+      handleDuplicateComponent,
+    ],
   );
 
   // Load saved nodes from storage on mount
@@ -1182,7 +1200,10 @@ const ReactFlowCanvas: React.FC = () => {
     handleRegenerateComponent,
     presentationMode,
     handleDuplicateComponent,
-    handleCompilationComplete,
+    handleCompilationComplete, // Warm up cache with library components in background
+    componentPipeline.warmCacheWithLibraryComponents,
+    handleNativeComponentStateUpdate,
+    handleScreenshotCapture,
   ]);
 
   // Update all nodes when presentation mode changes (throttled to reduce renders)
@@ -1282,6 +1303,8 @@ const ReactFlowCanvas: React.FC = () => {
       handleCompilationComplete,
       setNodes,
       getViewportCenter,
+      handleDuplicateComponent,
+      handleScreenshotCapture,
     ],
   );
 
@@ -1315,7 +1338,7 @@ const ReactFlowCanvas: React.FC = () => {
           validateOutput: true,
         });
 
-        if (!result.success || !result.component) {
+        if (!(result.success && result.component)) {
           console.error(`Failed to process component: ${result.error}`);
           setGenerationError(result.error || 'Failed to process component');
           return;
@@ -1362,8 +1385,9 @@ const ReactFlowCanvas: React.FC = () => {
       handleDeleteComponent,
       handleRegenerateComponent,
       componentPipeline,
-      setGenerationError,
       getViewportCenter,
+      handleCompilationComplete,
+      handleDuplicateComponent,
     ],
   );
 
@@ -1379,7 +1403,7 @@ const ReactFlowCanvas: React.FC = () => {
       try {
         const result = await cerebrasService.generateComponent(prompt);
 
-        if (!result.success || !result.code) {
+        if (!(result.success && result.code)) {
           posthogService.trackComponentGeneration(prompt, false);
           throw new Error(result.error || 'Failed to generate component');
         }
@@ -1396,7 +1420,7 @@ const ReactFlowCanvas: React.FC = () => {
           },
         );
 
-        if (!pipelineResult.success || !pipelineResult.component) {
+        if (!(pipelineResult.success && pipelineResult.component)) {
           throw new Error(pipelineResult.error || 'Failed to process generated component');
         }
 
@@ -1455,6 +1479,7 @@ const ReactFlowCanvas: React.FC = () => {
       handleRegenerateComponent,
       componentPipeline,
       getViewportCenter,
+      handleCompilationComplete,
     ],
   );
 
@@ -1482,7 +1507,7 @@ const ReactFlowCanvas: React.FC = () => {
           },
         );
 
-        if (!pipelineResult.success || !pipelineResult.component) {
+        if (!(pipelineResult.success && pipelineResult.component)) {
           throw new Error(pipelineResult.error || 'Failed to process imported component');
         }
 
@@ -1542,6 +1567,7 @@ const ReactFlowCanvas: React.FC = () => {
       handleRegenerateComponent,
       componentPipeline,
       getViewportCenter,
+      handleCompilationComplete,
     ],
   );
 
@@ -1554,7 +1580,6 @@ const ReactFlowCanvas: React.FC = () => {
       ref={canvasRef}
       className="h-screen w-screen relative"
       style={{ width: '100vw', height: '100vh', background: '#f8f9fa', outline: 'none' }}
-      tabIndex={0}
       role="application"
       aria-label="AI Whiteboard Canvas - Click to focus, then press Ctrl+V to paste images or text, use arrow keys to navigate components"
       aria-describedby="canvas-instructions"

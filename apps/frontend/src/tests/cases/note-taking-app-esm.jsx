@@ -1,6 +1,6 @@
 // AI-generated note-taking app with complex JSX and hooks - ESM format test case
 // This is the exact code that was failing with "Unexpected token '<'" error
-import React, { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 const NoteTakingApp = () => {
   const [notes, setNotes] = useState([]);
@@ -35,7 +35,9 @@ const NoteTakingApp = () => {
   }, [categories]);
 
   const handleAddNote = () => {
-    if (newNote.title.trim() === '' || newNote.content.trim() === '') return;
+    if (newNote.title.trim() === '' || newNote.content.trim() === '') {
+      return;
+    }
 
     if (editingNoteId !== null) {
       setNotes(notes.map((note) => (note.id === editingNoteId ? { ...note, ...newNote } : note)));

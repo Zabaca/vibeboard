@@ -63,7 +63,7 @@ export class ImportFixer {
       // Find hooks used in the code but not imported
       const usedHooks = new Set<string>();
 
-      for (const hook of this.REACT_HOOKS) {
+      for (const hook of ImportFixer.REACT_HOOKS) {
         // Look for hook usage patterns: hookName( or hookName.
         const hookPattern = new RegExp(`\\b${hook}\\s*\\(`, 'g');
         if (hookPattern.test(code)) {
@@ -113,7 +113,7 @@ export class ImportFixer {
    * Check if code has missing React hook imports without fixing
    */
   static validateImports(code: string): { valid: boolean; missingImports: string[] } {
-    const result = this.fixImports(code);
+    const result = ImportFixer.fixImports(code);
     return {
       valid: !result.addedImports || result.addedImports.length === 0,
       missingImports: result.addedImports || [],

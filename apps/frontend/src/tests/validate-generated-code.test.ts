@@ -6,10 +6,10 @@
  * Each file should compile and transform without errors
  */
 
+import * as path from 'node:path';
+import { ComponentPipeline } from '../services/ComponentPipeline.ts';
 import { CodeTransformer } from '../utils/codeTransformer.ts';
 import { ComponentExecutor } from '../utils/componentExecutor.ts';
-import { ComponentPipeline } from '../services/ComponentPipeline.ts';
-import * as path from 'node:path';
 
 interface ValidationResult {
   filename: string;
@@ -97,7 +97,7 @@ export class GeneratedCodeValidator {
       // Detect if this is an ESM component
       const isESM = this.isESMModule(code);
 
-      const legacyResult: any = null;
+      const _legacyResult: any = null;
       let pipelineResult: any = null;
       let pipelineSuccess = false;
       let jsxTranspiled = false;
@@ -180,30 +180,12 @@ export class GeneratedCodeValidator {
             pipelineSuccess,
             jsxTranspiled,
           };
-        } else {
-          // The transformation succeeded but execution would fail
-          return {
-            filename,
-            success: false,
-            error: `Execution validation failed: ${validationResult.error}`,
-            warnings: legacyTransformResult.warnings,
-            transformationTime,
-            fileSize: fileInfo.size,
-            isESM,
-            pipelineSuccess,
-            jsxTranspiled,
-          };
         }
-      } else {
-        // Both pipeline and legacy transformer failed
-        const errors = [];
-        if (legacyTransformResult.error) errors.push(`Legacy: ${legacyTransformResult.error}`);
-        if (pipelineResult?.error) errors.push(`Pipeline: ${pipelineResult.error}`);
-
+        // The transformation succeeded but execution would fail
         return {
           filename,
           success: false,
-          error: errors.join('; ') || 'Both transformation methods failed',
+          error: `Execution validation failed: ${validationResult.error}`,
           warnings: legacyTransformResult.warnings,
           transformationTime,
           fileSize: fileInfo.size,
@@ -212,6 +194,26 @@ export class GeneratedCodeValidator {
           jsxTranspiled,
         };
       }
+      // Both pipeline and legacy transformer failed
+      const errors = [];
+      if (legacyTransformResult.error) {
+        errors.push(`Legacy: ${legacyTransformResult.error}`);
+      }
+      if (pipelineResult?.error) {
+        errors.push(`Pipeline: ${pipelineResult.error}`);
+      }
+
+      return {
+        filename,
+        success: false,
+        error: errors.join('; ') || 'Both transformation methods failed',
+        warnings: legacyTransformResult.warnings,
+        transformationTime,
+        fileSize: fileInfo.size,
+        isESM,
+        pipelineSuccess,
+        jsxTranspiled,
+      };
     } catch (error) {
       return {
         filename,
@@ -252,7 +254,7 @@ export class GeneratedCodeValidator {
     const jsxTranspiled = results.filter((r) => r.jsxTranspiled);
     const successRate = (passed.length / results.length) * 100;
 
-    console.log('\n' + '='.repeat(70));
+    console.log(`\n${'='.repeat(70)}`);
     console.log('📊 VALIDATION REPORT');
     console.log('='.repeat(70));
 
@@ -302,12 +304,12 @@ export class GeneratedCodeValidator {
       }
 
       if (result.warnings && result.warnings.length > 0) {
-        console.log(`   ⚠️  Warnings:`);
+        console.log('   ⚠️  Warnings:');
         result.warnings.forEach((w) => console.log(`      - ${w}`));
       }
 
       if (result.success && !result.hasComponent) {
-        console.log(`   ⚠️  No React component detected in output`);
+        console.log('   ⚠️  No React component detected in output');
       }
 
       console.log('');
@@ -326,8 +328,12 @@ export class GeneratedCodeValidator {
   }
 
   private formatFileSize(bytes: number): string {
-    if (bytes < 1024) return `${bytes} bytes`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    if (bytes < 1024) {
+      return `${bytes} bytes`;
+    }
+    if (bytes < 1024 * 1024) {
+      return `${(bytes / 1024).toFixed(1)} KB`;
+    }
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
 }

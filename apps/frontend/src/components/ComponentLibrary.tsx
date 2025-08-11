@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { prebuiltComponents, type PrebuiltComponent } from '../data/prebuiltComponents.ts';
+import React, { useMemo, useState } from 'react';
+import { type PrebuiltComponent, prebuiltComponents } from '../data/prebuiltComponents.ts';
 
 interface ComponentLibraryProps {
   isOpen: boolean;
@@ -43,7 +43,9 @@ const ComponentLibrary: React.FC<ComponentLibraryProps> = ({
     return filtered;
   }, [selectedCategory, searchTerm]);
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   const categoryIcons: Record<string, string> = {
     UI: '🎨',
@@ -175,7 +177,6 @@ const ComponentLibrary: React.FC<ComponentLibraryProps> = ({
               outline: 'none',
               boxSizing: 'border-box',
             }}
-            autoFocus
           />
         </div>
 

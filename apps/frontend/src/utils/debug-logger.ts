@@ -133,7 +133,9 @@ class DebugLogger {
   }
 
   private updateDebugPanel() {
-    if (!this.onScreenEnabled) return;
+    if (!this.onScreenEnabled) {
+      return;
+    }
 
     const logsContainer = document.getElementById('debug-logs');
     if (logsContainer) {
@@ -346,7 +348,9 @@ class DebugLogger {
       }[log.level];
 
       markdown += `### ${emoji} ${log.timestamp} - ${log.level.toUpperCase()}\n`;
-      if (log.source) markdown += `**Source:** ${log.source}\n\n`;
+      if (log.source) {
+        markdown += `**Source:** ${log.source}\n\n`;
+      }
       markdown += `${log.message}\n`;
       if (log.data) {
         markdown += '\n```json\n';

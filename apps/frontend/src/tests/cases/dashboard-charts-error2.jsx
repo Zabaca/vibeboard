@@ -126,7 +126,7 @@ const DashboardCharts = () => {
     return `${value.toLocaleString()}`;
   };
 
-  const formatUsers = (value) => {
+  const _formatUsers = (value) => {
     return `${value} users`;
   };
 
@@ -205,4 +205,4 @@ const DashboardCharts = () => {
   );
 };
 
-const Component = DashboardCharts;
+const _Component = DashboardCharts;

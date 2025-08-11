@@ -1,15 +1,15 @@
+import type {
+  CacheEntry,
+  ComponentFormat,
+  ComponentSource,
+  PipelineOptions,
+  PipelineResult,
+  UnifiedComponentNode,
+  URLImportOptions,
+} from '../types/component.types.ts';
 import { esmExecutor } from '../utils/esmExecutor.ts';
 import { ESMJsxTranspiler } from '../utils/esmJsxTranspiler.ts';
 import { ImportFixer } from '../utils/importFixer.ts';
-import type {
-  UnifiedComponentNode,
-  ComponentSource,
-  ComponentFormat,
-  PipelineResult,
-  PipelineOptions,
-  CacheEntry,
-  URLImportOptions,
-} from '../types/component.types.ts';
 
 /**
  * ComponentPipeline Service
@@ -51,7 +51,7 @@ export class ComponentPipeline {
 
     try {
       // Ensure component has required fields
-      if (!component.originalCode && !component.compiledCode) {
+      if (!(component.originalCode || component.compiledCode)) {
         return {
           success: false,
           error: 'Component must have either originalCode or compiledCode',
@@ -141,7 +141,7 @@ export class ComponentPipeline {
           debug: false, // Always disable debug to reduce CPU usage
         });
 
-        if (!transformResult.success || !transformResult.code) {
+        if (!(transformResult.success && transformResult.code)) {
           return {
             success: false,
             error: transformResult.error || 'Failed to transpile JSX in ESM module',
@@ -518,7 +518,7 @@ export class ComponentPipeline {
       const [key, entry] = entries[i];
 
       // Clean up blob URL if it's an ESM module
-      if (entry.component.moduleUrl && entry.component.moduleUrl.startsWith('blob:')) {
+      if (entry.component.moduleUrl?.startsWith('blob:')) {
         URL.revokeObjectURL(entry.component.moduleUrl);
       }
 
@@ -542,7 +542,7 @@ export class ComponentPipeline {
           const entries = (data.entries as [string, CacheEntry][]).filter(
             ([_key, entry]: [string, CacheEntry]) => {
               // Skip entries with blob URLs as they're no longer valid
-              if (entry.component.moduleUrl && entry.component.moduleUrl.startsWith('blob:')) {
+              if (entry.component.moduleUrl?.startsWith('blob:')) {
                 return false;
               }
               return true;
@@ -581,7 +581,7 @@ export class ComponentPipeline {
   clearCache(): void {
     // Clean up blob URLs for ESM modules
     for (const entry of this.cache.values()) {
-      if (entry.component.moduleUrl && entry.component.moduleUrl.startsWith('blob:')) {
+      if (entry.component.moduleUrl?.startsWith('blob:')) {
         URL.revokeObjectURL(entry.component.moduleUrl);
       }
     }
@@ -642,7 +642,9 @@ export class ComponentPipeline {
     > = {};
 
     for (const [name, values] of this.performanceMetrics.entries()) {
-      if (values.length === 0) continue;
+      if (values.length === 0) {
+        continue;
+      }
 
       const sum = values.reduce((a, b) => a + b, 0);
       const avg = sum / values.length;

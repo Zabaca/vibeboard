@@ -38,6 +38,7 @@ import ImageNode from './native/ImageNode.tsx';
 import NativeComponentsToolbar from './native/NativeComponentsToolbar.tsx';
 import NativeComponentContextMenu from './native/NativeComponentContextMenu.tsx';
 import StorageManagementDialog from './StorageManagementDialog.tsx';
+import { readClipboard, type ClipboardResult } from '../utils/clipboardUtils.ts';
 
 // Define nodeTypes outside of component to prevent re-renders
 const nodeTypes = {
@@ -76,7 +77,10 @@ const ReactFlowCanvas: React.FC = () => {
     nodeId: string;
     nodeType: NativeComponentType;
   } | null>(null);
+  const [canvasIsFocused, setCanvasIsFocused] = useState(false);
+  const [pasteError, setPasteError] = useState<string | null>(null);
   const reactFlowInstance = useRef<ReactFlowInstance<Node<ComponentNodeData>, Edge> | null>(null);
+  const canvasRef = useRef<HTMLDivElement>(null);
   
   // Check if we're in development mode
   const isDevelopment = import.meta.env.DEV;
@@ -107,6 +111,42 @@ const ReactFlowCanvas: React.FC = () => {
   // Initialize the component pipeline for processing components
   const [componentPipeline] = useState(() => new ComponentPipeline());
 
+  // Helper function to check if paste should be ignored (input focused)
+  const shouldIgnorePaste = useCallback((target: EventTarget | null): boolean => {
+    if (!target || !(target instanceof HTMLElement)) return false;
+    
+    const element = target as HTMLElement;
+    const tagName = element.tagName.toLowerCase();
+    
+    // Ignore paste in input elements
+    if (['input', 'textarea', 'select'].includes(tagName)) {
+      return true;
+    }
+    
+    // Ignore paste in contentEditable elements
+    if (element.contentEditable === 'true') {
+      return true;
+    }
+    
+    // Ignore paste in elements with 'nodrag' class (component editing)
+    if (element.classList.contains('nodrag')) {
+      return true;
+    }
+    
+    // Check if any parent element should block paste
+    let parent = element.parentElement;
+    while (parent) {
+      if (parent.classList.contains('nodrag') || 
+          parent.contentEditable === 'true' ||
+          ['input', 'textarea', 'select'].includes(parent.tagName.toLowerCase())) {
+        return true;
+      }
+      parent = parent.parentElement;
+    }
+    
+    return false;
+  }, []);
+
   // Helper function to get the center of the current viewport
   const getViewportCenter = useCallback(() => {
     if (reactFlowInstance.current) {
@@ -123,6 +163,274 @@ const ReactFlowCanvas: React.FC = () => {
     // Fallback to default position
     return { x: 250, y: 250 };
   }, []);
+
+  // Define handlers first before using them in useEffect
+  const handleDeleteComponent = useCallback((nodeId: string) => {
+    setNodes((nds) => nds.filter((node) => node.id !== nodeId));
+    posthogService.trackComponentInteraction('delete', nodeId);
+  }, [setNodes]);
+
+  // Handle native component state updates
+  const handleNativeComponentStateUpdate = useCallback((nodeId: string, newState: ComponentState) => {
+    setNodes((nds) =>
+      nds.map((n) => {
+        if (n.id === nodeId && n.data) {
+          return {
+            ...n,
+            data: {
+              ...n.data,
+              state: newState,
+            },
+          };
+        }
+        return n;
+      })
+    );
+  }, [setNodes]);
+
+  // Create TextNode with content from paste
+  const handleCreateTextNodeWithContent = useCallback(async (text: string, position: { x: number; y: number }) => {
+    const nodeId = `text-${Date.now()}`;
+    
+    // Create the native component state with pasted text
+    const defaultState = { ...defaultComponentStates.text };
+    defaultState.text = text;
+    
+    // Create native component node data
+    const nativeNodeData: NativeComponentNode = {
+      id: nodeId,
+      componentType: 'native',
+      nativeType: 'text',
+      state: defaultState,
+      source: 'native',
+      originalCode: '',
+      compiledCode: undefined,
+      description: 'Pasted text content',
+    };
+    
+    // Create the node
+    const newNode: Node = {
+      id: nodeId,
+      type: 'text',
+      position,
+      width: Math.max(150, Math.min(400, text.length * 8)), // Dynamic width based on text length
+      height: Math.max(50, Math.min(300, text.split('\n').length * 20)), // Dynamic height based on line count
+      style: {
+        width: Math.max(150, Math.min(400, text.length * 8)),
+        height: Math.max(50, Math.min(300, text.split('\n').length * 20)),
+      },
+      data: {
+        ...nativeNodeData,
+        presentationMode,
+        onDelete: handleDeleteComponent,
+        onUpdateState: handleNativeComponentStateUpdate,
+      },
+    };
+    
+    setNodes((nds) => [...nds, newNode as Node<ComponentNodeData>]);
+  }, [presentationMode, handleDeleteComponent, handleNativeComponentStateUpdate, setNodes]);
+
+  // Create ImageNode with content from paste
+  const handleCreateImageNodeWithContent = useCallback(async (clipboardResult: ClipboardResult, position: { x: number; y: number }) => {
+    if (!clipboardResult.data || !clipboardResult.metadata) {
+      throw new Error('Invalid image data from clipboard');
+    }
+
+    const nodeId = `image-${Date.now()}`;
+    
+    try {
+      // Convert data URL to ArrayBuffer for storage and create blob for display
+      const response = await fetch(clipboardResult.data);
+      const arrayBuffer = await response.arrayBuffer();
+      const blob = new Blob([arrayBuffer], { type: clipboardResult.format || 'image/png' });
+      const blobUrl = URL.createObjectURL(blob);
+      
+      // Store image in IndexedDB and get the stored image ID
+      const imageId = await storageService.saveImageData(
+        arrayBuffer,
+        clipboardResult.format || 'image/png',
+        clipboardResult.metadata.dimensions || { width: 300, height: 300 }
+      );
+
+      if (!imageId) {
+        throw new Error('Failed to store image in IndexedDB');
+      }
+
+      // Create the native component state with image data
+      const defaultState = { ...defaultComponentStates.image };
+      defaultState.imageId = imageId;
+      defaultState.blobUrl = blobUrl;
+      defaultState.alt = 'Pasted image';
+      defaultState.format = clipboardResult.format || 'image/png';
+      defaultState.sizeKB = clipboardResult.metadata.sizeKB;
+      defaultState.dimensions = clipboardResult.metadata.dimensions ? {
+        ...clipboardResult.metadata.dimensions,
+        aspectRatio: clipboardResult.metadata.dimensions.width / clipboardResult.metadata.dimensions.height
+      } : undefined;
+      defaultState.metadata = {
+        pastedAt: Date.now(),
+        originalSize: clipboardResult.metadata.dimensions,
+        compressed: false, // TODO: Add compression logic if needed
+      };
+
+      // Create native component node data
+      const nativeNodeData: NativeComponentNode = {
+        id: nodeId,
+        componentType: 'native',
+        nativeType: 'image',
+        state: defaultState,
+        source: 'native',
+        originalCode: '',
+        compiledCode: undefined,
+        description: `Pasted ${clipboardResult.format || 'image'}`,
+      };
+
+      // Calculate initial size based on image dimensions
+      const maxWidth = 300;
+      const maxHeight = 300;
+      let nodeWidth = maxWidth;
+      let nodeHeight = maxHeight;
+
+      if (clipboardResult.metadata.dimensions) {
+        const { width, height } = clipboardResult.metadata.dimensions;
+        const aspectRatio = width / height;
+        
+        if (width > height) {
+          nodeWidth = Math.min(maxWidth, width);
+          nodeHeight = nodeWidth / aspectRatio;
+        } else {
+          nodeHeight = Math.min(maxHeight, height);
+          nodeWidth = nodeHeight * aspectRatio;
+        }
+      }
+
+      // Create the node
+      const newNode: Node = {
+        id: nodeId,
+        type: 'image',
+        position,
+        width: nodeWidth,
+        height: nodeHeight,
+        style: {
+          width: nodeWidth,
+          height: nodeHeight,
+        },
+        data: {
+          ...nativeNodeData,
+          presentationMode,
+          onDelete: handleDeleteComponent,
+          onUpdateState: handleNativeComponentStateUpdate,
+        },
+      };
+      
+      setNodes((nds) => [...nds, newNode as Node<ComponentNodeData>]);
+      
+    } catch (error) {
+      console.error('Failed to store image:', error);
+      throw new Error('Failed to store pasted image: ' + (error instanceof Error ? error.message : String(error)));
+    }
+  }, [presentationMode, handleDeleteComponent, handleNativeComponentStateUpdate, setNodes]);
+
+  // Handle paste events on the canvas
+  const handleCanvasPaste = useCallback(async (e: ClipboardEvent) => {
+    // Only handle paste if canvas is focused and not in input elements
+    if (!canvasIsFocused || shouldIgnorePaste(e.target)) {
+      return;
+    }
+
+    // Prevent default paste behavior
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Clear previous paste errors
+    setPasteError(null);
+
+    try {
+      console.log('📋 Processing clipboard paste...');
+      const clipboardResult = await readClipboard();
+
+      if (!clipboardResult.success) {
+        console.warn('Clipboard read failed:', clipboardResult.error);
+        setPasteError(clipboardResult.error || 'Failed to read clipboard');
+        return;
+      }
+
+      const viewportCenter = getViewportCenter();
+
+      if (clipboardResult.type === 'text' && clipboardResult.data) {
+        // Create TextNode with pasted text
+        await handleCreateTextNodeWithContent(clipboardResult.data, viewportCenter);
+        console.log('📝 Text pasted successfully');
+        
+        // Track paste event
+        posthogService.track('paste_text', {
+          format: clipboardResult.format,
+          textLength: clipboardResult.data.length,
+        });
+        
+      } else if (clipboardResult.type === 'image' && clipboardResult.data) {
+        // Create ImageNode with pasted image
+        await handleCreateImageNodeWithContent(clipboardResult, viewportCenter);
+        console.log('🖼️ Image pasted successfully');
+        
+        // Track paste event
+        posthogService.track('paste_image', {
+          format: clipboardResult.format,
+          sizeKB: clipboardResult.metadata?.sizeKB,
+          dimensions: clipboardResult.metadata?.dimensions,
+        });
+      }
+    } catch (error) {
+      console.error('Failed to handle paste:', error);
+      setPasteError(error instanceof Error ? error.message : 'Failed to paste content');
+    }
+  }, [canvasIsFocused, shouldIgnorePaste, getViewportCenter, handleCreateTextNodeWithContent, handleCreateImageNodeWithContent]);
+
+  // Handle native component creation
+  const handleCreateNativeComponent = useCallback((type: NativeComponentType, subType?: string) => {
+    const nodeId = `${type}-${Date.now()}`;
+    const viewportCenter = getViewportCenter();
+    
+    // Create the native component state based on type
+    const defaultState = { ...defaultComponentStates[type] };
+    if (type === 'shape' && subType) {
+      defaultState.shapeType = subType as 'rectangle' | 'triangle' | 'square';
+    }
+    
+    // Create native component node data
+    const nativeNodeData: NativeComponentNode = {
+      id: nodeId,
+      componentType: 'native',
+      nativeType: type,
+      state: defaultState,
+      source: 'native',
+      originalCode: '',
+      compiledCode: undefined,
+      description: `${type.charAt(0).toUpperCase() + type.slice(1)} component`,
+    };
+    
+    // Create the node with handler functions
+    const newNode: Node = {
+      id: nodeId,
+      type,
+      position: viewportCenter,
+      width: type === 'sticky' ? 200 : 150,
+      height: type === 'sticky' ? 200 : 150,
+      style: {
+        width: type === 'sticky' ? 200 : 150,
+        height: type === 'sticky' ? 200 : 150,
+      },
+      data: {
+        ...nativeNodeData,
+        presentationMode,
+        onDelete: handleDeleteComponent,
+        onUpdateState: handleNativeComponentStateUpdate,
+      },
+    };
+    
+    setNodes((nds) => [...nds, newNode as Node<ComponentNodeData>]);
+    posthogService.trackComponentInteraction('edit', nodeId);
+  }, [setNodes, presentationMode, handleDeleteComponent, getViewportCenter, handleNativeComponentStateUpdate]);
 
   // Handle compilation completion from GeneratedApp components
   const handleCompilationComplete = useCallback((nodeId: string, compiledCode: string, hash: string) => {
@@ -223,11 +531,6 @@ const ReactFlowCanvas: React.FC = () => {
   }, [setNodes, nodes, edges]);
 
 
-  // Define handlers first before using them in useEffect
-  const handleDeleteComponent = useCallback((nodeId: string) => {
-    setNodes((nds) => nds.filter((node) => node.id !== nodeId));
-    posthogService.trackComponentInteraction('delete', nodeId);
-  }, [setNodes]);
 
   // Open the edit dialog when edit button is clicked
   const handleRegenerateComponent = useCallback((nodeId: string, prompt: string, currentCode?: string) => {
@@ -476,51 +779,6 @@ const ReactFlowCanvas: React.FC = () => {
     setEditDialog({ isOpen: false, nodeId: '', prompt: '', code: '' });
   }, []);
 
-  // Handle native component creation
-  const handleCreateNativeComponent = useCallback((type: NativeComponentType, subType?: string) => {
-    const nodeId = `${type}-${Date.now()}`;
-    const viewportCenter = getViewportCenter();
-    
-    // Create the native component state based on type
-    const defaultState = { ...defaultComponentStates[type] };
-    if (type === 'shape' && subType) {
-      defaultState.shapeType = subType as 'rectangle' | 'triangle' | 'square';
-    }
-    
-    // Create native component node data
-    const nativeNodeData: NativeComponentNode = {
-      id: nodeId,
-      componentType: 'native',
-      nativeType: type,
-      state: defaultState,
-      source: 'native',
-      originalCode: '',
-      compiledCode: undefined,
-      description: `${type.charAt(0).toUpperCase() + type.slice(1)} component`,
-    };
-    
-    // Create the node with handler functions
-    const newNode: Node = {
-      id: nodeId,
-      type,
-      position: viewportCenter,
-      width: type === 'sticky' ? 200 : 150,
-      height: type === 'sticky' ? 200 : 150,
-      style: {
-        width: type === 'sticky' ? 200 : 150,
-        height: type === 'sticky' ? 200 : 150,
-      },
-      data: {
-        ...nativeNodeData,
-        presentationMode,
-        onDelete: handleDeleteComponent,
-        onUpdateState: handleNativeComponentStateUpdate,
-      },
-    };
-    
-    setNodes((nds) => [...nds, newNode as Node<ComponentNodeData>]);
-    posthogService.trackComponentInteraction('edit', nodeId);
-  }, [setNodes, presentationMode, handleDeleteComponent, getViewportCenter]);
 
   // Use ref to prevent getNodeCode from changing on every render
   const nodesRef = useRef(nodes);
@@ -596,30 +854,16 @@ const ReactFlowCanvas: React.FC = () => {
     });
   }, [setNodes]);
 
-  // Handle native component state updates
-  const handleNativeComponentStateUpdate = useCallback((nodeId: string, newState: ComponentState) => {
-    setNodes((nds) =>
-      nds.map((n) => {
-        if (n.id === nodeId && n.data) {
-          return {
-            ...n,
-            data: {
-              ...n.data,
-              state: newState,
-            },
-          };
-        }
-        return n;
-      })
-    );
-  }, [setNodes]);
 
-  // Add keyboard shortcuts
+  // Add canvas focus detection and paste event handling
   useEffect(() => {
+    const handleCanvasFocus = () => setCanvasIsFocused(true);
+    const handleCanvasBlur = () => setCanvasIsFocused(false);
+    
     const handleKeyDown = (e: KeyboardEvent) => {
       // Check if user is typing in an input field
       const target = e.target as HTMLElement;
-      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true') {
+      if (shouldIgnorePaste(target)) {
         return;
       }
       
@@ -664,9 +908,31 @@ const ReactFlowCanvas: React.FC = () => {
       }
     };
 
+    // Set up canvas focus detection
+    const canvasElement = canvasRef.current;
+    if (canvasElement) {
+      canvasElement.addEventListener('focus', handleCanvasFocus);
+      canvasElement.addEventListener('blur', handleCanvasBlur);
+      canvasElement.addEventListener('mousedown', handleCanvasFocus); // Focus on mouse interaction
+      canvasElement.addEventListener('click', handleCanvasFocus);     // Focus on click
+    }
+    
+    // Set up keyboard and paste event listeners
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isDevelopment, handleCreateNativeComponent]);
+    window.addEventListener('paste', handleCanvasPaste);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('paste', handleCanvasPaste);
+      
+      if (canvasElement) {
+        canvasElement.removeEventListener('focus', handleCanvasFocus);
+        canvasElement.removeEventListener('blur', handleCanvasBlur);
+        canvasElement.removeEventListener('mousedown', handleCanvasFocus);
+        canvasElement.removeEventListener('click', handleCanvasFocus);
+      }
+    };
+  }, [isDevelopment, handleCreateNativeComponent, handleCanvasPaste, shouldIgnorePaste]);
 
   // Export canvas to JSON file
   const handleExportCanvas = useCallback(async () => {
@@ -1131,7 +1397,12 @@ const ReactFlowCanvas: React.FC = () => {
   }, []);
 
   return (
-    <div className="h-screen w-screen relative" style={{ width: '100vw', height: '100vh', background: '#f8f9fa' }}>
+    <div 
+      ref={canvasRef}
+      className="h-screen w-screen relative" 
+      style={{ width: '100vw', height: '100vh', background: '#f8f9fa', outline: 'none' }}
+      tabIndex={0}
+    >
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -1570,7 +1841,7 @@ const ReactFlowCanvas: React.FC = () => {
                 opacity: 0.9,
               }}>
                 <span>💡</span>
-                <span>Drag header to move • 📋 Copy • 🔄 Regenerate • 🗑️ Delete</span>
+                <span>Drag header to move • 📋 Copy • 🔄 Regenerate • 🗑️ Delete • Ctrl+V Paste</span>
               </div>
             </div>
             
@@ -1585,6 +1856,34 @@ const ReactFlowCanvas: React.FC = () => {
                 fontSize: '13px',
               }}>
                 <strong>Error:</strong> {generationError}
+              </div>
+            )}
+            
+            {pasteError && (
+              <div style={{
+                marginTop: '12px',
+                padding: '8px 12px',
+                backgroundColor: '#fef3c7',
+                border: '1px solid #fed7aa',
+                borderRadius: '6px',
+                color: '#d97706',
+                fontSize: '13px',
+              }}>
+                <strong>Paste Error:</strong> {pasteError}
+                <button 
+                  onClick={() => setPasteError(null)}
+                  style={{
+                    marginLeft: '8px',
+                    background: 'none',
+                    border: 'none',
+                    color: '#d97706',
+                    cursor: 'pointer',
+                    textDecoration: 'underline',
+                    fontSize: '12px',
+                  }}
+                >
+                  Dismiss
+                </button>
               </div>
             )}
           </div>

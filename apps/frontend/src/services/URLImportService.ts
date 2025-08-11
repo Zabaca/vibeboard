@@ -1,5 +1,17 @@
 import type { UnifiedComponentNode, URLImportOptions } from '../types/component.types.ts';
 
+interface URLImportMetadata {
+  sourceUrl: string;
+  lastFetched: number;
+  packageName?: string;
+  packageVersion?: string;
+  cdnProvider?: 'esm.sh' | 'skypack' | 'unpkg' | 'github';
+  author?: string;
+  repo?: string;
+  branch?: string;
+  filepath?: string;
+}
+
 /**
  * URLImportService
  *
@@ -324,7 +336,7 @@ export class URLImportService {
     }
 
     // Extract metadata from URL
-    const metadata: any = {
+    const metadata: URLImportMetadata = {
       sourceUrl: url,
       lastFetched: Date.now(),
     };

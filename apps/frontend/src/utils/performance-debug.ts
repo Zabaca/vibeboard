@@ -36,7 +36,7 @@ export class PerformanceDebugger {
     return result;
   }
 
-  static logRenderInfo(componentName: string, props: Record<string, any>): void {
+  static logRenderInfo(componentName: string, props: Record<string, unknown>): void {
     console.log(`[RENDER] ${componentName}`, {
       timestamp: new Date().toISOString(),
       propsKeys: Object.keys(props),

@@ -7,7 +7,7 @@ interface LogEntry {
   timestamp: string;
   level: 'log' | 'error' | 'warn' | 'info' | 'debug';
   message: string;
-  data?: any;
+  data?: unknown;
   source?: string;
 }
 
@@ -226,7 +226,7 @@ class DebugLogger {
   /**
    * Core logging methods
    */
-  private addLog(level: LogEntry['level'], message: string, data?: any, source?: string) {
+  private addLog(level: LogEntry['level'], message: string, data?: unknown, source?: string) {
     const entry: LogEntry = {
       timestamp: new Date().toTimeString().split(' ')[0],
       level,
@@ -252,23 +252,23 @@ class DebugLogger {
     }
   }
 
-  log(message: string, data?: any, source?: string) {
+  log(message: string, data?: unknown, source?: string) {
     this.addLog('log', message, data, source);
   }
 
-  error(message: string, data?: any, source?: string) {
+  error(message: string, data?: unknown, source?: string) {
     this.addLog('error', message, data, source);
   }
 
-  warn(message: string, data?: any, source?: string) {
+  warn(message: string, data?: unknown, source?: string) {
     this.addLog('warn', message, data, source);
   }
 
-  info(message: string, data?: any, source?: string) {
+  info(message: string, data?: unknown, source?: string) {
     this.addLog('info', message, data, source);
   }
 
-  debug(message: string, data?: any, source?: string) {
+  debug(message: string, data?: unknown, source?: string) {
     this.addLog('debug', message, data, source);
   }
 
@@ -372,8 +372,8 @@ export default debugLogger;
 
 // Also expose globally for console access
 if (typeof window !== 'undefined') {
-  (window as any).debugLogger = debugLogger;
-  (window as any).debug = {
+  (window as Record<string, unknown>).debugLogger = debugLogger;
+  (window as Record<string, unknown>).debug = {
     enable: () => debugLogger.enableOnScreenLogging(),
     disable: () => debugLogger.disableOnScreenLogging(),
     copy: () => debugLogger.copyLogsToClipboard(),

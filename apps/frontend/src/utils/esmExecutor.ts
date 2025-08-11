@@ -35,7 +35,7 @@ export interface ModuleCacheEntry {
 export class ESMExecutor {
   private moduleCache: Map<string, ModuleCacheEntry> = new Map();
   private blobUrls: Set<string> = new Set();
-  private pendingImports: Map<string, Promise<any>> = new Map();
+  private pendingImports: Map<string, Promise<unknown>> = new Map();
 
   /**
    * Execute an ESM module and extract the React component
@@ -241,7 +241,7 @@ export class ESMExecutor {
   /**
    * Import module with timeout
    */
-  private async importWithTimeout(url: string, timeout: number = 5000): Promise<any> {
+  private async importWithTimeout(url: string, timeout: number = 5000): Promise<unknown> {
     // Check if already importing this URL
     if (this.pendingImports.has(url)) {
       return this.pendingImports.get(url);
@@ -271,7 +271,7 @@ export class ESMExecutor {
   /**
    * Extract React component from module
    */
-  private extractComponent(module: any): React.ComponentType | null {
+  private extractComponent(module: Record<string, unknown>): React.ComponentType | null {
     // Check for default export
     if (module.default && typeof module.default === 'function') {
       return module.default;
@@ -300,7 +300,7 @@ export class ESMExecutor {
     const importPattern = /import\s+.*?\s+from\s+['"]([@\w\-/.]+)['"]/g;
     const dependencies: string[] = [];
 
-    let match;
+    let match: RegExpExecArray | null;
     while ((match = importPattern.exec(code)) !== null) {
       dependencies.push(match[1]);
     }

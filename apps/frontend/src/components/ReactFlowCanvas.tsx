@@ -6,6 +6,7 @@ import {
   type Edge,
   MiniMap,
   type Node,
+  type NodeProps,
   Panel,
   ReactFlow,
   type ReactFlowInstance,
@@ -49,14 +50,10 @@ import StorageManagementDialog from './StorageManagementDialog.tsx';
 // Define nodeTypes outside of component to prevent re-renders
 const nodeTypes = {
   aiComponent: ComponentNode,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  shape: ShapeNode as React.ComponentType<any>,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  text: TextNode as React.ComponentType<any>,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  sticky: StickyNote as React.ComponentType<any>,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  image: ImageNode as React.ComponentType<any>,
+  shape: ShapeNode as React.ComponentType<NodeProps>,
+  text: TextNode as React.ComponentType<NodeProps>,
+  sticky: StickyNote as React.ComponentType<NodeProps>,
+  image: ImageNode as React.ComponentType<NodeProps>,
 };
 
 const ReactFlowCanvas: React.FC = () => {

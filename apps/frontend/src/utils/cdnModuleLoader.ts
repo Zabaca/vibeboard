@@ -12,13 +12,16 @@ export interface CDNModuleLoaderOptions {
   cache?: boolean;
 }
 
+// Type for cached module exports
+type ModuleExports = Record<string, unknown> | unknown;
+
 export class CDNModuleLoader {
-  private cache = new Map<string, any>();
+  private cache = new Map<string, ModuleExports>();
 
   /**
    * Load a module from a CDN URL, resolving all imports properly
    */
-  async load(url: string, options: CDNModuleLoaderOptions = {}): Promise<any> {
+  async load(url: string, options: CDNModuleLoaderOptions = {}): Promise<ModuleExports> {
     if (options.cache && this.cache.has(url)) {
       if (options.debug) {
         console.log(`📦 Loading from cache: ${url}`);
@@ -159,7 +162,7 @@ export class CDNModuleLoader {
   /**
    * Try multiple CDN strategies to load a module
    */
-  async loadWithFallback(packageName: string, options: CDNModuleLoaderOptions = {}): Promise<any> {
+  async loadWithFallback(packageName: string, options: CDNModuleLoaderOptions = {}): Promise<ModuleExports> {
     const strategies = [
       // Strategy 1: unpkg direct file (often the simplest)
       {
@@ -228,7 +231,7 @@ export class CDNModuleLoader {
     code: string,
     _url: string,
     options: CDNModuleLoaderOptions,
-  ): Promise<any> {
+  ): Promise<ModuleExports> {
     const strategies = [
       // Strategy 1: Direct evaluation as a function (for IIFE modules)
       async () => {
@@ -363,11 +366,11 @@ export class CDNModuleLoader {
           document.head.appendChild(script);
 
           // Get the module from global
-          const moduleExports = (window as any)[globalName];
+          const moduleExports = (window as Record<string, unknown>)[globalName];
 
           // Clean up
           document.head.removeChild(script);
-          delete (window as any)[globalName];
+          delete (window as Record<string, unknown>)[globalName];
 
           if (options.debug) {
             console.log('  Module from global:', typeof moduleExports);

@@ -43,6 +43,10 @@ const ComponentNodeImpl = ({ id, data, selected = false }: ComponentNodeProps) =
   
   const nodeData = data as ComponentNodeData;
   
+  // Refs for screenshot capture functionality
+  const componentRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  
   // Simple render without complex logic for testing
   if (!nodeData) {
     return (

@@ -668,28 +668,32 @@ const CodeEditDialogOptimized: React.FC<CodeEditDialogOptimizedProps> = ({
       if (screenshotResult.success && screenshotResult.dataUrl) {
         console.log('✅ Screenshot captured successfully:', screenshotResult);
 
-        // Update local metadata with screenshot
-        const updatedMetadata: VisionMetadata = {
-          ...currentVisionMetadata,
-          screenshot: {
-            dataUrl: screenshotResult.dataUrl,
-            format: screenshotResult.format || 'webp',
-            capturedAt: screenshotResult.capturedAt,
-            sizeKB: screenshotResult.sizeKB || 0,
-          },
+        // Update local metadata with screenshot using functional update to avoid dependency on currentVisionMetadata
+        const newScreenshotData = {
+          dataUrl: screenshotResult.dataUrl,
+          format: screenshotResult.format || 'webp',
+          capturedAt: screenshotResult.capturedAt,
+          sizeKB: screenshotResult.sizeKB || 0,
         };
 
-        setCurrentVisionMetadata(updatedMetadata);
+        let updatedMetadata: VisionMetadata;
+        setCurrentVisionMetadata((prevMetadata) => {
+          updatedMetadata = {
+            ...prevMetadata,
+            screenshot: newScreenshotData,
+          };
+          return updatedMetadata;
+        });
 
         // Save screenshot metadata back to parent component immediately
         if (nodeId && onVisionMetadataUpdate) {
-          onVisionMetadataUpdate(nodeId, updatedMetadata);
+          onVisionMetadataUpdate(nodeId, updatedMetadata!);
         }
 
         // Always trigger vision analysis when capturing a new screenshot
         // This function is only called when we need a fresh analysis
         console.log('🔍 New screenshot captured - triggering vision analysis');
-        await performVisionAnalysis(screenshotResult.dataUrl, updatedMetadata);
+        await performVisionAnalysis(screenshotResult.dataUrl, updatedMetadata!);
       } else {
         console.error('❌ Screenshot capture failed:', screenshotResult.error);
       }
@@ -701,10 +705,9 @@ const CodeEditDialogOptimized: React.FC<CodeEditDialogOptimizedProps> = ({
   }, [
     nodeId,
     getComponentElement,
-    currentVisionMetadata,
     performVisionAnalysis,
     onVisionMetadataUpdate,
-  ]);
+  ]); // Removed currentVisionMetadata to prevent circular dependency
 
   // Reset state and capture screenshot when modal opens
   useEffect(() => {
@@ -739,7 +742,7 @@ const CodeEditDialogOptimized: React.FC<CodeEditDialogOptimizedProps> = ({
         }
       }
     }
-  }, [nodeCode, isOpen, nodeId, visionMetadata, captureComponentScreenshot, getComponentElement]); // Added visionMetadata to deps
+  }, [nodeCode, isOpen, nodeId, visionMetadata, getComponentElement]); // Removed captureComponentScreenshot to prevent infinite loop
 
   // Vision analysis is now handled by the backend during regeneration
 

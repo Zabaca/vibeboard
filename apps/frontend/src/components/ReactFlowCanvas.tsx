@@ -63,9 +63,9 @@ const ReactFlowCanvas: React.FC = () => {
   const [nodes, setNodes] = useState<Node<ComponentNodeData>[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
   
-  // Simplified onNodesChange handler - let React Flow handle everything normally
+  // Optimized onNodesChange handler - apply all changes for visual feedback
+  // React.memo in ComponentNode prevents unnecessary component re-renders during drag
   const onNodesChange = useCallback((changes: NodeChanges) => {
-    // console.log('🔧 [DEBUG] onNodesChange:', changes.length, 'changes');
     setNodes((nds) => applyNodeChanges(changes, nds));
   }, []);
 
@@ -1658,11 +1658,14 @@ const ReactFlowCanvas: React.FC = () => {
         onNodeClick={(event, node) => {
           console.log('🔧 [DEBUG] Node clicked:', { nodeId: node.id, node });
         }}
+        onNodeDragStart={(event, node) => {
+          // Drag started - visual updates handled by React Flow
+        }}
         onNodeDrag={(event, node) => {
-          console.log('🔧 [DEBUG] Node being dragged:', node.id);
+          // Visual position updates handled by React Flow
         }}
         onNodeDragStop={(event, node) => {
-          console.log('🔧 [DEBUG] Node drag stopped:', node.id);
+          // Drag completed - final position applied via onNodesChange
         }}
       >
         <Background color="#aaa" gap={16} />
@@ -2254,37 +2257,6 @@ const ReactFlowCanvas: React.FC = () => {
         isCreating={isGenerating}
       />
 
-      {/* TEST BUTTON: Add a default React Flow node to test dragging */}
-      <div style={{ position: 'fixed', top: '20px', right: '20px', zIndex: 10 }}>
-        <button
-          onClick={() => {
-            const testNodeId = `test-${Date.now()}`;
-            const testNode: Node = {
-              id: testNodeId,
-              type: 'default', // Use React Flow's built-in default node
-              position: { x: 300, y: 300 },
-              data: { label: 'Test Draggable Node' },
-              draggable: true,
-              selectable: true,
-              deletable: true,
-            };
-            console.log('🧪 Creating test default node:', testNode);
-            setNodes((nds) => [...nds, testNode]);
-          }}
-          style={{
-            background: '#ef4444',
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            padding: '8px 16px',
-            cursor: 'pointer',
-            fontSize: '12px',
-            fontWeight: '600',
-          }}
-        >
-          TEST: Add Default Node
-        </button>
-      </div>
 
       {showGenerationDialog && (
         <GenerationDialog

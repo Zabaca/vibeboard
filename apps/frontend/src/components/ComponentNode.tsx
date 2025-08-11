@@ -39,7 +39,7 @@ interface ComponentNodeData extends UnifiedComponentNode {
 type ComponentNodeProps = NodeProps;
 
 const ComponentNodeImpl = ({ id, data, selected = false }: ComponentNodeProps) => {
-  // console.log('🔧 [DEBUG] ComponentNode render:', { id, selected });
+  // console.log('🔧 [DEBUG] ComponentNode render:', { id, selected, timestamp: Date.now() });
   
   const nodeData = data as ComponentNodeData;
   

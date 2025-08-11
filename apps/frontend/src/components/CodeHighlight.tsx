@@ -8,7 +8,7 @@ interface PrismGlobal {
 // Dynamic Prism.js loading
 let prismPromise: Promise<PrismGlobal> | null = null;
 
-const loadPrism = async () => {
+const loadPrism = () => {
   if (prismPromise) {
     return prismPromise;
   }

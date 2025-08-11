@@ -68,7 +68,7 @@ class ComponentErrorBoundary extends React.Component<
         <div className="async-component-error">
           <h3>Component Error</h3>
           <p>{this.state.error.message}</p>
-          <button onClick={this.props.retry}>Retry</button>
+          <button type="button" onClick={this.props.retry}>Retry</button>
         </div>
       );
     }
@@ -90,7 +90,7 @@ const DefaultErrorComponent: React.FC<{ error: Error; retry: () => void }> = ({ 
   <div className="async-component-error">
     <h3>Failed to load component</h3>
     <p>{error.message}</p>
-    <button onClick={retry}>Retry</button>
+    <button type="button" onClick={retry}>Retry</button>
   </div>
 );
 

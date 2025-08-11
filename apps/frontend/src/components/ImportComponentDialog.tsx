@@ -212,7 +212,7 @@ export default function MyComponent() {
   return (
     <div>
       <h1>Count: {count}</h1>
-      <button onClick={() => setCount(count + 1)}>
+      <button type="button" onClick={() => setCount(count + 1)}>
         Increment
       </button>
     </div>

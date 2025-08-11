@@ -317,7 +317,7 @@ export default AIGeneratedCounter;`;
             >
               Test Shim Module
             </button>
-            <button onClick={testImportMaps} style={{ ...buttonStyle, backgroundColor: '#4CAF50' }}>
+            <button type="button" onClick={testImportMaps} style={{ ...buttonStyle, backgroundColor: '#4CAF50' }}>
               Test Import Maps
             </button>
             <button
@@ -338,10 +338,10 @@ export default AIGeneratedCounter;`;
             >
               Nested Components
             </button>
-            <button onClick={testNPMPackage} style={{ ...buttonStyle, backgroundColor: '#FF6B6B' }}>
+            <button type="button" onClick={testNPMPackage} style={{ ...buttonStyle, backgroundColor: '#FF6B6B' }}>
               NPM Package (esm.sh)
             </button>
-            <button onClick={testSimpleNPM} style={{ ...buttonStyle, backgroundColor: '#00ACC1' }}>
+            <button type="button" onClick={testSimpleNPM} style={{ ...buttonStyle, backgroundColor: '#00ACC1' }}>
               Simple NPM (clsx)
             </button>
           </div>
@@ -505,10 +505,10 @@ export default AIGeneratedCounter;`;
             Performance Metrics
           </p>
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-            <button onClick={clearCache} style={{ ...buttonStyle, backgroundColor: '#ff9800' }}>
+            <button type="button" onClick={clearCache} style={{ ...buttonStyle, backgroundColor: '#ff9800' }}>
               Clear Cache
             </button>
-            <button onClick={getCacheStats} style={{ ...buttonStyle, backgroundColor: '#2196F3' }}>
+            <button type="button" onClick={getCacheStats} style={{ ...buttonStyle, backgroundColor: '#2196F3' }}>
               Get Cache Stats
             </button>
           </div>

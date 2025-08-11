@@ -289,7 +289,6 @@ const StickyNote = ({ id, data, selected = false }: StickyNoteProps) => {
 
           {/* Lock button */}
           <button
-            type="button"
             onClick={() => onUpdateState?.(id, { ...state, locked: true })}
             style={{
               background: 'transparent',

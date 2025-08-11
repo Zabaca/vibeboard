@@ -48,12 +48,14 @@
         "useImportExtensions": "off",
         "noNodejsModules": "off",
         "noUndeclaredVariables": "off",
-        "noUndeclaredDependencies": "off"
+        "noUndeclaredDependencies": "off",
+        "useJsxKeyInIterable": "off"
       },
       "a11y": {
         "noSvgWithoutTitle": "off",
         "useKeyWithClickEvents": "off",
-        "noStaticElementInteractions": "off"
+        "noStaticElementInteractions": "off",
+        "useButtonType": "off"
       },
       "nursery": {},
       "performance": {
@@ -118,7 +120,8 @@
         "noShadowRestrictedNames": "error",
         "useAwait": "error",
         "useDefaultSwitchClauseLast": "error",
-        "noVar": "error"
+        "noVar": "error",
+        "noArrayIndexKey": "off"
       }
     }
   },

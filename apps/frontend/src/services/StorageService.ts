@@ -6,7 +6,8 @@
  * - Compression for large payloads 
  * - Storage size monitoring and cleanup
  * - Versioning for migration support
- * - Fallback to IndexedDB for large canvases
+ * - IndexedDB integration for image storage
+ * - Fallback to localStorage for compatibility
  */
 
 import { z } from 'zod';
@@ -20,6 +21,7 @@ import type {
   NativeComponentNode
 } from '../types/native-component.types.ts';
 import type { Node, Edge } from '@xyflow/react';
+import { indexedDBUtils } from '../utils/indexedDBUtils.ts';
 
 // Zod schemas for validation
 const storageVersionInfoSchema = z.object({
@@ -104,9 +106,11 @@ interface CompressedData {
 
 export class StorageService {
   private static instance: StorageService;
-  private readonly STORAGE_VERSION = '1.1.0'; // Updated to support native components
+  private readonly STORAGE_VERSION = '2.0.0'; // IndexedDB only
   private readonly APP_VERSION = '1.0.0';
   private readonly COMPILER_VERSION = '1.0.0';
+  private indexedDBReady = false;
+  private initializationPromise: Promise<void> | null = null;
   
   // Storage keys
   private readonly NODES_KEY = 'ai-whiteboard-nodes';
@@ -120,7 +124,12 @@ export class StorageService {
   private readonly CLEANUP_THRESHOLD = 0.8; // Clean up when 80% full
 
   private constructor() {
-    this.initializeStorage();
+    console.log('🚀 StorageService constructor called');
+    // Initialize asynchronously but don't wait for it
+    this.initializationPromise = this.initializeStorage().catch(error => {
+      console.error('❌ Failed to initialize storage:', error);
+      throw error;
+    });
   }
 
   static getInstance(): StorageService {
@@ -131,119 +140,237 @@ export class StorageService {
   }
 
   /**
-   * Initialize storage system and handle migrations
+   * Wait for storage to be initialized
    */
-  private initializeStorage(): void {
-    try {
-      const versionInfo = this.getVersionInfo();
-      
-      if (!versionInfo || versionInfo.version !== this.STORAGE_VERSION) {
-        console.log(`🔄 Migrating storage from version ${versionInfo?.version || 'unknown'} to ${this.STORAGE_VERSION}`);
-        this.migrateStorage(versionInfo);
-      }
-
-      // Check storage size and cleanup if needed
-      this.checkStorageSize();
-    } catch (error) {
-      console.error('Failed to initialize storage:', error);
-      this.clearAllStorage();
+  async waitForInitialization(): Promise<void> {
+    if (this.initializationPromise) {
+      await this.initializationPromise;
     }
   }
 
   /**
-   * Save nodes with compiled code and compression
+   * Initialize IndexedDB storage
+   */
+  private async initializeStorage(): Promise<void> {
+    try {
+      // Initialize IndexedDB
+      this.indexedDBReady = await indexedDBUtils.initialize();
+      if (this.indexedDBReady) {
+      } else {
+        console.error('❌ IndexedDB not available - app will not work');
+        throw new Error('IndexedDB is required for this application');
+      }
+    } catch (error) {
+      console.error('❌ Failed to initialize IndexedDB:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Save nodes to IndexedDB
    */
   async saveNodes(nodes: Node[]): Promise<boolean> {
+    
+    // Wait for initialization to complete if not ready
+    if (!this.indexedDBReady) {
+      try {
+        await this.waitForInitialization();
+      } catch (error) {
+        console.error('❌ IndexedDB initialization failed, cannot save nodes:', error);
+        return false;
+      }
+    }
+    
+    if (!this.indexedDBReady) {
+      console.error('❌ IndexedDB still not ready after initialization wait');
+      return false;
+    }
+
     try {
-      // Convert to enhanced node format
+      // Get current edges to save complete canvas
+      const edges = await this.loadEdges();
+      
+      // Convert to enhanced node format (sanitizing callback functions)
       const enhancedNodes: ExportedNode[] = nodes.map(node => ({
         id: node.id,
         type: node.type || 'aiComponent',
         position: node.position,
-        data: this.enhanceNodeData(node.data),
+        data: this.sanitizeNodeDataForStorage(this.enhanceNodeData(node.data)),
         width: node.width,
         height: node.height,
       }));
 
-      const nodeData = {
-        version: this.STORAGE_VERSION,
-        timestamp: Date.now(),
-        nodeCount: enhancedNodes.length,
-        nodes: enhancedNodes,
-      };
-
-      const success = await this.saveToStorage(this.NODES_KEY, nodeData);
-      
-      if (success) {
-        this.updateStorageStats({
-          nodeCount: enhancedNodes.length,
-          compiledCount: enhancedNodes.filter(n => n.data.compiledCode).length,
-        });
+      // Extract image references
+      const imageReferences: string[] = [];
+      for (const node of enhancedNodes) {
+        if (node.data && typeof node.data === 'object' && 'imageId' in node.data) {
+          imageReferences.push(node.data.imageId as string);
+        }
       }
 
-      return success;
+      // Save complete canvas to IndexedDB
+      await indexedDBUtils.saveCanvas({
+        name: 'Current Canvas',
+        nodes: enhancedNodes,
+        edges,
+        version: this.STORAGE_VERSION,
+        metadata: {
+          nodeCount: enhancedNodes.length,
+          edgeCount: edges.length,
+          imageReferences,
+          componentCount: enhancedNodes.filter(n => n.type === 'aiComponent').length,
+        },
+      });
+
+      return true;
     } catch (error) {
-      console.error('Failed to save nodes:', error);
+      console.error('❌ Failed to save nodes to IndexedDB:', error);
       return false;
     }
   }
 
   /**
-   * Load nodes with compiled code restoration
+   * Load nodes from IndexedDB
    */
   async loadNodes(): Promise<Node[]> {
+    // Wait for initialization to complete if not ready
+    if (!this.indexedDBReady) {
+      try {
+        await this.waitForInitialization();
+      } catch (error) {
+        console.error('❌ IndexedDB initialization failed, cannot load nodes:', error);
+        return [];
+      }
+    }
+    
+    if (!this.indexedDBReady) {
+      console.error('❌ IndexedDB still not ready after initialization wait');
+      return [];
+    }
+
     try {
-      const stored = await this.loadFromStorage(this.NODES_KEY);
+      const canvas = await indexedDBUtils.getCanvas();
       
-      if (!stored || !(stored as any).nodes) {
+      if (!canvas || !canvas.nodes) {
+        console.log('No canvas data found in IndexedDB');
         return [];
       }
 
-      // Convert back to React Flow format
-      const nodes: Node[] = (stored as any).nodes.map((exportedNode: ExportedNode) => ({
-        id: exportedNode.id,
-        type: exportedNode.type || 'aiComponent',
-        position: exportedNode.position,
-        data: exportedNode.data,
-        width: exportedNode.width,
-        height: exportedNode.height,
+      const nodes = canvas.nodes as ExportedNode[];
+      
+      // Process image nodes to restore blob URLs
+      const processedNodes = await Promise.all(nodes.map(async (node) => {
+        if (node.data && typeof node.data === 'object' && 'imageId' in node.data) {
+          const imageData = await this.getImageData(node.data.imageId as string);
+          if (imageData) {
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                blobUrl: imageData.blobUrl,
+              },
+            };
+          }
+        }
+        return node;
       }));
 
-      console.log(`✅ Loaded ${nodes.length} nodes from storage`);
-      return nodes;
+      return processedNodes.map(n => ({
+        id: n.id,
+        type: n.type || 'aiComponent',
+        position: n.position,
+        data: n.data,
+        width: n.width,
+        height: n.height,
+      }));
     } catch (error) {
-      console.error('Failed to load nodes:', error);
+      console.error('Failed to load nodes from IndexedDB:', error);
       return [];
     }
   }
 
   /**
-   * Save edges
+   * Save edges to IndexedDB
    */
   async saveEdges(edges: Edge[]): Promise<boolean> {
-    try {
-      const edgeData = {
-        version: this.STORAGE_VERSION,
-        timestamp: Date.now(),
-        edges,
-      };
+    
+    // Wait for initialization to complete if not ready
+    if (!this.indexedDBReady) {
+      try {
+        await this.waitForInitialization();
+      } catch (error) {
+        console.error('❌ IndexedDB initialization failed, cannot save edges:', error);
+        return false;
+      }
+    }
+    
+    if (!this.indexedDBReady) {
+      console.error('❌ IndexedDB still not ready after initialization wait');
+      return false;
+    }
 
-      return await this.saveToStorage(this.EDGES_KEY, edgeData);
+    try {
+      // Get current nodes to save complete canvas
+      const nodes = await this.loadNodes();
+      
+      // Extract image references
+      const imageReferences: string[] = [];
+      for (const node of nodes) {
+        if (node.data && typeof node.data === 'object' && 'imageId' in node.data) {
+          imageReferences.push(node.data.imageId as string);
+        }
+      }
+
+      // Save complete canvas to IndexedDB
+      await indexedDBUtils.saveCanvas({
+        name: 'Current Canvas',
+        nodes: nodes as unknown[],
+        edges,
+        version: this.STORAGE_VERSION,
+        metadata: {
+          nodeCount: nodes.length,
+          edgeCount: edges.length,
+          imageReferences,
+          componentCount: nodes.filter(n => n.type === 'aiComponent').length,
+        },
+      });
+
+      return true;
     } catch (error) {
-      console.error('Failed to save edges:', error);
+      console.error('Failed to save edges to IndexedDB:', error);
       return false;
     }
   }
 
   /**
-   * Load edges
+   * Load edges from IndexedDB
    */
   async loadEdges(): Promise<Edge[]> {
+    // Wait for initialization to complete if not ready
+    if (!this.indexedDBReady) {
+      try {
+        await this.waitForInitialization();
+      } catch (error) {
+        console.error('❌ IndexedDB initialization failed, cannot load edges:', error);
+        return [];
+      }
+    }
+    
+    if (!this.indexedDBReady) {
+      console.error('❌ IndexedDB still not ready after initialization wait');
+      return [];
+    }
+
     try {
-      const stored = await this.loadFromStorage(this.EDGES_KEY);
-      return (stored as any)?.edges || [];
+      const canvas = await indexedDBUtils.getCanvas();
+      
+      if (!canvas || !canvas.edges) {
+        return [];
+      }
+
+      return canvas.edges as Edge[];
     } catch (error) {
-      console.error('Failed to load edges:', error);
+      console.error('Failed to load edges from IndexedDB:', error);
       return [];
     }
   }
@@ -292,7 +419,6 @@ export class StorageService {
       // Handle version differences
       let processedCanvas = canvas;
       if (canvas.version !== this.STORAGE_VERSION) {
-        console.log(`🔄 Migrating imported canvas from version ${canvas.version} to ${this.STORAGE_VERSION}`);
         const migrated = this.migrateCanvasData(canvas);
         processedCanvas = exportedCanvasSchema.parse(migrated);
       }
@@ -338,7 +464,6 @@ export class StorageService {
       // Validate edges
       const edges: Edge[] = this.validateEdges(processedCanvas.edges || [], nodes);
 
-      console.log(`✅ Imported ${nodes.length} nodes and ${edges.length} edges (${invalidNodes.length} invalid nodes skipped)`);
       return { nodes, edges };
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -371,7 +496,6 @@ export class StorageService {
    */
   async cleanupStorage(): Promise<void> {
     try {
-      console.log('🧹 Starting storage cleanup...');
 
       // Remove old cache entries
       this.cleanupCache();
@@ -382,7 +506,6 @@ export class StorageService {
       // Update cleanup timestamp
       this.updateStorageStats({ lastCleanup: Date.now() });
 
-      console.log('✅ Storage cleanup completed');
     } catch (error) {
       console.error('Failed to cleanup storage:', error);
     }
@@ -400,10 +523,45 @@ export class StorageService {
       localStorage.removeItem('reactflow-nodes'); // Legacy key
       localStorage.removeItem('componentPipelineCache');
       
-      console.log('🗑️ All storage cleared');
     } catch (error) {
       console.error('Failed to clear storage:', error);
     }
+  }
+
+  /**
+   * Remove callback functions from node data before saving to IndexedDB
+   */
+  private sanitizeNodeDataForStorage(nodeData: UnifiedComponentNode | NativeComponentNode): UnifiedComponentNode | NativeComponentNode {
+    if (!nodeData || typeof nodeData !== 'object') {
+      return nodeData;
+    }
+
+    // Create a copy without callback functions
+    const sanitized = { ...nodeData };
+    
+    // Remove common callback functions that can't be serialized
+    const callbackKeys = [
+      'onDelete', 
+      'onEdit', 
+      'onDuplicate', 
+      'onCompilationComplete',
+      'onScreenshotCapture',
+      'onStateUpdate',
+      'handleDeleteComponent',
+      'handleRegenerateComponent',
+      'handleDuplicateComponent',
+      'handleCompilationComplete'
+    ];
+
+    // Remove any property that is a function
+    Object.keys(sanitized).forEach(key => {
+      const value = (sanitized as unknown as Record<string, unknown>)[key];
+      if (typeof value === 'function' || callbackKeys.includes(key)) {
+        delete (sanitized as unknown as Record<string, unknown>)[key];
+      }
+    });
+
+    return sanitized;
   }
 
   /**
@@ -614,10 +772,17 @@ export class StorageService {
   /**
    * Migrate storage between versions
    */
-  private migrateStorage(oldVersion: StorageVersionInfo | null): void {
+  private async migrateStorage(oldVersion: StorageVersionInfo | null): Promise<void> {
     // Handle migration from legacy format
     if (!oldVersion) {
       this.migrateLegacyStorage();
+    }
+
+    // Migrate to IndexedDB if available
+    if (this.indexedDBReady) {
+      // Try to migrate from localStorage automatically
+      await indexedDBUtils.migrateFromLocalStorage();
+      await indexedDBUtils.migrate(oldVersion);
     }
 
     // Set new version info
@@ -637,7 +802,6 @@ export class StorageService {
       const legacyNodes = localStorage.getItem('reactflow-nodes');
       if (legacyNodes) {
         const nodes = JSON.parse(legacyNodes);
-        console.log(`🔄 Migrating ${nodes.length} legacy nodes`);
         
         // Convert to new format and save
         this.saveNodes(nodes);
@@ -674,7 +838,7 @@ export class StorageService {
       const hasComponent = compiledCode.includes('Component') || compiledCode.includes('function') || compiledCode.includes('=>');
       
       return hasReactImport || hasComponent; // Should have either React or be a component
-    } catch (error) {
+    } catch {
       return false;
     }
   }
@@ -824,7 +988,7 @@ export class StorageService {
           localStorage.setItem(cacheKey, JSON.stringify(data));
         }
       }
-    } catch (error) {
+    } catch {
       localStorage.removeItem(cacheKey);
     }
   }
@@ -935,7 +1099,7 @@ export class StorageService {
     try {
       const cacheData = localStorage.getItem('componentPipelineCache');
       return cacheData ? cacheData.length : 0;
-    } catch (error) {
+    } catch {
       return 0;
     }
   }
@@ -944,8 +1108,16 @@ export class StorageService {
    * Force cleanup now (for manual trigger)
    */
   async forceCleanup(): Promise<void> {
-    console.log('🧹 Forcing storage cleanup...');
     await this.cleanupStorage();
+    
+    // Also cleanup IndexedDB if available
+    if (this.indexedDBReady) {
+      try {
+        await indexedDBUtils.cleanup();
+      } catch (error) {
+        console.warn('Could not cleanup IndexedDB:', error);
+      }
+    }
     
     // Also cleanup component pipeline cache
     try {
@@ -954,6 +1126,263 @@ export class StorageService {
       pipeline.clearCache();
     } catch (error) {
       console.warn('Could not cleanup component pipeline cache:', error);
+    }
+  }
+
+  /**
+   * Save image data to IndexedDB storage
+   */
+  async saveImageData(imageData: ArrayBuffer, format: string, dimensions: { width: number; height: number }): Promise<string | null> {
+    if (!this.indexedDBReady) {
+      console.warn('IndexedDB not available for image storage');
+      return null;
+    }
+
+    try {
+      const sizeKB = imageData.byteLength / 1024;
+      const aspectRatio = dimensions.width / dimensions.height;
+
+      const imageId = await indexedDBUtils.saveImage({
+        data: imageData,
+        format,
+        sizeKB,
+        dimensions: {
+          ...dimensions,
+          aspectRatio,
+        },
+        metadata: {
+          pastedAt: Date.now(),
+          originalSize: dimensions,
+          compressed: false, // TODO: Implement compression
+        },
+      });
+
+      return imageId;
+    } catch (error) {
+      console.error('Failed to save image to IndexedDB:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Get image data from IndexedDB storage
+   */
+  async getImageData(imageId: string): Promise<{ data: ArrayBuffer; format: string; blobUrl: string } | null> {
+    if (!this.indexedDBReady) {
+      console.warn('IndexedDB not available for image retrieval');
+      return null;
+    }
+
+    try {
+      const imageData = await indexedDBUtils.getImage(imageId);
+      if (!imageData) {
+        return null;
+      }
+
+      // Create blob URL for display
+      const blobUrl = indexedDBUtils.createBlobUrl(imageData.data, imageData.format);
+
+      return {
+        data: imageData.data,
+        format: imageData.format,
+        blobUrl,
+      };
+    } catch (error) {
+      console.error('Failed to get image from IndexedDB:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Delete image from IndexedDB storage
+   */
+  async deleteImageData(imageId: string): Promise<boolean> {
+    if (!this.indexedDBReady) {
+      console.warn('IndexedDB not available for image deletion');
+      return false;
+    }
+
+    try {
+      return await indexedDBUtils.deleteImage(imageId);
+    } catch (error) {
+      console.error('Failed to delete image from IndexedDB:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Get storage usage statistics including IndexedDB
+   */
+  async getEnhancedStorageStats(): Promise<StorageStats & { indexedDBQuota?: { usage: number; quota: number; usagePercentage: number } }> {
+    const localStorageStats = this.getStorageStats();
+    
+    if (this.indexedDBReady) {
+      try {
+        const quotaInfo = await indexedDBUtils.getStorageQuota();
+        return {
+          ...localStorageStats,
+          indexedDBQuota: quotaInfo,
+        };
+      } catch (error) {
+        console.warn('Failed to get IndexedDB quota info:', error);
+      }
+    }
+
+    return localStorageStats;
+  }
+
+  /**
+   * Clean up unused images when nodes are deleted
+   */
+  async cleanupUnusedImages(currentNodes: Node[]): Promise<void> {
+    if (!this.indexedDBReady) {
+      return;
+    }
+
+    try {
+      // Extract image IDs from current nodes
+      const imageIds: string[] = [];
+      
+      for (const node of currentNodes) {
+        // Check for ImageNode types that reference images
+        if (node.data && typeof node.data === 'object') {
+          const data = node.data as Record<string, unknown>;
+          if (data.imageId && typeof data.imageId === 'string') {
+            imageIds.push(data.imageId);
+          }
+        }
+      }
+
+      const deletedCount = await indexedDBUtils.cleanupUnusedImages(imageIds);
+      if (deletedCount > 0) {
+      }
+    } catch (error) {
+      console.error('Failed to cleanup unused images:', error);
+    }
+  }
+
+  /**
+   * Check if IndexedDB is ready for use
+   */
+  isIndexedDBReady(): boolean {
+    return this.indexedDBReady;
+  }
+
+  /**
+   * Force initialization and migration (for debugging)
+   */
+  async forceInitialization(): Promise<void> {
+    await this.initializeStorage();
+  }
+
+  /**
+   * Debug storage state
+   */
+  async getDebugInfo(): Promise<{
+    indexedDBReady: boolean;
+    storageVersion: string;
+    canvas: unknown;
+    migrationInfo: unknown;
+    localStorage: {
+      nodes: boolean;
+      edges: boolean;
+    };
+  }> {
+    const canvas = this.indexedDBReady ? await indexedDBUtils.getCanvas().catch(() => null) : null;
+    const migrationInfo = this.indexedDBReady ? await indexedDBUtils.getMigrationInfo().catch(() => null) : null;
+
+    return {
+      indexedDBReady: this.indexedDBReady,
+      storageVersion: this.STORAGE_VERSION,
+      canvas,
+      migrationInfo,
+      localStorage: {
+        nodes: !!localStorage.getItem(this.NODES_KEY),
+        edges: !!localStorage.getItem(this.EDGES_KEY),
+      },
+    };
+  }
+
+  /**
+   * Save complete canvas (nodes + edges) in one operation
+   */
+  async saveCanvas(nodes: Node[], edges: Edge[]): Promise<boolean> {
+    if (!this.indexedDBReady) {
+      console.error('IndexedDB not ready');
+      return false;
+    }
+
+    try {
+      // Convert to enhanced node format (sanitizing callback functions)
+      const enhancedNodes: ExportedNode[] = nodes.map(node => ({
+        id: node.id,
+        type: node.type || 'aiComponent',
+        position: node.position,
+        data: this.sanitizeNodeDataForStorage(this.enhanceNodeData(node.data)),
+        width: node.width,
+        height: node.height,
+      }));
+
+      // Extract image references
+      const imageReferences: string[] = [];
+      for (const node of enhancedNodes) {
+        if (node.data && typeof node.data === 'object' && 'imageId' in node.data) {
+          imageReferences.push(node.data.imageId as string);
+        }
+      }
+
+      // Save complete canvas to IndexedDB
+      await indexedDBUtils.saveCanvas({
+        name: 'Current Canvas',
+        nodes: enhancedNodes,
+        edges,
+        version: this.STORAGE_VERSION,
+        metadata: {
+          nodeCount: enhancedNodes.length,
+          edgeCount: edges.length,
+          imageReferences,
+          componentCount: enhancedNodes.filter(n => n.type === 'aiComponent').length,
+        },
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Failed to save canvas:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Load complete canvas (nodes + edges) in one operation
+   */
+  async loadCanvas(): Promise<{ nodes: Node[]; edges: Edge[] }> {
+    try {
+      const nodes = await this.loadNodes();
+      const edges = await this.loadEdges();
+      return { nodes, edges };
+    } catch (error) {
+      console.error('Failed to load canvas:', error);
+      return { nodes: [], edges: [] };
+    }
+  }
+
+  /**
+   * Clear all canvas data
+   */
+  async clearCanvas(): Promise<boolean> {
+    if (!this.indexedDBReady) {
+      console.error('IndexedDB not ready');
+      return false;
+    }
+
+    try {
+      const success = await indexedDBUtils.deleteCanvas('current');
+      if (success) {
+      }
+      return success;
+    } catch (error) {
+      console.error('Failed to clear canvas:', error);
+      return false;
     }
   }
 }

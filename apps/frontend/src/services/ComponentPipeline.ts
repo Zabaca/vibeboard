@@ -68,7 +68,6 @@ export class ComponentPipeline {
       };
 
       // Always process as ESM (ESM-first architecture)
-      console.log('🚀 Processing component as ESM');
       return this.processESMComponent(node, options);
     } catch (error) {
       this.recordMetric('compilation_errors', 1);
@@ -99,9 +98,6 @@ export class ComponentPipeline {
       if (options.useCache && !options.forceRecompile) {
         const cached = this.getFromCache(cacheKey);
         if (cached) {
-          if (options.debug) {
-            console.log('✅ ESM cache hit for component:', node.id);
-          }
           this.recordMetric('esm_cache_hit', 1);
           return {
             success: true,
@@ -123,9 +119,6 @@ export class ComponentPipeline {
         };
       }
       
-      if (importFixResult.addedImports && importFixResult.addedImports.length > 0 && options.debug) {
-        console.log(`🔧 Fixed missing imports: ${importFixResult.addedImports.join(', ')}`);
-      }
       
       esmCode = importFixResult.code || esmCode;
       
@@ -139,9 +132,6 @@ export class ComponentPipeline {
       
       // If this is legacy code that needs ESM conversion
       if (!this.isESMModule(esmCode)) {
-        if (options.debug) {
-          console.log('📦 Converting legacy code to ESM format');
-        }
         esmCode = esmExecutor.convertToESM(esmCode);
       }
       
@@ -192,10 +182,6 @@ export class ComponentPipeline {
       });
       
       if (!validation.success) {
-        if (options.debug) {
-          console.log(`⚠️  ESM execution failed: ${validation.error}`);
-          console.log('💾 Transpiled code saved, execution error returned');
-        }
         
         // Return error but include the transpiled component for debugging
         return {
@@ -308,10 +294,6 @@ export class ComponentPipeline {
   ): Promise<PipelineResult> {
     const detectedFormat = this.detectFormat(code);
     
-    if (options.debug) {
-      console.log(`🤖 Processing AI-generated component (detected format: ${detectedFormat})`);
-      console.log(`📝 Prompt: ${prompt.substring(0, 50)}...`);
-    }
     
     const unifiedComponent: Partial<UnifiedComponentNode> = {
       originalCode: code,
@@ -358,9 +340,6 @@ export class ComponentPipeline {
         console.warn('⚠️  CDN URL should include ?external=react,react-dom to prevent React conflicts');
       }
       
-      if (pipelineOptions.debug) {
-        console.log('🚀 ComponentPipeline: Direct CDN import:', url);
-      }
       
       // Direct ES module import - no blob URLs, no processing
       const module = await import(/* @vite-ignore */ url);
@@ -368,9 +347,6 @@ export class ComponentPipeline {
       // Extract component from module
       let component = null;
       
-      if (pipelineOptions.debug) {
-        console.log('🔍 Analyzing CDN module exports:', Object.keys(module));
-      }
       
       // 1. Check for default export (most common)
       if (module.default && typeof module.default === 'function') {
@@ -388,9 +364,6 @@ export class ComponentPipeline {
               key !== '__esModule' && 
               /^[A-Z]/.test(key)) {
             component = moduleRecord[key] as React.ComponentType;
-            if (pipelineOptions.debug) {
-              console.log(`🎯 Found component via capitalized export: ${key}`);
-            }
             break;
           }
         }
@@ -402,9 +375,6 @@ export class ComponentPipeline {
         for (const key in defaultObj) {
           if (typeof defaultObj[key] === 'function' && /^[A-Z]/.test(key)) {
             component = defaultObj[key] as React.ComponentType;
-            if (pipelineOptions.debug) {
-              console.log(`🎯 Found component in default object: ${key}`);
-            }
             break;
           }
         }
@@ -427,9 +397,6 @@ export class ComponentPipeline {
         description: `CDN import from ${url}`,
       };
       
-      if (pipelineOptions.debug) {
-        console.log('✅ ComponentPipeline: CDN import successful!');
-      }
       
       return {
         success: true,
@@ -692,7 +659,6 @@ export class ComponentPipeline {
    * Warm up cache with frequently used components
    */
   async warmCache(components: Partial<UnifiedComponentNode>[]): Promise<void> {
-    console.log(`🔥 Warming cache with ${components.length} components...`);
     
     const promises = components.map(component =>
       this.processComponent(component, {
@@ -708,7 +674,6 @@ export class ComponentPipeline {
     const results = await Promise.allSettled(promises);
     const successful = results.filter(r => r.status === 'fulfilled' && r.value?.success).length;
     
-    console.log(`✅ Cache warming complete: ${successful}/${components.length} components cached`);
   }
 
   /**

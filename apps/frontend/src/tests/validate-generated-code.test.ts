@@ -97,7 +97,7 @@ export class GeneratedCodeValidator {
       // Detect if this is an ESM component
       const isESM = this.isESMModule(code);
       
-      let legacyResult: any = null;
+      const legacyResult: any = null;
       let pipelineResult: any = null;
       let pipelineSuccess = false;
       let jsxTranspiled = false;

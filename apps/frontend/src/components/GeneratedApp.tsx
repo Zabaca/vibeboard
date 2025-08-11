@@ -193,7 +193,6 @@ const GeneratedApp = ({ code, component, presentationMode = false, onCompilation
       (entries) => {
         const [entry] = entries;
         if (entry.isIntersecting && !hasBeenRendered) {
-          console.log('🔍 Component entered viewport, starting lazy transpilation...');
           setIsInViewport(true);
           setHasBeenRendered(true);
         }
@@ -231,9 +230,7 @@ const GeneratedApp = ({ code, component, presentationMode = false, onCompilation
     const hasStoredCode = component?.compiledAt && (component?.originalCode || component?.compiledCode);
     
     if (hasStoredCode && !isInViewport && !hasBeenRendered) {
-      console.log('📦 Stored component detected, setting fallback timer');
       const fallbackTimer = setTimeout(() => {
-        console.log('🔄 Intersection observer fallback - forcing stored component to render');
         setIsInViewport(true);
       }, 500); // Short delay to let intersection observer work first
       
@@ -321,7 +318,6 @@ const GeneratedApp = ({ code, component, presentationMode = false, onCompilation
         // ESM-ONLY EXECUTION: All components are processed as ESM modules
         try {
           const { esmExecutor } = await import('../utils/esmExecutor.ts');
-          console.log('🚀 ESM-only execution for component');
           
           const esmResult = await esmExecutor.executeModule(transpiledCode, {
             debug: false,

@@ -32,7 +32,7 @@ export class CDNModuleLoader {
       }
 
       // First, try to load and follow any re-exports
-      let code = await this.loadAndBundle(url, options);
+      const code = await this.loadAndBundle(url, options);
       
       if (options.debug) {
         console.log(`📝 Original code (first 500 chars):`, code.substring(0, 500));
@@ -272,7 +272,7 @@ export class CDNModuleLoader {
         }
         try {
           // The code is already valid ESM, but we need to handle it properly
-          let finalCode = code;
+          const finalCode = code;
           
           // Check what kind of exports we have
           const hasNamedExport = /export\s+\{[^}]*nanoid[^}]*\}/m.test(code);

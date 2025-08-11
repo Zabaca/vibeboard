@@ -36,6 +36,7 @@ import TextNode from './native/TextNode.tsx';
 import StickyNote from './native/StickyNote.tsx';
 import NativeComponentsToolbar from './native/NativeComponentsToolbar.tsx';
 import NativeComponentContextMenu from './native/NativeComponentContextMenu.tsx';
+import StorageManagementDialog from './StorageManagementDialog.tsx';
 
 // Define nodeTypes outside of component to prevent re-renders
 const nodeTypes = {
@@ -65,6 +66,7 @@ const ReactFlowCanvas: React.FC = () => {
   });
   const [showLibrary, setShowLibrary] = useState(false);
   const [showURLImport, setShowURLImport] = useState(false);
+  const [showStorageDialog, setShowStorageDialog] = useState(false);
   const [contextMenu, setContextMenu] = useState<{
     x: number;
     y: number;
@@ -325,7 +327,6 @@ const ReactFlowCanvas: React.FC = () => {
       
       // Close dialog and reset state
       setEditDialog({ isOpen: false, nodeId: '', prompt: '', code: '' });
-      console.log('✅ Component code saved successfully');
     } catch (error) {
       console.error('Failed to save component code:', error);
       setGenerationError(error instanceof Error ? error.message : 'Failed to save component code');
@@ -419,7 +420,6 @@ const ReactFlowCanvas: React.FC = () => {
       
       // Close dialog and reset state
       setEditDialog({ isOpen: false, nodeId: '', prompt: '', code: '' });
-      console.log('✅ Component regenerated successfully with AI');
     } catch (error) {
       console.error('Failed to regenerate component:', error);
       setGenerationError(error instanceof Error ? error.message : 'Failed to regenerate component');
@@ -467,7 +467,6 @@ const ReactFlowCanvas: React.FC = () => {
         return node;
       })
     );
-    console.log('✅ Vision metadata updated for node:', nodeId);
   }, [setNodes]);
 
   const handleCancelEdit = useCallback(() => {
@@ -680,7 +679,6 @@ const ReactFlowCanvas: React.FC = () => {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-      console.log('✅ Canvas exported successfully');
       posthogService.trackCanvasAction('export');
     } catch (error) {
       console.error('Failed to export canvas:', error);
@@ -733,7 +731,6 @@ const ReactFlowCanvas: React.FC = () => {
         await storageService.saveNodes(restoredNodes);
         await storageService.saveEdges(importedEdges);
         
-        console.log(`✅ Imported ${restoredNodes.length} nodes and ${importedEdges.length} edges`);
         posthogService.trackCanvasAction('import');
       } catch (error) {
         console.error('Failed to import canvas:', error);
@@ -757,6 +754,7 @@ const ReactFlowCanvas: React.FC = () => {
           storageService.loadNodes(),
           storageService.loadEdges(),
         ]);
+
 
         if (savedNodes.length > 0) {
           // Attach callbacks to loaded nodes
@@ -793,7 +791,6 @@ const ReactFlowCanvas: React.FC = () => {
           setEdges(savedEdges);
         }
 
-        console.log(`✅ Loaded ${savedNodes.length} nodes and ${savedEdges.length} edges from storage`);
       } catch (error) {
         console.error('Failed to load saved data:', error);
       }
@@ -829,22 +826,20 @@ const ReactFlowCanvas: React.FC = () => {
   useEffect(() => {
     // Debounce the save to avoid too frequent saves
     const timeoutId = setTimeout(() => {
-      if (nodes.length > 0) {
-        storageService.saveNodes(nodes).catch(error => {
-          console.error('Failed to save nodes:', error);
-        });
-      }
+      // Always save, even if empty (allows saving empty canvas)
+      storageService.saveNodes(nodes).catch(error => {
+        console.error('Failed to save nodes:', error);
+      });
     }, 500); // 500ms debounce
 
     return () => clearTimeout(timeoutId);
   }, [nodes]);
 
   useEffect(() => {
-    if (edges.length > 0) {
-      storageService.saveEdges(edges).catch(error => {
-        console.error('Failed to save edges:', error);
-      });
-    }
+    // Always save edges, even if empty
+    storageService.saveEdges(edges).catch(error => {
+      console.error('Failed to save edges:', error);
+    });
   }, [edges]);
 
   const onConnect = useCallback(
@@ -898,7 +893,6 @@ const ReactFlowCanvas: React.FC = () => {
     setNodes((prevNodes) => [...prevNodes, newNode]);
     
     // Show success message
-    console.log(`✅ Imported component from URL: ${component.sourceUrl}`);
   }, [presentationMode, handleDeleteComponent, handleRegenerateComponent, handleCompilationComplete, setNodes, getViewportCenter]);
 
   const handleAddPrebuiltComponent = useCallback(async (component: PrebuiltComponent) => {
@@ -909,7 +903,6 @@ const ReactFlowCanvas: React.FC = () => {
     
     if (compiled) {
       // Use pre-compiled component directly
-      console.log(`✅ Using pre-compiled component: ${component.name}`);
       nodeData = {
         ...compiled,
         id: `node-${Date.now()}`,
@@ -1035,6 +1028,7 @@ const ReactFlowCanvas: React.FC = () => {
         },
       };
 
+      console.log('🆕 Adding new generated component to canvas:', newNode.id);
       setNodes((nds) => [...nds, newNode]);
       
       // Track successful generation
@@ -1537,14 +1531,7 @@ const ReactFlowCanvas: React.FC = () => {
                       background: 'rgba(255,255,255,0.3)' 
                     }} />
                     <button
-                      onClick={async () => {
-                        try {
-                          await storageService.forceCleanup();
-                          console.log('✅ Storage cleanup completed');
-                        } catch (error) {
-                          console.error('Storage cleanup failed:', error);
-                        }
-                      }}
+                      onClick={() => setShowStorageDialog(true)}
                       style={{
                         background: 'transparent',
                         border: 'none',
@@ -1564,9 +1551,9 @@ const ReactFlowCanvas: React.FC = () => {
                         e.currentTarget.style.opacity = '0.8';
                         e.currentTarget.style.background = 'transparent';
                       }}
-                      title={`Storage Cleanup - ${storageService.getStorageUsageSummary().recommendation}`}
+                      title="Manage storage and view usage"
                     >
-                      🧹 Cleanup
+                      📊 Storage
                     </button>
                   </>
                 )}
@@ -1781,6 +1768,14 @@ const ReactFlowCanvas: React.FC = () => {
           onDuplicate={handleDuplicateNode}
           onBringToFront={handleBringToFront}
           onSendToBack={handleSendToBack}
+        />
+      )}
+
+      {/* Storage Management Dialog */}
+      {showStorageDialog && (
+        <StorageManagementDialog
+          isOpen={showStorageDialog}
+          onClose={() => setShowStorageDialog(false)}
         />
       )}
     </div>

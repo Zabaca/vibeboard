@@ -363,6 +363,7 @@ const ImageNode = ({ id, data, selected = false }: ImageNodeProps) => {
         >
           {/* Metadata toggle button */}
           <button
+            type="button"
             onClick={() => setShowMetadata(!showMetadata)}
             style={{
               background: showMetadata ? '#eef2ff' : 'transparent',
@@ -396,6 +397,7 @@ const ImageNode = ({ id, data, selected = false }: ImageNodeProps) => {
           {/* Save image button */}
           {state.blobUrl && (
             <button
+              type="button"
               onClick={handleSaveImage}
               style={{
                 background: 'transparent',
@@ -430,6 +432,7 @@ const ImageNode = ({ id, data, selected = false }: ImageNodeProps) => {
           {/* Copy image button */}
           {state.blobUrl && (
             <button
+              type="button"
               onClick={handleCopyImage}
               style={{
                 background: 'transparent',
@@ -462,6 +465,7 @@ const ImageNode = ({ id, data, selected = false }: ImageNodeProps) => {
 
           {/* Lock button */}
           <button
+            type="button"
             onClick={() => onUpdateState?.(id, { ...state, locked: true })}
             style={{
               background: 'transparent',
@@ -494,6 +498,7 @@ const ImageNode = ({ id, data, selected = false }: ImageNodeProps) => {
           {/* Delete button */}
           {onDelete && (
             <button
+              type="button"
               onClick={() => onDelete(id)}
               style={{
                 background: 'transparent',

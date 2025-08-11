@@ -135,6 +135,7 @@ const ComponentLibrary: React.FC<ComponentLibraryProps> = ({
               </p>
             </div>
             <button
+              type="button"
               onClick={onClose}
               style={{
                 width: '36px',
@@ -193,6 +194,7 @@ const ComponentLibrary: React.FC<ComponentLibraryProps> = ({
         >
           {categories.map((cat) => (
             <button
+              type="button"
               key={cat}
               onClick={() => setSelectedCategory(cat)}
               style={{

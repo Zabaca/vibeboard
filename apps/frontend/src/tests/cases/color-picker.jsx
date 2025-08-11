@@ -33,9 +33,10 @@ const ColorPicker = () => {
           marginBottom: '20px',
         }}
       >
-        {colors.map((color, index) => (
+        {colors.map((color) => (
           <button
-            key={index}
+            type="button"
+            key={color}
             onClick={() => setSelectedColor(color)}
             style={{
               width: '40px',
@@ -62,10 +63,11 @@ const ColorPicker = () => {
       </div>
 
       <div>
-        <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px' }}>
+        <label htmlFor="opacity-slider" style={{ display: 'block', marginBottom: '8px', fontSize: '14px' }}>
           Opacity: `${opacity}%`
         </label>
         <input
+          id="opacity-slider"
           type="range"
           min="0"
           max="100"

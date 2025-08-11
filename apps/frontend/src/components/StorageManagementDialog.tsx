@@ -23,12 +23,6 @@ const StorageManagementDialog: React.FC<StorageManagementDialogProps> = ({ isOpe
   const [isLoading, setIsLoading] = useState(false);
   const [isCleaningUp, setIsCleaningUp] = useState(false);
 
-  useEffect(() => {
-    if (isOpen) {
-      loadStorageInfo();
-    }
-  }, [isOpen, loadStorageInfo]);
-
   const loadStorageInfo = async (): Promise<void> => {
     setIsLoading(true);
     try {
@@ -119,6 +113,12 @@ const StorageManagementDialog: React.FC<StorageManagementDialogProps> = ({ isOpe
     return new Date(timestamp).toLocaleString();
   };
 
+  useEffect(() => {
+    if (isOpen) {
+      loadStorageInfo();
+    }
+  }, [isOpen, loadStorageInfo]);
+
   if (!isOpen) {
     return null;
   }
@@ -168,6 +168,7 @@ const StorageManagementDialog: React.FC<StorageManagementDialogProps> = ({ isOpe
             Storage Management
           </h2>
           <button
+            type="button"
             onClick={onClose}
             style={{
               background: 'none',
@@ -370,6 +371,7 @@ const StorageManagementDialog: React.FC<StorageManagementDialogProps> = ({ isOpe
                 }}
               >
                 <button
+                  type="button"
                   onClick={() => void loadStorageInfo()}
                   disabled={isLoading}
                   style={{
@@ -387,6 +389,7 @@ const StorageManagementDialog: React.FC<StorageManagementDialogProps> = ({ isOpe
                 </button>
 
                 <button
+                  type="button"
                   onClick={() => void handleCleanup()}
                   disabled={isLoading || isCleaningUp}
                   style={{
@@ -404,6 +407,7 @@ const StorageManagementDialog: React.FC<StorageManagementDialogProps> = ({ isOpe
                 </button>
 
                 <button
+                  type="button"
                   onClick={() => void handleClearAll()}
                   disabled={isLoading}
                   style={{

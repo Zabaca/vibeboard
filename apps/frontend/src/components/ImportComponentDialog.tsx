@@ -118,6 +118,7 @@ const ImportComponentDialog: React.FC<ImportComponentDialogProps> = ({
           {/* Description Input */}
           <div style={{ marginBottom: '16px' }}>
             <label
+              htmlFor="description-input"
               style={{
                 display: 'block',
                 marginBottom: '6px',
@@ -129,6 +130,7 @@ const ImportComponentDialog: React.FC<ImportComponentDialogProps> = ({
               Component Description (Optional)
             </label>
             <input
+              id="description-input"
               type="text"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -165,6 +167,7 @@ const ImportComponentDialog: React.FC<ImportComponentDialogProps> = ({
             }}
           >
             <label
+              htmlFor="component-code-textarea"
               style={{
                 display: 'block',
                 marginBottom: '8px',
@@ -176,6 +179,7 @@ const ImportComponentDialog: React.FC<ImportComponentDialogProps> = ({
               Component Code
             </label>
             <textarea
+              id="component-code-textarea"
               ref={textareaRef}
               value={componentCode}
               onChange={(e) => setComponentCode(e.target.value)}
@@ -281,6 +285,7 @@ export default function MyComponent() {
             }}
           >
             <button
+              type="button"
               onClick={onCancel}
               disabled={isProcessing}
               style={{
@@ -307,6 +312,7 @@ export default function MyComponent() {
               Cancel
             </button>
             <button
+              type="button"
               onClick={handleSubmit}
               disabled={isProcessing || !isValidCode}
               style={{

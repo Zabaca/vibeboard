@@ -82,6 +82,7 @@ const NativeComponentContextMenu: React.FC<ContextMenuProps> = ({
         />
 
         <button
+          type="button"
           onClick={() => handleAction(() => onDuplicate(nodeId))}
           style={{
             display: 'block',
@@ -106,6 +107,7 @@ const NativeComponentContextMenu: React.FC<ContextMenuProps> = ({
         </button>
 
         <button
+          type="button"
           onClick={() => handleAction(() => onBringToFront(nodeId))}
           style={{
             display: 'block',
@@ -130,6 +132,7 @@ const NativeComponentContextMenu: React.FC<ContextMenuProps> = ({
         </button>
 
         <button
+          type="button"
           onClick={() => handleAction(() => onSendToBack(nodeId))}
           style={{
             display: 'block',
@@ -163,6 +166,7 @@ const NativeComponentContextMenu: React.FC<ContextMenuProps> = ({
         />
 
         <button
+          type="button"
           onClick={() => handleAction(() => onDelete(nodeId))}
           style={{
             display: 'block',

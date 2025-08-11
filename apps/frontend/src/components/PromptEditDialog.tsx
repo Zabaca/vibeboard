@@ -103,6 +103,7 @@ const PromptEditDialog: React.FC<PromptEditDialogProps> = ({
           {/* Prompt Editor */}
           <div style={{ marginBottom: '20px' }}>
             <label
+              htmlFor="prompt-textarea"
               style={{
                 display: 'block',
                 marginBottom: '8px',
@@ -114,6 +115,7 @@ const PromptEditDialog: React.FC<PromptEditDialogProps> = ({
               Component Prompt
             </label>
             <textarea
+              id="prompt-textarea"
               ref={textareaRef}
               value={editedPrompt}
               onChange={(e) => setEditedPrompt(e.target.value)}
@@ -196,6 +198,7 @@ const PromptEditDialog: React.FC<PromptEditDialogProps> = ({
             }}
           >
             <button
+              type="button"
               onClick={onCancel}
               disabled={isGenerating}
               style={{
@@ -222,6 +225,7 @@ const PromptEditDialog: React.FC<PromptEditDialogProps> = ({
               Cancel
             </button>
             <button
+              type="button"
               onClick={() => onConfirm(editedPrompt)}
               disabled={isGenerating || !editedPrompt.trim()}
               style={{

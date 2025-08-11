@@ -60,6 +60,7 @@ const ShapeCustomizer: React.FC<ShapeCustomizerProps> = ({ state, onUpdateState,
           Shape Settings
         </h4>
         <button
+          type="button"
           onClick={onClose}
           style={{
             background: 'transparent',
@@ -89,14 +90,15 @@ const ShapeCustomizer: React.FC<ShapeCustomizerProps> = ({ state, onUpdateState,
       {/* Shape Type */}
       {state.shapeType !== undefined && (
         <div style={{ marginBottom: '12px' }}>
-          <label
-            style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', display: 'block' }}
+          <div
+            style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', display: 'block', fontWeight: '500' }}
           >
             Shape Type
-          </label>
+          </div>
           <div style={{ display: 'flex', gap: '4px' }}>
             {(['rectangle', 'square', 'triangle'] as const).map((shape) => (
               <button
+                type="button"
                 key={shape}
                 onClick={() => onUpdateState({ ...state, shapeType: shape })}
                 style={{
@@ -120,14 +122,15 @@ const ShapeCustomizer: React.FC<ShapeCustomizerProps> = ({ state, onUpdateState,
 
       {/* Fill Color */}
       <div style={{ marginBottom: '12px' }}>
-        <label
-          style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', display: 'block' }}
+        <div
+          style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', display: 'block', fontWeight: '500' }}
         >
           Fill Color
-        </label>
+        </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px' }}>
           {colors.map((color) => (
             <button
+              type="button"
               key={color.value}
               onClick={() => onUpdateState({ ...state, fillColor: color.value })}
               style={{
@@ -166,14 +169,15 @@ const ShapeCustomizer: React.FC<ShapeCustomizerProps> = ({ state, onUpdateState,
 
       {/* Border Color */}
       <div style={{ marginBottom: '12px' }}>
-        <label
-          style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', display: 'block' }}
+        <div
+          style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', display: 'block', fontWeight: '500' }}
         >
           Border Color
-        </label>
+        </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px' }}>
           {borderColors.map((color) => (
             <button
+              type="button"
               key={color.value}
               onClick={() => onUpdateState({ ...state, strokeColor: color.value })}
               style={{
@@ -213,11 +217,13 @@ const ShapeCustomizer: React.FC<ShapeCustomizerProps> = ({ state, onUpdateState,
       {/* Border Width */}
       <div style={{ marginBottom: '12px' }}>
         <label
+          htmlFor="border-width-slider"
           style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', display: 'block' }}
         >
           Border Width
         </label>
         <input
+          id="border-width-slider"
           type="range"
           min="0"
           max="8"
@@ -245,11 +251,13 @@ const ShapeCustomizer: React.FC<ShapeCustomizerProps> = ({ state, onUpdateState,
         <>
           <div style={{ marginBottom: '12px' }}>
             <label
+              htmlFor="font-size-slider"
               style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', display: 'block' }}
             >
               Font Size
             </label>
             <input
+              id="font-size-slider"
               type="range"
               min="12"
               max="48"
@@ -274,11 +282,13 @@ const ShapeCustomizer: React.FC<ShapeCustomizerProps> = ({ state, onUpdateState,
 
           <div style={{ marginBottom: '12px' }}>
             <label
+              htmlFor="text-color-input"
               style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', display: 'block' }}
             >
               Text Color
             </label>
             <input
+              id="text-color-input"
               type="color"
               value={state.textColor || '#111827'}
               onChange={(e) => onUpdateState({ ...state, textColor: e.target.value })}

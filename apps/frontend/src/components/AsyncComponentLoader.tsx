@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect, useRef, useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import type { ESMExecutionResult } from '../utils/esmExecutor.ts';
 import { esmExecutor } from '../utils/esmExecutor.ts';
 
@@ -117,7 +117,7 @@ export const AsyncComponentLoader: React.FC<AsyncComponentLoaderProps> = ({
   const maxRetries = 3;
 
   // Load component function
-  const loadComponent = async () => {
+  const loadComponent = useCallback(async () => {
     // Check if we have either code or moduleUrl
     if (!(code || moduleUrl)) {
       setState({
@@ -306,7 +306,7 @@ export const AsyncComponentLoader: React.FC<AsyncComponentLoaderProps> = ({
         setTimeout(loadComponent, delay);
       }
     }
-  };
+  }, [code, moduleUrl, debug]);
 
   // Effect to load component when code or moduleUrl changes
   useEffect(() => {
@@ -314,7 +314,7 @@ export const AsyncComponentLoader: React.FC<AsyncComponentLoaderProps> = ({
       loadAttempts.current = 0;
       loadComponent();
     }
-  }, [code, moduleUrl, loadComponent]);
+  }, [loadComponent]);
 
   // Retry function
   const retry = () => {
@@ -411,7 +411,7 @@ export function useAsyncComponent(
     error: null,
   });
 
-  const load = async () => {
+  const load = useCallback(async () => {
     if (!code) {
       setState({
         status: 'error',
@@ -447,13 +447,13 @@ export function useAsyncComponent(
         error: err,
       });
     }
-  };
+  }, [code, options.debug, options.cache]);
 
   useEffect(() => {
     if (options.autoLoad && code) {
       load();
     }
-  }, [code, options.autoLoad, load]);
+  }, [load, options.autoLoad, code]);
 
   return {
     ...state,

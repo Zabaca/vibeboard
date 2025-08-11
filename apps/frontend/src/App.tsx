@@ -18,6 +18,7 @@ function App() {
       {/* Toggle button - only show in development */}
       {isDevelopment && (
         <button
+          type="button"
           onClick={() => setTestMode(!testMode)}
           style={{
             position: 'fixed',

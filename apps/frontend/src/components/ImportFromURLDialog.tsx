@@ -270,10 +270,11 @@ export const ImportFromURLDialog: React.FC<ImportFromURLDialogProps> = ({
         </div>
 
         <div style={{ marginBottom: '16px' }}>
-          <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: '#666' }}>
+          <label htmlFor="url-input" style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: '#666' }}>
             Component URL
           </label>
           <input
+            id="url-input"
             type="url"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
@@ -310,6 +311,7 @@ export const ImportFromURLDialog: React.FC<ImportFromURLDialogProps> = ({
         {/* Example URLs */}
         <div style={{ marginBottom: '16px' }}>
           <button
+            type="button"
             onClick={() => setShowExamples(!showExamples)}
             style={{
               padding: '6px 12px',
@@ -326,11 +328,11 @@ export const ImportFromURLDialog: React.FC<ImportFromURLDialogProps> = ({
 
           {showExamples && (
             <div style={{ marginTop: '12px', maxHeight: '200px', overflowY: 'auto' }}>
-              {EXAMPLE_URLS.map((example, index) => {
+              {EXAMPLE_URLS.map((example) => {
                 const isSelected = url === example.url;
                 return (
                   <div
-                    key={index}
+                    key={example.url}
                     onClick={() => handleExampleClick(example.url)}
                     style={{
                       padding: '8px 12px',
@@ -388,15 +390,15 @@ export const ImportFromURLDialog: React.FC<ImportFromURLDialogProps> = ({
         {/* Recent URLs */}
         {recentUrls.length > 0 && (
           <div style={{ marginBottom: '16px' }}>
-            <label
-              style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: '#666' }}
+            <div
+              style={{ display: 'block', marginBottom: '8px', fontSize: '14px', color: '#666', fontWeight: '500' }}
             >
               Recent Imports
-            </label>
+            </div>
             <div style={{ maxHeight: '120px', overflowY: 'auto' }}>
-              {recentUrls.map((recentUrl, index) => (
+              {recentUrls.map((recentUrl) => (
                 <div
-                  key={index}
+                  key={recentUrl}
                   onClick={() => {
                     setUrl(recentUrl);
                     validateUrl(recentUrl);
@@ -465,6 +467,7 @@ export const ImportFromURLDialog: React.FC<ImportFromURLDialogProps> = ({
         {/* Action buttons */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
           <button
+            type="button"
             onClick={onClose}
             disabled={isImporting}
             style={{
@@ -481,6 +484,7 @@ export const ImportFromURLDialog: React.FC<ImportFromURLDialogProps> = ({
             Cancel
           </button>
           <button
+            type="button"
             onClick={handleImport}
             disabled={isImporting || !url}
             style={{

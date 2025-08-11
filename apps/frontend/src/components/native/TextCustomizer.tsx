@@ -72,6 +72,7 @@ const TextCustomizer: React.FC<TextCustomizerProps> = ({ state, onUpdateState, o
           Text Formatting
         </h4>
         <button
+          type="button"
           onClick={onClose}
           style={{
             background: 'transparent',
@@ -101,12 +102,14 @@ const TextCustomizer: React.FC<TextCustomizerProps> = ({ state, onUpdateState, o
       {/* Font Size */}
       <div style={{ marginBottom: '16px' }}>
         <label
+          htmlFor="font-size-range"
           style={{ fontSize: '12px', color: '#6b7280', marginBottom: '6px', display: 'block' }}
         >
           Font Size
         </label>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <input
+            id="font-size-range"
             type="range"
             min="12"
             max="72"
@@ -134,11 +137,13 @@ const TextCustomizer: React.FC<TextCustomizerProps> = ({ state, onUpdateState, o
       {/* Font Family */}
       <div style={{ marginBottom: '16px' }}>
         <label
+          htmlFor="font-family-select"
           style={{ fontSize: '12px', color: '#6b7280', marginBottom: '6px', display: 'block' }}
         >
           Font Family
         </label>
         <select
+          id="font-family-select"
           value={state.fontFamily || fontFamilies[0].value}
           onChange={(e) => onUpdateState({ ...state, fontFamily: e.target.value })}
           style={{
@@ -161,14 +166,15 @@ const TextCustomizer: React.FC<TextCustomizerProps> = ({ state, onUpdateState, o
 
       {/* Font Weight */}
       <div style={{ marginBottom: '16px' }}>
-        <label
-          style={{ fontSize: '12px', color: '#6b7280', marginBottom: '6px', display: 'block' }}
+        <div
+          style={{ fontSize: '12px', color: '#6b7280', marginBottom: '6px', display: 'block', fontWeight: '500' }}
         >
           Font Weight
-        </label>
+        </div>
         <div style={{ display: 'flex', gap: '4px' }}>
           {fontWeights.map((weight) => (
             <button
+              type="button"
               key={weight.value}
               onClick={() => onUpdateState({ ...state, fontWeight: weight.value })}
               style={{
@@ -191,14 +197,15 @@ const TextCustomizer: React.FC<TextCustomizerProps> = ({ state, onUpdateState, o
 
       {/* Text Alignment */}
       <div style={{ marginBottom: '16px' }}>
-        <label
-          style={{ fontSize: '12px', color: '#6b7280', marginBottom: '6px', display: 'block' }}
+        <div
+          style={{ fontSize: '12px', color: '#6b7280', marginBottom: '6px', display: 'block', fontWeight: '500' }}
         >
           Text Alignment
-        </label>
+        </div>
         <div style={{ display: 'flex', gap: '4px' }}>
           {textAlignments.map((align) => (
             <button
+              type="button"
               key={align.value}
               onClick={() =>
                 onUpdateState({ ...state, textAlign: align.value as 'left' | 'center' | 'right' })
@@ -234,11 +241,11 @@ const TextCustomizer: React.FC<TextCustomizerProps> = ({ state, onUpdateState, o
 
       {/* Text Color */}
       <div style={{ marginBottom: '8px' }}>
-        <label
-          style={{ fontSize: '12px', color: '#6b7280', marginBottom: '6px', display: 'block' }}
+        <div
+          style={{ fontSize: '12px', color: '#6b7280', marginBottom: '6px', display: 'block', fontWeight: '500' }}
         >
           Text Color
-        </label>
+        </div>
         <div
           style={{
             display: 'grid',
@@ -249,6 +256,7 @@ const TextCustomizer: React.FC<TextCustomizerProps> = ({ state, onUpdateState, o
         >
           {textColors.map((color) => (
             <button
+              type="button"
               key={color.value}
               onClick={() => onUpdateState({ ...state, textColor: color.value })}
               style={{

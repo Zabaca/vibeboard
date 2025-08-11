@@ -122,6 +122,7 @@ const ScreenshotTest: React.FC = () => {
       {/* Control buttons */}
       <div style={{ marginBottom: '20px' }}>
         <button
+          type="button"
           onClick={() => handleCaptureTest('component')}
           disabled={isCapturing}
           style={{
@@ -139,6 +140,7 @@ const ScreenshotTest: React.FC = () => {
         </button>
 
         <button
+          type="button"
           onClick={() => handleCaptureTest('preview')}
           disabled={isCapturing}
           style={{
@@ -156,6 +158,7 @@ const ScreenshotTest: React.FC = () => {
         </button>
 
         <button
+          type="button"
           onClick={() => handleCaptureTest('thumbnail')}
           disabled={isCapturing}
           style={{

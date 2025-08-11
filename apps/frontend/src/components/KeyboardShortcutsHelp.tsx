@@ -192,6 +192,7 @@ const KeyboardShortcutsHelp: React.FC<KeyboardShortcutsHelpProps> = ({ isOpen, o
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
             style={{
               background: 'none',
@@ -220,8 +221,8 @@ const KeyboardShortcutsHelp: React.FC<KeyboardShortcutsHelpProps> = ({ isOpen, o
 
         {/* Shortcut Sections */}
         <div style={{ display: 'grid', gap: '24px' }}>
-          {shortcutSections.map((section, sectionIndex) => (
-            <div key={sectionIndex}>
+          {shortcutSections.map((section) => (
+            <div key={section.title}>
               <h3
                 style={{
                   margin: '0 0 12px 0',
@@ -233,9 +234,9 @@ const KeyboardShortcutsHelp: React.FC<KeyboardShortcutsHelpProps> = ({ isOpen, o
                 {section.title}
               </h3>
               <div style={{ display: 'grid', gap: '8px' }}>
-                {section.shortcuts.map((shortcut, shortcutIndex) => (
+                {section.shortcuts.map((shortcut) => (
                   <div
-                    key={shortcutIndex}
+                    key={`${section.title}-${shortcut.description}`}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -254,7 +255,7 @@ const KeyboardShortcutsHelp: React.FC<KeyboardShortcutsHelpProps> = ({ isOpen, o
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                       {shortcut.keys.map((key, keyIndex) => (
-                        <React.Fragment key={keyIndex}>
+                        <React.Fragment key={`${section.title}-${shortcut.description}-${keyIndex}`}>
                           {keyIndex > 0 && (
                             <span style={{ fontSize: '12px', color: '#9ca3af', margin: '0 2px' }}>
                               +

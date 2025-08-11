@@ -38,7 +38,9 @@ import ImageNode from './native/ImageNode.tsx';
 import NativeComponentsToolbar from './native/NativeComponentsToolbar.tsx';
 import NativeComponentContextMenu from './native/NativeComponentContextMenu.tsx';
 import StorageManagementDialog from './StorageManagementDialog.tsx';
+import KeyboardShortcutsHelp from './KeyboardShortcutsHelp.tsx';
 import { readClipboard, type ClipboardResult } from '../utils/clipboardUtils.ts';
+import { showPasteSuccessToast, showPasteErrorToast } from '../utils/toastUtils.ts';
 
 // Define nodeTypes outside of component to prevent re-renders
 const nodeTypes = {
@@ -71,6 +73,7 @@ const ReactFlowCanvas: React.FC = () => {
   const [showLibrary, setShowLibrary] = useState(false);
   const [showURLImport, setShowURLImport] = useState(false);
   const [showStorageDialog, setShowStorageDialog] = useState(false);
+  const [showKeyboardHelp, setShowKeyboardHelp] = useState(false);
   const [contextMenu, setContextMenu] = useState<{
     x: number;
     y: number;
@@ -351,7 +354,9 @@ const ReactFlowCanvas: React.FC = () => {
 
       if (!clipboardResult.success) {
         console.warn('Clipboard read failed:', clipboardResult.error);
-        setPasteError(clipboardResult.error || 'Failed to read clipboard');
+        const errorMessage = clipboardResult.error || 'Failed to read clipboard';
+        setPasteError(errorMessage);
+        showPasteErrorToast(errorMessage);
         return;
       }
 
@@ -360,7 +365,9 @@ const ReactFlowCanvas: React.FC = () => {
       if (clipboardResult.type === 'text' && clipboardResult.data) {
         // Create TextNode with pasted text
         await handleCreateTextNodeWithContent(clipboardResult.data, viewportCenter);
-        console.log('📝 Text pasted successfully');
+        
+        // Show success toast
+        showPasteSuccessToast('text', clipboardResult.format);
         
         // Track paste event
         posthogService.track('paste_text', {
@@ -371,7 +378,9 @@ const ReactFlowCanvas: React.FC = () => {
       } else if (clipboardResult.type === 'image' && clipboardResult.data) {
         // Create ImageNode with pasted image
         await handleCreateImageNodeWithContent(clipboardResult, viewportCenter);
-        console.log('🖼️ Image pasted successfully');
+        
+        // Show success toast
+        showPasteSuccessToast('image', clipboardResult.format);
         
         // Track paste event
         posthogService.track('paste_image', {
@@ -382,7 +391,9 @@ const ReactFlowCanvas: React.FC = () => {
       }
     } catch (error) {
       console.error('Failed to handle paste:', error);
-      setPasteError(error instanceof Error ? error.message : 'Failed to paste content');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to paste content';
+      setPasteError(errorMessage);
+      showPasteErrorToast(errorMessage);
     }
   }, [canvasIsFocused, shouldIgnorePaste, getViewportCenter, handleCreateTextNodeWithContent, handleCreateImageNodeWithContent]);
 
@@ -1402,6 +1413,9 @@ const ReactFlowCanvas: React.FC = () => {
       className="h-screen w-screen relative" 
       style={{ width: '100vw', height: '100vh', background: '#f8f9fa', outline: 'none' }}
       tabIndex={0}
+      role="application"
+      aria-label="AI Whiteboard Canvas - Click to focus, then press Ctrl+V to paste images or text, use arrow keys to navigate components"
+      aria-describedby="canvas-instructions"
     >
       <ReactFlow
         nodes={nodes}
@@ -1685,6 +1699,47 @@ const ReactFlowCanvas: React.FC = () => {
                     {nodes.length} {nodes.length === 1 ? 'Component' : 'Components'}
                   </span>
                 </div>
+                
+                {/* Paste availability indicator */}
+                {canvasIsFocused && (
+                  <>
+                    <div style={{ 
+                      width: '1px', 
+                      height: '16px', 
+                      background: 'rgba(255,255,255,0.3)' 
+                    }} />
+                    <div 
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        padding: '2px 6px',
+                        background: 'rgba(34, 197, 94, 0.2)',
+                        borderRadius: '4px',
+                        fontSize: '11px',
+                        fontWeight: '500',
+                        animation: 'fadeIn 0.3s ease',
+                      }}
+                      role="status"
+                      aria-live="polite"
+                      aria-label="Canvas is focused and ready for paste operations. Press Ctrl+V to paste images or text."
+                    >
+                      <svg 
+                        width="12" 
+                        height="12" 
+                        viewBox="0 0 24 24" 
+                        fill="none" 
+                        stroke="currentColor" 
+                        strokeWidth="2"
+                        aria-hidden="true"
+                      >
+                        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+                        <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+                      </svg>
+                      <span>Paste ready</span>
+                    </div>
+                  </>
+                )}
                 {nodes.length > 0 && (
                   <>
                     <div style={{ 
@@ -1828,6 +1883,39 @@ const ReactFlowCanvas: React.FC = () => {
                       title="Manage storage and view usage"
                     >
                       📊 Storage
+                    </button>
+                    <div style={{ 
+                      width: '1px', 
+                      height: '16px', 
+                      background: 'rgba(255,255,255,0.3)' 
+                    }} />
+                    <button
+                      onClick={() => setShowKeyboardHelp(true)}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: 'white',
+                        fontSize: '12px',
+                        cursor: 'pointer',
+                        opacity: 0.8,
+                        padding: '2px 6px',
+                        borderRadius: '4px',
+                        transition: 'all 0.2s ease',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.opacity = '1';
+                        e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.opacity = '0.8';
+                        e.currentTarget.style.background = 'transparent';
+                      }}
+                      title="Keyboard shortcuts and help"
+                    >
+                      ⌨️ Help
                     </button>
                   </>
                 )}
@@ -2080,6 +2168,39 @@ const ReactFlowCanvas: React.FC = () => {
           onClose={() => setShowStorageDialog(false)}
         />
       )}
+
+      {/* Keyboard Shortcuts Help Dialog */}
+      <KeyboardShortcutsHelp
+        isOpen={showKeyboardHelp}
+        onClose={() => setShowKeyboardHelp(false)}
+      />
+
+      {/* Screen reader instructions */}
+      <div 
+        id="canvas-instructions" 
+        style={{ 
+          position: 'absolute', 
+          left: '-10000px', 
+          width: '1px', 
+          height: '1px', 
+          overflow: 'hidden' 
+        }}
+      >
+        AI Whiteboard canvas for creating and managing components. Press Tab to navigate between controls. 
+        Click the canvas to focus it, then press Ctrl+V to paste images or text from your clipboard. 
+        Use keyboard shortcuts: T for text, R for rectangle, S for sticky note. 
+        Press the Help button or Ctrl+H for full keyboard shortcuts.
+      </div>
+
+      {/* CSS for animations */}
+      <style>
+        {`
+          @keyframes fadeIn {
+            0% { opacity: 0; transform: translateY(-4px); }
+            100% { opacity: 1; transform: translateY(0); }
+          }
+        `}
+      </style>
     </div>
   );
 };

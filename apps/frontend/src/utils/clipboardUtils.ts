@@ -84,17 +84,44 @@ export async function readClipboard(): Promise<ClipboardResult> {
       return await processHtmlFromClipboard(clipboardItem);
     }
 
+    // Provide specific error message based on available types
+    const availableTypes = clipboardItem.types.join(', ');
+    let errorMessage = 'Unsupported clipboard format';
+    
+    if (availableTypes.includes('text/')) {
+      errorMessage = 'Text format not supported. Try copying plain text or formatted content.';
+    } else if (availableTypes.includes('image/')) {
+      errorMessage = `Image format not supported. Supported formats: PNG, JPEG, WebP, GIF. Found: ${availableTypes}`;
+    } else {
+      errorMessage = `Cannot paste this content type. Available types: ${availableTypes}`;
+    }
+
     return {
       success: false,
       type: 'unsupported',
-      error: `Unsupported clipboard format. Available types: ${clipboardItem.types.join(', ')}`
+      error: errorMessage
     };
 
   } catch (error) {
     console.error('Failed to read clipboard:', error);
     
+    // Provide specific error messages based on error type
+    let errorMessage = 'Unknown clipboard error';
+    
+    if (error instanceof Error) {
+      if (error.message.includes('permission') || error.message.includes('denied')) {
+        errorMessage = 'Clipboard access denied. Please allow clipboard permissions and try again.';
+      } else if (error.message.includes('not supported') || error.message.includes('not available')) {
+        errorMessage = 'Clipboard API not available. Try using a modern browser or enable clipboard access.';
+      } else if (error.message.includes('insecure') || error.message.includes('https')) {
+        errorMessage = 'Clipboard access requires HTTPS. Please use a secure connection.';
+      } else {
+        errorMessage = error.message;
+      }
+    }
+    
     // Fallback to text-only clipboard access
-    if (navigator.clipboard.readText) {
+    if (navigator.clipboard?.readText) {
       try {
         const text = await navigator.clipboard.readText();
         if (text.trim()) {
@@ -107,13 +134,17 @@ export async function readClipboard(): Promise<ClipboardResult> {
         }
       } catch (textError) {
         console.error('Text fallback also failed:', textError);
+        // Update error message if text fallback also fails
+        if (textError instanceof Error) {
+          errorMessage = `${errorMessage} (Text fallback also failed: ${textError.message})`;
+        }
       }
     }
 
     return {
       success: false,
       type: 'unsupported',
-      error: error instanceof Error ? error.message : 'Unknown clipboard error'
+      error: errorMessage
     };
   }
 }

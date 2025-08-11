@@ -26,10 +26,11 @@ Add clipboard paste functionality to the main canvas for both images and text, c
 - ✅ `apps/frontend/src/utils/indexedDBUtils.ts` - New IndexedDB wrapper with storage methods
 - ✅ `apps/frontend/src/services/StorageService.ts` - Enhanced with IndexedDB integration  
 - ✅ `apps/frontend/src/components/StorageManagementDialog.tsx` - New storage management UI
-- `apps/frontend/src/components/ReactFlowCanvas.tsx` - Main canvas paste handler  
-- `apps/frontend/src/components/native/` - New ImageNode component
+- ✅ `apps/frontend/src/utils/clipboardUtils.ts` - New utility file with clipboard detection and formatting
+- ✅ `apps/frontend/src/components/native/ImageNode.tsx` - New ImageNode component with image display and controls
+- ✅ `apps/frontend/src/types/native-component.types.ts` - Updated with image component types
+- ✅ `apps/frontend/src/components/ReactFlowCanvas.tsx` - Main canvas paste handler with event handling
 - `apps/frontend/src/types/component.types.ts` - Type definitions
-- `apps/frontend/src/utils/clipboardUtils.ts` - New utility file
 
 ### Files to Reference
 - `apps/frontend/src/components/native/TextNode.tsx` - Pattern for new ImageNode
@@ -49,26 +50,26 @@ Add clipboard paste functionality to the main canvas for both images and text, c
 - [x] Sub-goal 0.7: Implement storage quota monitoring and cleanup
 - [x] Sub-goal 0.8: Add storage usage indicators and management UI
 
-### Parent Goal 1: Create Clipboard Utilities
-- [ ] Sub-goal 1.1: Create `clipboardUtils.ts` with image paste detection
-- [ ] Sub-goal 1.2: Add text paste detection and formatting utilities
-- [ ] Sub-goal 1.3: Add format detection (plain text, HTML, code, etc.)
-- [ ] Sub-goal 1.4: Add image validation and size limits
+### Parent Goal 1: Create Clipboard Utilities ✅
+- [x] Sub-goal 1.1: Create `clipboardUtils.ts` with image paste detection
+- [x] Sub-goal 1.2: Add text paste detection and formatting utilities
+- [x] Sub-goal 1.3: Add format detection (plain text, HTML, code, etc.)
+- [x] Sub-goal 1.4: Add image validation and size limits
 
-### Parent Goal 2: Implement ImageNode Component
-- [ ] Sub-goal 2.1: Create `ImageNode.tsx` component following native component patterns
-- [ ] Sub-goal 2.2: Add image display with proper aspect ratio handling
-- [ ] Sub-goal 2.3: Add resize handles and drag functionality
-- [ ] Sub-goal 2.4: Add image metadata display (format, size, dimensions)
-- [ ] Sub-goal 2.5: Add image export/save functionality
-- [ ] Sub-goal 2.6: Register ImageNode as new React Flow node type
+### Parent Goal 2: Implement ImageNode Component ✅
+- [x] Sub-goal 2.1: Create `ImageNode.tsx` component following native component patterns
+- [x] Sub-goal 2.2: Add image display with proper aspect ratio handling
+- [x] Sub-goal 2.3: Add resize handles and drag functionality
+- [x] Sub-goal 2.4: Add image metadata display (format, size, dimensions)
+- [x] Sub-goal 2.5: Add image export/save functionality
+- [x] Sub-goal 2.6: Register ImageNode as new React Flow node type
 
-### Parent Goal 3: Canvas Paste Event Handling
-- [ ] Sub-goal 3.1: Add global paste event listener to ReactFlowCanvas
-- [ ] Sub-goal 3.2: Implement canvas focus detection to avoid conflicts
-- [ ] Sub-goal 3.3: Add paste event filtering (ignore when input/textarea focused)
-- [ ] Sub-goal 3.4: Add viewport center calculation for new node placement
-- [ ] Sub-goal 3.5: Add keyboard shortcut indication in UI
+### Parent Goal 3: Canvas Paste Event Handling ✅
+- [x] Sub-goal 3.1: Add global paste event listener to ReactFlowCanvas
+- [x] Sub-goal 3.2: Implement canvas focus detection to avoid conflicts
+- [x] Sub-goal 3.3: Add paste event filtering (ignore when input/textarea focused)
+- [x] Sub-goal 3.4: Add viewport center calculation for new node placement
+- [x] Sub-goal 3.5: Add keyboard shortcut indication in UI
 
 ### Parent Goal 4: Text Paste Integration
 - [ ] Sub-goal 4.1: Detect text paste and create TextNode instances

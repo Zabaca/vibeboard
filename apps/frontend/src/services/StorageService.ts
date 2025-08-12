@@ -199,10 +199,25 @@ export class StorageService {
         height: node.height,
       }));
 
-      // Extract image references
+      // Extract image references from native image components
       const imageReferences: string[] = [];
       for (const node of enhancedNodes) {
-        if (node.data && typeof node.data === 'object' && 'imageId' in node.data) {
+        if (
+          node.data && 
+          typeof node.data === 'object' && 
+          'componentType' in node.data && 
+          node.data.componentType === 'native' &&
+          'nativeType' in node.data &&
+          node.data.nativeType === 'image' &&
+          'state' in node.data &&
+          typeof node.data.state === 'object' &&
+          node.data.state &&
+          'imageId' in node.data.state
+        ) {
+          imageReferences.push(node.data.state.imageId as string);
+        }
+        // Also check for legacy format
+        else if (node.data && typeof node.data === 'object' && 'imageId' in node.data) {
           imageReferences.push(node.data.imageId as string);
         }
       }
@@ -260,9 +275,42 @@ export class StorageService {
       // Process image nodes to restore blob URLs
       const processedNodes = await Promise.all(
         nodes.map(async (node) => {
-          if (node.data && typeof node.data === 'object' && 'imageId' in node.data) {
+          // Check for native image components (imageId in state)
+          if (
+            node.data && 
+            typeof node.data === 'object' && 
+            'componentType' in node.data && 
+            node.data.componentType === 'native' &&
+            'nativeType' in node.data &&
+            node.data.nativeType === 'image' &&
+            'state' in node.data &&
+            typeof node.data.state === 'object' &&
+            node.data.state &&
+            'imageId' in node.data.state
+          ) {
+            const imageId = node.data.state.imageId as string;
+            const imageData = await this.getImageData(imageId);
+            if (imageData) {
+              console.log(`✅ Restored blob URL for image ${imageId}`);
+              return {
+                ...node,
+                data: {
+                  ...node.data,
+                  state: {
+                    ...node.data.state,
+                    blobUrl: imageData.blobUrl,
+                  },
+                },
+              };
+            } else {
+              console.warn(`⚠️ Failed to restore image data for imageId: ${imageId}`);
+            }
+          }
+          // Also check for legacy format (imageId directly in node.data)
+          else if (node.data && typeof node.data === 'object' && 'imageId' in node.data) {
             const imageData = await this.getImageData(node.data.imageId as string);
             if (imageData) {
+              console.log(`✅ Restored blob URL for legacy image ${node.data.imageId}`);
               return {
                 ...node,
                 data: {
@@ -313,10 +361,25 @@ export class StorageService {
       // Get current nodes to save complete canvas
       const nodes = await this.loadNodes();
 
-      // Extract image references
+      // Extract image references from native image components
       const imageReferences: string[] = [];
       for (const node of nodes) {
-        if (node.data && typeof node.data === 'object' && 'imageId' in node.data) {
+        if (
+          node.data && 
+          typeof node.data === 'object' && 
+          'componentType' in node.data && 
+          node.data.componentType === 'native' &&
+          'nativeType' in node.data &&
+          node.data.nativeType === 'image' &&
+          'state' in node.data &&
+          typeof node.data.state === 'object' &&
+          node.data.state &&
+          'imageId' in node.data.state
+        ) {
+          imageReferences.push(node.data.state.imageId as string);
+        }
+        // Also check for legacy format
+        else if (node.data && typeof node.data === 'object' && 'imageId' in node.data) {
           imageReferences.push(node.data.imageId as string);
         }
       }
@@ -1115,8 +1178,26 @@ export class StorageService {
       const imageIds: string[] = [];
 
       for (const node of currentNodes) {
-        // Check for ImageNode types that reference images
-        if (node.data && typeof node.data === 'object') {
+        // Check for native image components
+        if (
+          node.data && 
+          typeof node.data === 'object' && 
+          'componentType' in node.data && 
+          node.data.componentType === 'native' &&
+          'nativeType' in node.data &&
+          node.data.nativeType === 'image' &&
+          'state' in node.data &&
+          typeof node.data.state === 'object' &&
+          node.data.state &&
+          'imageId' in node.data.state
+        ) {
+          const imageId = node.data.state.imageId as string;
+          if (typeof imageId === 'string') {
+            imageIds.push(imageId);
+          }
+        }
+        // Also check for legacy format
+        else if (node.data && typeof node.data === 'object') {
           const data = node.data as Record<string, unknown>;
           if (data.imageId && typeof data.imageId === 'string') {
             imageIds.push(data.imageId);
@@ -1196,10 +1277,25 @@ export class StorageService {
         height: node.height,
       }));
 
-      // Extract image references
+      // Extract image references from native image components
       const imageReferences: string[] = [];
       for (const node of enhancedNodes) {
-        if (node.data && typeof node.data === 'object' && 'imageId' in node.data) {
+        if (
+          node.data && 
+          typeof node.data === 'object' && 
+          'componentType' in node.data && 
+          node.data.componentType === 'native' &&
+          'nativeType' in node.data &&
+          node.data.nativeType === 'image' &&
+          'state' in node.data &&
+          typeof node.data.state === 'object' &&
+          node.data.state &&
+          'imageId' in node.data.state
+        ) {
+          imageReferences.push(node.data.state.imageId as string);
+        }
+        // Also check for legacy format
+        else if (node.data && typeof node.data === 'object' && 'imageId' in node.data) {
           imageReferences.push(node.data.imageId as string);
         }
       }

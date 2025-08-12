@@ -118,7 +118,7 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
   initialize(): Promise<boolean> {
     if (!this.isSupported()) {
       console.warn('IndexedDB not supported in this browser');
-      return false;
+      return Promise.resolve(false);
     }
 
     return new Promise((resolve) => {
@@ -693,7 +693,7 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
    */
   getMigrationInfo(): Promise<{ version: string; migratedAt: number } | null> {
     if (!this.db) {
-      return null;
+      return Promise.resolve(null);
     }
 
     return new Promise((resolve) => {
@@ -755,13 +755,13 @@ class IndexedDBUtils implements IndexedDBUtilsInterface {
     const currentSizeKB = imageData.byteLength / 1024;
 
     if (currentSizeKB <= maxSizeKB) {
-      return imageData;
+      return Promise.resolve(imageData);
     }
 
     console.warn(
       `Image size (${currentSizeKB}KB) exceeds maximum (${maxSizeKB}KB). Consider implementing compression.`,
     );
-    return imageData;
+    return Promise.resolve(imageData);
   }
 
   /**

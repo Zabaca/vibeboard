@@ -17,13 +17,13 @@ export interface ComponentState {
   // Common state for all native components
   locked?: boolean;
   layer?: number;
-  
+
   // Shape-specific state
   shapeType?: 'rectangle' | 'triangle' | 'square';
   fillColor?: string;
   strokeColor?: string;
   strokeWidth?: number;
-  
+
   // Text-specific state
   text?: string;
   fontSize?: number;
@@ -31,17 +31,17 @@ export interface ComponentState {
   fontWeight?: string;
   textAlign?: 'left' | 'center' | 'right';
   textColor?: string;
-  
+
   // Sticky-specific state
   stickyColor?: 'yellow' | 'pink' | 'blue' | 'green';
   padding?: number;
-  
+
   // Image-specific state
-  imageId?: string;       // Reference to IndexedDB stored image
-  blobUrl?: string;      // Runtime blob URL for display (not persisted)
-  alt?: string;          // Alt text for accessibility
-  format?: string;       // 'png', 'jpeg', 'webp', etc.
-  sizeKB?: number;       // File size in KB
+  imageId?: string; // Reference to IndexedDB stored image
+  blobUrl?: string; // Runtime blob URL for display (not persisted)
+  alt?: string; // Alt text for accessibility
+  format?: string; // 'png', 'jpeg', 'webp', etc.
+  sizeKB?: number; // File size in KB
   dimensions?: {
     width: number;
     height: number;
@@ -58,23 +58,24 @@ export interface ComponentState {
  * Native component node structure
  * Extends UnifiedComponentNode with native-specific properties
  */
-export interface NativeComponentNode extends Omit<UnifiedComponentNode, 'originalCode' | 'compiledCode' | 'source'> {
+export interface NativeComponentNode
+  extends Omit<UnifiedComponentNode, 'originalCode' | 'compiledCode' | 'source'> {
   // Override component type to be native
   componentType: 'native';
-  
+
   // Type of native component
   nativeType: NativeComponentType;
-  
+
   // Component-specific state
   state: ComponentState;
-  
+
   // Native components have a different source
   source: 'native';
-  
+
   // Native components don't need code fields
   originalCode: '';
   compiledCode?: undefined;
-  
+
   // No compilation-related fields
   compiledHash?: undefined;
   compiledAt?: undefined;
@@ -84,7 +85,9 @@ export interface NativeComponentNode extends Omit<UnifiedComponentNode, 'origina
 /**
  * Helper type guard to check if a node is a native component
  */
-export function isNativeComponentNode(node: UnifiedComponentNode | NativeComponentNode): node is NativeComponentNode {
+export function isNativeComponentNode(
+  node: UnifiedComponentNode | NativeComponentNode,
+): node is NativeComponentNode {
   return 'componentType' in node && node.componentType === 'native';
 }
 

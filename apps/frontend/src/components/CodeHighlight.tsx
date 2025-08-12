@@ -8,9 +8,11 @@ interface PrismGlobal {
 // Dynamic Prism.js loading
 let prismPromise: Promise<PrismGlobal> | null = null;
 
-const loadPrism = async () => {
-  if (prismPromise) return prismPromise;
-  
+const loadPrism = () => {
+  if (prismPromise) {
+    return prismPromise;
+  }
+
   prismPromise = new Promise((resolve) => {
     // Check if already loaded
     const globalPrism = (window as { Prism?: PrismGlobal }).Prism;
@@ -18,13 +20,13 @@ const loadPrism = async () => {
       resolve(globalPrism);
       return;
     }
-    
+
     // Load Prism CSS
     const link = document.createElement('link');
     link.rel = 'stylesheet';
     link.href = 'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css';
     document.head.appendChild(link);
-    
+
     // Load Prism JS
     const script = document.createElement('script');
     script.src = 'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js';
@@ -32,9 +34,9 @@ const loadPrism = async () => {
       // Load additional components in sequence
       const scripts = [
         'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-jsx.min.js',
-        'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.js'
+        'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.js',
       ];
-      
+
       for (const src of scripts) {
         await new Promise<void>((resolveScript) => {
           const s = document.createElement('script');
@@ -43,13 +45,14 @@ const loadPrism = async () => {
           document.head.appendChild(s);
         });
       }
-      
+
       // Load line numbers CSS
       const lineNumbersLink = document.createElement('link');
       lineNumbersLink.rel = 'stylesheet';
-      lineNumbersLink.href = 'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.css';
+      lineNumbersLink.href =
+        'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.css';
       document.head.appendChild(lineNumbersLink);
-      
+
       const loadedPrism = (window as { Prism?: PrismGlobal }).Prism;
       if (loadedPrism) {
         resolve(loadedPrism);
@@ -57,7 +60,7 @@ const loadPrism = async () => {
     };
     document.head.appendChild(script);
   });
-  
+
   return prismPromise;
 };
 
@@ -67,13 +70,13 @@ interface CodeHighlightProps {
   showLineNumbers?: boolean;
 }
 
-const CodeHighlight: React.FC<CodeHighlightProps> = ({ 
-  code, 
+const CodeHighlight: React.FC<CodeHighlightProps> = ({
+  code,
   language = 'jsx',
-  showLineNumbers = true 
+  showLineNumbers = true,
 }) => {
   const codeRef = useRef<HTMLElement>(null);
-  
+
   useEffect(() => {
     const highlight = async () => {
       const Prism = await loadPrism();
@@ -81,12 +84,12 @@ const CodeHighlight: React.FC<CodeHighlightProps> = ({
         Prism.highlightElement(codeRef.current);
       }
     };
-    
+
     highlight();
-  }, [code, language]);
-  
+  }, []);
+
   return (
-    <pre 
+    <pre
       className={showLineNumbers ? 'line-numbers' : ''}
       style={{
         margin: 0,

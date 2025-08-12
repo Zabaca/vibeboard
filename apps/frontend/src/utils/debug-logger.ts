@@ -7,7 +7,7 @@ interface LogEntry {
   timestamp: string;
   level: 'log' | 'error' | 'warn' | 'info' | 'debug';
   message: string;
-  data?: any;
+  data?: unknown;
   source?: string;
 }
 
@@ -133,7 +133,9 @@ class DebugLogger {
   }
 
   private updateDebugPanel() {
-    if (!this.onScreenEnabled) return;
+    if (!this.onScreenEnabled) {
+      return;
+    }
 
     const logsContainer = document.getElementById('debug-logs');
     if (logsContainer) {
@@ -224,7 +226,7 @@ class DebugLogger {
   /**
    * Core logging methods
    */
-  private addLog(level: LogEntry['level'], message: string, data?: any, source?: string) {
+  private addLog(level: LogEntry['level'], message: string, data?: unknown, source?: string) {
     const entry: LogEntry = {
       timestamp: new Date().toTimeString().split(' ')[0],
       level,
@@ -250,23 +252,23 @@ class DebugLogger {
     }
   }
 
-  log(message: string, data?: any, source?: string) {
+  log(message: string, data?: unknown, source?: string) {
     this.addLog('log', message, data, source);
   }
 
-  error(message: string, data?: any, source?: string) {
+  error(message: string, data?: unknown, source?: string) {
     this.addLog('error', message, data, source);
   }
 
-  warn(message: string, data?: any, source?: string) {
+  warn(message: string, data?: unknown, source?: string) {
     this.addLog('warn', message, data, source);
   }
 
-  info(message: string, data?: any, source?: string) {
+  info(message: string, data?: unknown, source?: string) {
     this.addLog('info', message, data, source);
   }
 
-  debug(message: string, data?: any, source?: string) {
+  debug(message: string, data?: unknown, source?: string) {
     this.addLog('debug', message, data, source);
   }
 
@@ -275,23 +277,38 @@ class DebugLogger {
    */
   private interceptConsole() {
     console.log = (...args) => {
-      this.addLog('log', args.map((a) => (typeof a === 'object' ? JSON.stringify(a) : a)).join(' '));
+      this.addLog(
+        'log',
+        args.map((a) => (typeof a === 'object' ? JSON.stringify(a) : a)).join(' '),
+      );
     };
 
     console.error = (...args) => {
-      this.addLog('error', args.map((a) => (typeof a === 'object' ? JSON.stringify(a) : a)).join(' '));
+      this.addLog(
+        'error',
+        args.map((a) => (typeof a === 'object' ? JSON.stringify(a) : a)).join(' '),
+      );
     };
 
     console.warn = (...args) => {
-      this.addLog('warn', args.map((a) => (typeof a === 'object' ? JSON.stringify(a) : a)).join(' '));
+      this.addLog(
+        'warn',
+        args.map((a) => (typeof a === 'object' ? JSON.stringify(a) : a)).join(' '),
+      );
     };
 
     console.info = (...args) => {
-      this.addLog('info', args.map((a) => (typeof a === 'object' ? JSON.stringify(a) : a)).join(' '));
+      this.addLog(
+        'info',
+        args.map((a) => (typeof a === 'object' ? JSON.stringify(a) : a)).join(' '),
+      );
     };
 
     console.debug = (...args) => {
-      this.addLog('debug', args.map((a) => (typeof a === 'object' ? JSON.stringify(a) : a)).join(' '));
+      this.addLog(
+        'debug',
+        args.map((a) => (typeof a === 'object' ? JSON.stringify(a) : a)).join(' '),
+      );
     };
   }
 
@@ -331,7 +348,9 @@ class DebugLogger {
       }[log.level];
 
       markdown += `### ${emoji} ${log.timestamp} - ${log.level.toUpperCase()}\n`;
-      if (log.source) markdown += `**Source:** ${log.source}\n\n`;
+      if (log.source) {
+        markdown += `**Source:** ${log.source}\n\n`;
+      }
       markdown += `${log.message}\n`;
       if (log.data) {
         markdown += '\n```json\n';
@@ -353,8 +372,8 @@ export default debugLogger;
 
 // Also expose globally for console access
 if (typeof window !== 'undefined') {
-  (window as any).debugLogger = debugLogger;
-  (window as any).debug = {
+  (window as unknown as Record<string, unknown>).debugLogger = debugLogger;
+  (window as unknown as Record<string, unknown>).debug = {
     enable: () => debugLogger.enableOnScreenLogging(),
     disable: () => debugLogger.disableOnScreenLogging(),
     copy: () => debugLogger.copyLogsToClipboard(),

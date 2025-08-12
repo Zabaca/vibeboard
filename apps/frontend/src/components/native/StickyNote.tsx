@@ -1,5 +1,5 @@
-import React, { memo, useState, useRef, useEffect } from 'react';
-import { Handle, Position, NodeResizer, type NodeProps } from '@xyflow/react';
+import { Handle, type NodeProps, NodeResizer, Position } from '@xyflow/react';
+import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
 import type { ComponentState } from '../../types/native-component.types.ts';
 
 interface StickyNoteData {
@@ -9,12 +9,12 @@ interface StickyNoteData {
   state: ComponentState;
   source: 'native';
   id: string;
-  
+
   // UI-specific fields
   presentationMode?: boolean;
   onDelete?: (nodeId: string) => void;
   onUpdateState?: (nodeId: string, newState: ComponentState) => void;
-  
+
   // Index signature for React Flow compatibility
   [key: string]: unknown;
 }
@@ -65,19 +65,19 @@ const StickyNote = ({ id, data, selected = false }: StickyNoteProps) => {
   const colorScheme = stickyColors[(state.stickyColor as keyof typeof stickyColors) || 'yellow'];
 
   // Adjust textarea height based on content
-  const adjustTextAreaHeight = () => {
+  const adjustTextAreaHeight = useCallback(() => {
     if (textAreaRef.current) {
       textAreaRef.current.style.height = 'auto';
       const newHeight = Math.max(100, textAreaRef.current.scrollHeight);
       textAreaRef.current.style.height = `${newHeight}px`;
-      
+
       // Update node height if auto-resize is enabled
       if (containerRef.current && !state.locked) {
         const padding = 32; // Account for padding
         containerRef.current.style.minHeight = `${newHeight + padding}px`;
       }
     }
-  };
+  }, [state.locked]);
 
   // Auto-focus and adjust height when editing starts
   useEffect(() => {
@@ -86,7 +86,7 @@ const StickyNote = ({ id, data, selected = false }: StickyNoteProps) => {
       adjustTextAreaHeight();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isEditing]);
+  }, [isEditing, adjustTextAreaHeight]);
 
   const handleTextSubmit = () => {
     setIsEditing(false);
@@ -110,13 +110,13 @@ const StickyNote = ({ id, data, selected = false }: StickyNoteProps) => {
   };
 
   const startEditing = () => {
-    if (!presentationMode && !state.locked) {
+    if (!(presentationMode || state.locked)) {
       setIsEditing(true);
     }
   };
 
   const cycleColor = () => {
-    if (!presentationMode && !state.locked && onUpdateState) {
+    if (!(presentationMode || state.locked) && onUpdateState) {
       const colors = Object.keys(stickyColors) as Array<keyof typeof stickyColors>;
       const currentIndex = colors.indexOf(state.stickyColor || 'yellow');
       const nextIndex = (currentIndex + 1) % colors.length;
@@ -229,13 +229,13 @@ const StickyNote = ({ id, data, selected = false }: StickyNoteProps) => {
                 fontFamily: state.fontFamily || 'Inter, system-ui, sans-serif',
                 fontWeight: '400',
                 color: colorScheme.text,
-                cursor: !presentationMode && !state.locked ? 'text' : 'default',
+                cursor: presentationMode || state.locked ? 'default' : 'text',
                 userSelect: presentationMode ? 'text' : 'none',
                 whiteSpace: 'pre-wrap',
                 wordBreak: 'break-word',
                 lineHeight: 1.6,
               }}
-              title={!presentationMode && !state.locked ? 'Click to edit note' : undefined}
+              title={presentationMode || state.locked ? undefined : 'Click to edit note'}
             >
               {state.text || 'Click to add note...'}
             </div>
@@ -244,7 +244,7 @@ const StickyNote = ({ id, data, selected = false }: StickyNoteProps) => {
       </div>
 
       {/* Control buttons - only show if not in presentation mode and not locked */}
-      {!presentationMode && !state.locked && selected && (
+      {!(presentationMode || state.locked) && selected && (
         <div
           className="nodrag"
           style={{
@@ -305,7 +305,14 @@ const StickyNote = ({ id, data, selected = false }: StickyNoteProps) => {
             }}
             title="Lock note"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <rect x="5" y="11" width="14" height="11" rx="2" ry="2" />
               <path d="M7 11V7a5 5 0 0110 0v4" />
             </svg>
@@ -330,7 +337,14 @@ const StickyNote = ({ id, data, selected = false }: StickyNoteProps) => {
               }}
               title="Delete note"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
                 <path d="M3 6h18" />
                 <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6" />
                 <path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2" />
@@ -355,7 +369,14 @@ const StickyNote = ({ id, data, selected = false }: StickyNoteProps) => {
           onClick={() => onUpdateState?.(id, { ...state, locked: false })}
           title="Click to unlock"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={colorScheme.text} strokeWidth="2">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke={colorScheme.text}
+            strokeWidth="2"
+          >
             <rect x="5" y="11" width="14" height="11" rx="2" ry="2" />
             <path d="M7 11V7a5 5 0 0110 0v4" />
           </svg>

@@ -13,9 +13,9 @@ interface NativeComponentsToolbarProps {
   isCreating?: boolean;
 }
 
-const NativeComponentsToolbar: React.FC<NativeComponentsToolbarProps> = ({ 
-  onCreateComponent, 
-  isCreating = false 
+const NativeComponentsToolbar: React.FC<NativeComponentsToolbarProps> = ({
+  onCreateComponent,
+  isCreating = false,
 }) => {
   const [selectedTool, setSelectedTool] = useState<string | null>(null);
 
@@ -37,18 +37,15 @@ const NativeComponentsToolbar: React.FC<NativeComponentsToolbarProps> = ({
       label: 'Rectangle',
       shortcut: 'R',
       icon: (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
           <rect x="3" y="5" width="18" height="14" rx="2" />
-        </svg>
-      ),
-    },
-    {
-      type: 'shape-square',
-      label: 'Square',
-      shortcut: 'Q',
-      icon: (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <rect x="4" y="4" width="16" height="16" rx="2" />
         </svg>
       ),
     },
@@ -57,7 +54,14 @@ const NativeComponentsToolbar: React.FC<NativeComponentsToolbarProps> = ({
       label: 'Triangle',
       shortcut: 'G',
       icon: (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
           <path d="M12 2L2 20h20L12 2z" />
         </svg>
       ),
@@ -67,7 +71,14 @@ const NativeComponentsToolbar: React.FC<NativeComponentsToolbarProps> = ({
       label: 'Text',
       shortcut: 'T',
       icon: (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
           <path d="M4 7V4h16v3" />
           <path d="M9 20h6" />
           <path d="M12 4v16" />
@@ -80,8 +91,13 @@ const NativeComponentsToolbar: React.FC<NativeComponentsToolbarProps> = ({
       shortcut: 'S',
       icon: (
         <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M16 3H5c-.55 0-1 .45-1 1v14c0 .55.45 1 1 1h14c.55 0 1-.45 1-1V7l-4-4z" fill="#fef3c7" stroke="#fbbf24" strokeWidth="1"/>
-          <path d="M16 3v4h4" fill="#fbbf24"/>
+          <path
+            d="M16 3H5c-.55 0-1 .45-1 1v14c0 .55.45 1 1 1h14c.55 0 1-.45 1-1V7l-4-4z"
+            fill="#fef3c7"
+            stroke="#fbbf24"
+            strokeWidth="1"
+          />
+          <path d="M16 3v4h4" fill="#fbbf24" />
         </svg>
       ),
     },
@@ -109,28 +125,33 @@ const NativeComponentsToolbar: React.FC<NativeComponentsToolbarProps> = ({
           minWidth: '100px',
         }}
       >
-        <div style={{
-          fontSize: '16px',
-          fontWeight: '600',
-          color: '#111827',
-          textAlign: 'center',
-          padding: '4px 0',
-          textTransform: 'uppercase',
-          letterSpacing: '0.5px',
-        }}>
+        <div
+          style={{
+            fontSize: '16px',
+            fontWeight: '600',
+            color: '#111827',
+            textAlign: 'center',
+            padding: '4px 0',
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px',
+          }}
+        >
           Tools
         </div>
 
-        <div style={{
-          width: '100%',
-          height: '1px',
-          background: '#e5e7eb',
-          margin: '4px 0',
-        }} />
+        <div
+          style={{
+            width: '100%',
+            height: '1px',
+            background: '#e5e7eb',
+            margin: '4px 0',
+          }}
+        />
 
         {/* All tools as direct buttons */}
         {allButtons.map((button) => (
           <button
+            type="button"
             key={button.type}
             onClick={() => handleButtonClick(button)}
             disabled={isCreating}
@@ -161,41 +182,50 @@ const NativeComponentsToolbar: React.FC<NativeComponentsToolbarProps> = ({
             title={`${button.label}${button.shortcut ? ` (${button.shortcut})` : ''}`}
           >
             <div style={{ color: '#6b7280' }}>{button.icon}</div>
-            <span style={{ fontSize: '13px', color: '#374151', fontWeight: '500' }}>{button.label}</span>
+            <span style={{ fontSize: '13px', color: '#374151', fontWeight: '500' }}>
+              {button.label}
+            </span>
             {button.shortcut && (
-              <span style={{
-                position: 'absolute',
-                top: '4px',
-                right: '4px',
-                fontSize: '11px',
-                color: '#6b7280',
-                background: 'rgba(255, 255, 255, 0.9)',
-                padding: '2px 4px',
-                borderRadius: '3px',
-                fontWeight: '500',
-              }}>
+              <span
+                style={{
+                  position: 'absolute',
+                  top: '4px',
+                  right: '4px',
+                  fontSize: '11px',
+                  color: '#6b7280',
+                  background: 'rgba(255, 255, 255, 0.9)',
+                  padding: '2px 4px',
+                  borderRadius: '3px',
+                  fontWeight: '500',
+                }}
+              >
                 {button.shortcut}
               </span>
             )}
           </button>
         ))}
 
-        <div style={{
-          width: '100%',
-          height: '1px',
-          background: '#e5e7eb',
-          margin: '4px 0',
-        }} />
+        <div
+          style={{
+            width: '100%',
+            height: '1px',
+            background: '#e5e7eb',
+            margin: '4px 0',
+          }}
+        />
 
-        <div style={{
-          fontSize: '12px',
-          color: '#6b7280',
-          textAlign: 'center',
-          padding: '4px',
-          lineHeight: 1.4,
-          fontWeight: '400',
-        }}>
-          Click to add<br />
+        <div
+          style={{
+            fontSize: '12px',
+            color: '#6b7280',
+            textAlign: 'center',
+            padding: '4px',
+            lineHeight: 1.4,
+            fontWeight: '400',
+          }}
+        >
+          Click to add
+          <br />
           to canvas
         </div>
       </div>

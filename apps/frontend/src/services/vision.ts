@@ -11,7 +11,7 @@ const VISION_MODELS = {
   'llama-4-maverick': 'meta-llama/llama-4-maverick-17b-128e-instruct',
   'llama-3.2-90b': 'meta-llama/llama-3.2-90b-vision-preview',
   'llama-3.2-11b': 'meta-llama/llama-3.2-11b-vision-preview',
-  'llava': 'llava-v1.5-7b-4096-preview',
+  llava: 'llava-v1.5-7b-4096-preview',
 } as const;
 
 export type VisionModel = keyof typeof VISION_MODELS;
@@ -56,13 +56,14 @@ class VisionService {
   constructor(apiKey?: string) {
     this.apiKey = apiKey || ''; // API key not needed for Netlify function
     // Use proxy/Netlify function to avoid CORS issues (similar to Cerebras service)
-    const isLocalhost = typeof window !== 'undefined' && 
+    const isLocalhost =
+      typeof window !== 'undefined' &&
       (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-    
+
     this.baseURL = isLocalhost
-      ? '/api/groq'  // Vite proxy
+      ? '/api/groq' // Vite proxy
       : '/.netlify/functions/groq'; // Netlify Function for production
-    
+
     this.defaultModel = 'llama-4-maverick';
   }
 
@@ -71,16 +72,17 @@ class VisionService {
    */
   async checkAvailableModels(): Promise<AvailableModel[]> {
     try {
-      const isLocalhost = typeof window !== 'undefined' && 
+      const isLocalhost =
+        typeof window !== 'undefined' &&
         (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-      
+
       const headers: HeadersInit = {
         'Content-Type': 'application/json',
       };
-      
+
       // No Authorization header needed - handled by Netlify function
       if (isLocalhost) {
-        headers['Authorization'] = `Bearer ${this.apiKey}`;
+        headers.Authorization = `Bearer ${this.apiKey}`;
       }
 
       const response = await fetch(`${this.baseURL}/openai/v1/models`, {
@@ -93,24 +95,24 @@ class VisionService {
         return Object.entries(VISION_MODELS).map(([name, id]) => ({
           name,
           id,
-          available: false
+          available: false,
         }));
       }
 
       const data = await response.json();
       const availableModels = data.data || [];
-      
+
       return Object.entries(VISION_MODELS).map(([name, id]) => ({
         name,
         id,
-        available: availableModels.some((m: { id: string }) => m.id === id)
+        available: availableModels.some((m: { id: string }) => m.id === id),
       }));
     } catch (error) {
       console.warn('Error checking available models:', error);
       return Object.entries(VISION_MODELS).map(([name, id]) => ({
         name,
         id,
-        available: false
+        available: false,
       }));
     }
   }
@@ -132,30 +134,30 @@ class VisionService {
 
       // Groq has a 4MB limit for images
       if (sizeMB > 4) {
-        return { 
-          valid: false, 
+        return {
+          valid: false,
           error: `Image too large: ${sizeMB.toFixed(2)}MB (max 4MB)`,
-          sizeKB 
+          sizeKB,
         };
       }
 
       // Check supported formats
       const supportedFormats = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
       const mimeType = imageDataUrl.split(',')[0].split(':')[1].split(';')[0];
-      
+
       if (!supportedFormats.includes(mimeType)) {
-        return { 
-          valid: false, 
+        return {
+          valid: false,
           error: `Unsupported image format: ${mimeType}`,
-          sizeKB 
+          sizeKB,
         };
       }
 
       return { valid: true, sizeKB };
     } catch (error) {
-      return { 
-        valid: false, 
-        error: `Image validation error: ${error instanceof Error ? error.message : 'Unknown error'}` 
+      return {
+        valid: false,
+        error: `Image validation error: ${error instanceof Error ? error.message : 'Unknown error'}`,
       };
     }
   }
@@ -200,14 +202,17 @@ Please analyze the screenshot and provide:
 Focus your analysis on elements that directly relate to the user's refinement request. Be specific about visual details you can observe in the screenshot.`;
 
     if (componentCode) {
-      return basePrompt + `
+      return (
+        basePrompt +
+        `
 
 CURRENT COMPONENT CODE (for context):
 \`\`\`javascript
 ${componentCode.substring(0, 2000)} ${componentCode.length > 2000 ? '...(truncated)' : ''}
 \`\`\`
 
-Relate your visual analysis to the code structure when making recommendations.`;
+Relate your visual analysis to the code structure when making recommendations.`
+      );
     }
 
     return basePrompt;
@@ -221,7 +226,7 @@ Relate your visual analysis to the code structure when making recommendations.`;
     if (timeSinceLastCall < this.rateLimitDelay) {
       const delay = this.rateLimitDelay - timeSinceLastCall;
       console.log(`Vision API rate limiting: waiting ${delay}ms`);
-      await new Promise(resolve => setTimeout(resolve, delay));
+      await new Promise((resolve) => setTimeout(resolve, delay));
     }
     this.lastCallTime = Date.now();
   }
@@ -236,7 +241,7 @@ Relate your visual analysis to the code structure when making recommendations.`;
       return {
         success: false,
         error: validation.error,
-        retryable: false
+        retryable: false,
       };
     }
 
@@ -277,12 +282,11 @@ Relate your visual analysis to the code structure when making recommendations.`;
           model: modelId,
           confidence: result.confidence,
           processingTime,
-          tokensUsed: result.tokensUsed
+          tokensUsed: result.tokensUsed,
         };
-
       } catch (error) {
         lastError = error instanceof Error ? error : new Error('Unknown error');
-        
+
         console.warn(`Vision analysis attempt ${attempt} failed:`, lastError.message);
 
         // Check if error is retryable
@@ -295,13 +299,13 @@ Relate your visual analysis to the code structure when making recommendations.`;
         if (attempt < this.retryAttempts) {
           const delay = this.retryDelay * attempt; // Exponential backoff
           console.log(`Retrying in ${delay}ms...`);
-          await new Promise(resolve => setTimeout(resolve, delay));
+          await new Promise((resolve) => setTimeout(resolve, delay));
         }
       }
     }
 
     const finalProcessingTime = (Date.now() - startTime) / 1000;
-    
+
     // Track failed vision analysis
     posthogService.track('vision_service_analysis_failed', {
       model: modelId,
@@ -318,7 +322,7 @@ Relate your visual analysis to the code structure when making recommendations.`;
       success: false,
       error: lastError?.message || 'Vision analysis failed',
       retryable: this.isRetryableError(lastError),
-      processingTime: finalProcessingTime
+      processingTime: finalProcessingTime,
     };
   }
 
@@ -326,24 +330,25 @@ Relate your visual analysis to the code structure when making recommendations.`;
    * Make the actual vision API request
    */
   private async makeVisionRequest(
-    modelId: string, 
-    imageDataUrl: string, 
-    prompt: string
+    modelId: string,
+    imageDataUrl: string,
+    prompt: string,
   ): Promise<{
     analysis: string;
     confidence?: number;
     tokensUsed?: { total: number; imageTokens: number; textTokens: number };
   }> {
-    const isLocalhost = typeof window !== 'undefined' && 
+    const isLocalhost =
+      typeof window !== 'undefined' &&
       (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-    
+
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
     };
-    
+
     // No Authorization header needed - handled by Netlify function
     if (isLocalhost) {
-      headers['Authorization'] = `Bearer ${this.apiKey}`;
+      headers.Authorization = `Bearer ${this.apiKey}`;
     }
 
     const requestBody = {
@@ -353,18 +358,18 @@ Relate your visual analysis to the code structure when making recommendations.`;
           role: 'user',
           content: [
             { type: 'text', text: prompt },
-            { 
-              type: 'image_url', 
-              image_url: { 
+            {
+              type: 'image_url',
+              image_url: {
                 url: imageDataUrl,
-                detail: 'auto'
-              } 
-            }
-          ]
-        }
+                detail: 'auto',
+              },
+            },
+          ],
+        },
       ],
       temperature: 0.3,
-      max_tokens: 2000
+      max_tokens: 2000,
     };
 
     const response = await fetch(`${this.baseURL}/openai/v1/chat/completions`, {
@@ -382,7 +387,7 @@ Relate your visual analysis to the code structure when making recommendations.`;
     const analysis = data.choices[0].message.content;
 
     // Calculate token usage if available
-    let tokensUsed;
+    let tokensUsed: { total: number; imageTokens: number; textTokens: number } | undefined;
     if (data.usage) {
       const totalTokens = data.usage.total_tokens;
       const promptTokens = data.usage.prompt_tokens;
@@ -392,13 +397,13 @@ Relate your visual analysis to the code structure when making recommendations.`;
       tokensUsed = {
         total: totalTokens,
         imageTokens: Math.max(0, imageTokens),
-        textTokens
+        textTokens,
       };
     }
 
     return {
       analysis,
-      tokensUsed
+      tokensUsed,
     };
   }
 
@@ -406,19 +411,19 @@ Relate your visual analysis to the code structure when making recommendations.`;
    * Check if an error is retryable
    */
   private isRetryableError(error: Error | null): boolean {
-    if (!error) return false;
-    
+    if (!error) {
+      return false;
+    }
+
     const retryableErrors = [
       'rate_limit_exceeded',
       'timeout',
       'network_error',
       'temporary_failure',
-      'service_unavailable'
+      'service_unavailable',
     ];
 
-    return retryableErrors.some(errorType => 
-      error.message.toLowerCase().includes(errorType)
-    );
+    return retryableErrors.some((errorType) => error.message.toLowerCase().includes(errorType));
   }
 
   /**
@@ -427,9 +432,9 @@ Relate your visual analysis to the code structure when making recommendations.`;
   createVisionMetadata(
     analysisResult: VisionAnalysisResult,
     screenshot: { dataUrl: string; format: 'webp' | 'png' | 'jpeg'; sizeKB: number },
-    prompt: string
+    prompt: string,
   ): VisionMetadata | undefined {
-    if (!analysisResult.success || !analysisResult.analysis) {
+    if (!(analysisResult.success && analysisResult.analysis)) {
       return undefined;
     }
 
@@ -438,15 +443,15 @@ Relate your visual analysis to the code structure when making recommendations.`;
         dataUrl: screenshot.dataUrl,
         format: screenshot.format,
         capturedAt: Date.now(),
-        sizeKB: screenshot.sizeKB
+        sizeKB: screenshot.sizeKB,
       },
       visionAnalysis: {
         analysis: analysisResult.analysis,
         analyzedAt: Date.now(),
         prompt,
         model: analysisResult.model || 'unknown',
-        confidence: analysisResult.confidence
-      }
+        confidence: analysisResult.confidence,
+      },
     };
   }
 }

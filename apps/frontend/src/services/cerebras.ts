@@ -1,5 +1,5 @@
-import VisionService, { type VisionAnalysisRequest } from './vision.ts';
 import { posthogService } from './posthog.ts';
+import VisionService, { type VisionAnalysisRequest } from './vision.ts';
 
 interface GenerationResult {
   success: boolean;
@@ -21,12 +21,13 @@ class CerebrasService {
     // Use proxy to avoid CORS issues
     // In development: Vite proxy
     // In production: Netlify Function
-    const isLocalhost = typeof window !== 'undefined' && 
+    const isLocalhost =
+      typeof window !== 'undefined' &&
       (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
     this.baseURL = isLocalhost
-      ? '/api/cerebras/v1/chat/completions'  // Vite proxy
-      : '/.netlify/functions/cerebras';  // Netlify Function
-    
+      ? '/api/cerebras/v1/chat/completions' // Vite proxy
+      : '/.netlify/functions/cerebras'; // Netlify Function
+
     // Initialize vision service (no API key needed - handled by Netlify function)
     if (enableVision) {
       this.visionService = new VisionService();
@@ -46,22 +47,22 @@ class CerebrasService {
       if (screenshotDataUrl && this.visionService) {
         console.log('🔍 Starting vision analysis step...');
         const visionStartTime = Date.now();
-        
+
         try {
           const visionRequest: VisionAnalysisRequest = {
             imageDataUrl: screenshotDataUrl,
             userPrompt: prompt,
-            preferredModel: 'llama-4-maverick'
+            preferredModel: 'llama-4-maverick',
           };
 
           const visionResult = await this.visionService.analyzeComponent(visionRequest);
           visionProcessingTime = (Date.now() - visionStartTime) / 1000;
-          
+
           if (visionResult.success && visionResult.analysis) {
             visionAnalysis = visionResult.analysis;
             visionUsed = true;
-            console.log('✅ Vision analysis completed:', visionProcessingTime + 's');
-            
+            console.log('✅ Vision analysis completed:', `${visionProcessingTime}s`);
+
             // Track successful vision analysis
             posthogService.track('vision_analysis_completed', {
               success: true,
@@ -75,8 +76,11 @@ class CerebrasService {
             });
           } else {
             visionError = visionResult.error;
-            console.warn('⚠️ Vision analysis failed, proceeding without visual context:', visionResult.error);
-            
+            console.warn(
+              '⚠️ Vision analysis failed, proceeding without visual context:',
+              visionResult.error,
+            );
+
             // Track failed vision analysis
             posthogService.track('vision_analysis_failed', {
               success: false,
@@ -91,7 +95,7 @@ class CerebrasService {
           visionProcessingTime = (Date.now() - visionStartTime) / 1000;
           const errorMessage = visionError instanceof Error ? visionError.message : 'Unknown error';
           console.warn('⚠️ Vision analysis error, proceeding without visual context:', errorMessage);
-          
+
           // Track vision analysis exception
           posthogService.track('vision_analysis_exception', {
             success: false,
@@ -107,19 +111,20 @@ class CerebrasService {
       const enhancedPrompt = this.createEnhancedPrompt(prompt, visionAnalysis);
       const systemPrompt = this.getESMSystemPrompt(visionUsed);
 
-      const isLocalhost = typeof window !== 'undefined' && 
+      const isLocalhost =
+        typeof window !== 'undefined' &&
         (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-      
+
       // Only send API key for local development (Vite proxy)
       // Netlify Function uses server-side env var
       const headers: HeadersInit = {
         'Content-Type': 'application/json',
       };
-      
+
       if (isLocalhost) {
-        headers['Authorization'] = `Bearer ${this.apiKey}`;
+        headers.Authorization = `Bearer ${this.apiKey}`;
       }
-      
+
       const response = await fetch(this.baseURL, {
         method: 'POST',
         headers,
@@ -191,7 +196,7 @@ class CerebrasService {
     } catch (error) {
       const totalTime = (Date.now() - startTime) / 1000;
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      
+
       // Track failed generation workflow
       posthogService.track('vision_enhanced_generation_failed', {
         success: false,
@@ -204,7 +209,7 @@ class CerebrasService {
         vision_error: visionError,
         timestamp: new Date().toISOString(),
       });
-      
+
       return {
         success: false,
         error: errorMessage,
@@ -241,7 +246,8 @@ The component should be a complete, working React component that incorporates bo
   }
 
   private getESMSystemPrompt(visionEnhanced: boolean = false): string {
-    const visionInstructions = visionEnhanced ? `
+    const visionInstructions = visionEnhanced
+      ? `
     
     VISION-ENHANCED GENERATION:
     You are working with visual analysis of an existing component. Use this analysis to:
@@ -250,7 +256,8 @@ The component should be a complete, working React component that incorporates bo
     - Fix spacing, alignment, and color issues noted
     - Follow the specific CSS and React recommendations provided
     - Maintain visual consistency while implementing requested changes
-    ` : '';
+    `
+      : '';
 
     return `You are an expert React developer. Create a modern ES module React component.${visionInstructions}
     
@@ -331,37 +338,51 @@ The component should be a complete, working React component that incorporates bo
     <div ref={containerRef} style={{ width: '100%', height: '100%' }} />`;
   }
 
-
   private processESMCode(code: string): string {
-    // Check if the code contains JSX (looking for < followed by capital letter or lowercase HTML elements)
-    const hasJSX = /<[A-Z]|\<(div|span|button|input|form|h[1-6]|p|a|ul|li|table|tbody|tr|td|th)/g.test(code);
+    let processedCode = code;
     
+    // Check if the code contains JSX (looking for < followed by capital letter or lowercase HTML elements)
+    const hasJSX =
+      /<[A-Z]|<(div|span|button|input|form|h[1-6]|p|a|ul|li|table|tbody|tr|td|th)/g.test(processedCode);
+
     if (hasJSX) {
       // If JSX is present, we need to transpile it
       // For now, we'll return an error message suggesting to use React.createElement
-      console.warn('ESM code contains JSX which requires transpilation. Consider using React.createElement instead.');
-      
+      console.warn(
+        'ESM code contains JSX which requires transpilation. Consider using React.createElement instead.',
+      );
+
       // Attempt to auto-convert simple JSX to React.createElement
       // This is a simplified conversion and may not handle all cases
       // For production, we should use a proper JSX transformer
     }
-    
+
     // Ensure the code has proper imports
-    if (!code.includes('import React')) {
+    if (!processedCode.includes('import React')) {
       // Add React import at the beginning
       const hooks = [];
-      if (code.includes('useState')) hooks.push('useState');
-      if (code.includes('useEffect')) hooks.push('useEffect');
-      if (code.includes('useRef')) hooks.push('useRef');
-      if (code.includes('useMemo')) hooks.push('useMemo');
-      if (code.includes('useCallback')) hooks.push('useCallback');
-      
+      if (processedCode.includes('useState')) {
+        hooks.push('useState');
+      }
+      if (processedCode.includes('useEffect')) {
+        hooks.push('useEffect');
+      }
+      if (processedCode.includes('useRef')) {
+        hooks.push('useRef');
+      }
+      if (processedCode.includes('useMemo')) {
+        hooks.push('useMemo');
+      }
+      if (processedCode.includes('useCallback')) {
+        hooks.push('useCallback');
+      }
+
       const hooksImport = hooks.length > 0 ? `, { ${hooks.join(', ')} }` : '';
-      code = `import React${hooksImport} from 'react';\n\n${code}`;
+      processedCode = `import React${hooksImport} from 'react';\n\n${processedCode}`;
     }
 
     // Ensure the code has a default export
-    if (!code.includes('export default')) {
+    if (!processedCode.includes('export default')) {
       // Try to find the main component name
       const patterns = [
         /const\s+(\w+)\s*=\s*\(\)\s*=>/, // Arrow function
@@ -370,21 +391,20 @@ The component should be a complete, working React component that incorporates bo
       ];
 
       for (const pattern of patterns) {
-        const match = code.match(pattern);
+        const match = processedCode.match(pattern);
         if (match) {
           // Add export default at the end
-          code += `\n\nexport default ${match[1]};`;
+          processedCode += `\n\nexport default ${match[1]};`;
           break;
         }
       }
     }
 
     // Remove any legacy Component assignment
-    code = code.replace(/const\s+Component\s*=\s*\w+;?/g, '');
+    processedCode = processedCode.replace(/const\s+Component\s*=\s*\w+;?/g, '');
 
-    return code.trim();
+    return processedCode.trim();
   }
-
 }
 
 export default CerebrasService;

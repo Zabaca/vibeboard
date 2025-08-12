@@ -1,42 +1,40 @@
 /**
  * StorageService - Enhanced storage and persistence for the AI Whiteboard POC
- * 
+ *
  * Features:
  * - Handles UnifiedComponentNode structure with compiled code
- * - Compression for large payloads 
+ * - Compression for large payloads
  * - Storage size monitoring and cleanup
  * - Versioning for migration support
  * - IndexedDB integration for image storage
  * - Fallback to localStorage for compatibility
  */
 
+import type { Edge, Node } from '@xyflow/react';
 import { z } from 'zod';
-import type { 
-  UnifiedComponentNode, 
-  ExportedCanvas, 
-  ExportedNode, 
-  StorageStats 
+import type {
+  ExportedCanvas,
+  ExportedNode,
+  StorageStats,
+  UnifiedComponentNode,
 } from '../types/component.types.ts';
-import type { 
-  NativeComponentNode
-} from '../types/native-component.types.ts';
-import type { Node, Edge } from '@xyflow/react';
+import type { NativeComponentNode } from '../types/native-component.types.ts';
 import { indexedDBUtils } from '../utils/indexedDBUtils.ts';
 
-// Zod schemas for validation
-const storageVersionInfoSchema = z.object({
-  version: z.string(),
-  appVersion: z.string(),
-  compilerVersion: z.string(),
-  migratedAt: z.number().optional(),
-});
+// Zod schemas for validation (currently unused but kept for future use)
+// const storageVersionInfoSchema = z.object({
+//   version: z.string(),
+//   appVersion: z.string(),
+//   compilerVersion: z.string(),
+//   migratedAt: z.number().optional(),
+// });
 
-const compressedDataSchema = z.object({
-  compressed: z.boolean(),
-  data: z.string(),
-  originalSize: z.number(),
-  compressedSize: z.number(),
-});
+// const compressedDataSchema = z.object({
+//   compressed: z.boolean(),
+//   data: z.string(),
+//   originalSize: z.number(),
+//   compressedSize: z.number(),
+// });
 
 const positionSchema = z.object({
   x: z.number(),
@@ -67,20 +65,22 @@ const exportedCanvasSchema = z.object({
   exportedAt: z.number(),
   nodes: z.array(exportedNodeSchema),
   edges: z.array(edgeSchema),
-  metadata: z.object({
-    appVersion: z.string(),
-    compilerVersion: z.string(),
-    nodeCount: z.number(),
-  }).optional(),
+  metadata: z
+    .object({
+      appVersion: z.string(),
+      compilerVersion: z.string(),
+      nodeCount: z.number(),
+    })
+    .optional(),
 });
 
-const storageDataSchema = z.object({
-  version: z.string(),
-  timestamp: z.number(),
-  nodeCount: z.number().optional(),
-  nodes: z.array(exportedNodeSchema).optional(),
-  edges: z.array(edgeSchema).optional(),
-});
+// const storageDataSchema = z.object({
+//   version: z.string(),
+//   timestamp: z.number(),
+//   nodeCount: z.number().optional(),
+//   nodes: z.array(exportedNodeSchema).optional(),
+//   edges: z.array(edgeSchema).optional(),
+// });
 
 const storageStatsSchema = z.object({
   nodeCount: z.number().optional(),
@@ -90,12 +90,12 @@ const storageStatsSchema = z.object({
   totalSize: z.number().optional(),
 });
 
-interface StorageVersionInfo {
-  version: string;
-  appVersion: string;
-  compilerVersion: string;
-  migratedAt?: number;
-}
+// interface StorageVersionInfo {
+//   version: string;
+//   appVersion: string;
+//   compilerVersion: string;
+//   migratedAt?: number;
+// }
 
 interface CompressedData {
   compressed: boolean;
@@ -111,13 +111,13 @@ export class StorageService {
   private readonly COMPILER_VERSION = '1.0.0';
   private indexedDBReady = false;
   private initializationPromise: Promise<void> | null = null;
-  
+
   // Storage keys
   private readonly NODES_KEY = 'ai-whiteboard-nodes';
   private readonly EDGES_KEY = 'ai-whiteboard-edges';
   private readonly VERSION_KEY = 'ai-whiteboard-version';
   private readonly STATS_KEY = 'ai-whiteboard-stats';
-  
+
   // Size limits (in bytes)
   private readonly MAX_LOCALSTORAGE_SIZE = 5 * 1024 * 1024; // 5MB
   private readonly COMPRESSION_THRESHOLD = 50 * 1024; // 50KB
@@ -126,7 +126,7 @@ export class StorageService {
   private constructor() {
     console.log('🚀 StorageService constructor called');
     // Initialize asynchronously but don't wait for it
-    this.initializationPromise = this.initializeStorage().catch(error => {
+    this.initializationPromise = this.initializeStorage().catch((error) => {
       console.error('❌ Failed to initialize storage:', error);
       throw error;
     });
@@ -170,7 +170,6 @@ export class StorageService {
    * Save nodes to IndexedDB
    */
   async saveNodes(nodes: Node[]): Promise<boolean> {
-    
     // Wait for initialization to complete if not ready
     if (!this.indexedDBReady) {
       try {
@@ -180,7 +179,7 @@ export class StorageService {
         return false;
       }
     }
-    
+
     if (!this.indexedDBReady) {
       console.error('❌ IndexedDB still not ready after initialization wait');
       return false;
@@ -189,9 +188,9 @@ export class StorageService {
     try {
       // Get current edges to save complete canvas
       const edges = await this.loadEdges();
-      
+
       // Convert to enhanced node format (sanitizing callback functions)
-      const enhancedNodes: ExportedNode[] = nodes.map(node => ({
+      const enhancedNodes: ExportedNode[] = nodes.map((node) => ({
         id: node.id,
         type: node.type || 'aiComponent',
         position: node.position,
@@ -200,10 +199,25 @@ export class StorageService {
         height: node.height,
       }));
 
-      // Extract image references
+      // Extract image references from native image components
       const imageReferences: string[] = [];
       for (const node of enhancedNodes) {
-        if (node.data && typeof node.data === 'object' && 'imageId' in node.data) {
+        if (
+          node.data && 
+          typeof node.data === 'object' && 
+          'componentType' in node.data && 
+          node.data.componentType === 'native' &&
+          'nativeType' in node.data &&
+          node.data.nativeType === 'image' &&
+          'state' in node.data &&
+          typeof node.data.state === 'object' &&
+          node.data.state &&
+          'imageId' in node.data.state
+        ) {
+          imageReferences.push(node.data.state.imageId as string);
+        }
+        // Also check for legacy format
+        else if (node.data && typeof node.data === 'object' && 'imageId' in node.data) {
           imageReferences.push(node.data.imageId as string);
         }
       }
@@ -218,7 +232,7 @@ export class StorageService {
           nodeCount: enhancedNodes.length,
           edgeCount: edges.length,
           imageReferences,
-          componentCount: enhancedNodes.filter(n => n.type === 'aiComponent').length,
+          componentCount: enhancedNodes.filter((n) => n.type === 'aiComponent').length,
         },
       });
 
@@ -242,7 +256,7 @@ export class StorageService {
         return [];
       }
     }
-    
+
     if (!this.indexedDBReady) {
       console.error('❌ IndexedDB still not ready after initialization wait');
       return [];
@@ -250,32 +264,67 @@ export class StorageService {
 
     try {
       const canvas = await indexedDBUtils.getCanvas();
-      
-      if (!canvas || !canvas.nodes) {
+
+      if (!canvas?.nodes) {
         console.log('No canvas data found in IndexedDB');
         return [];
       }
 
       const nodes = canvas.nodes as ExportedNode[];
-      
-      // Process image nodes to restore blob URLs
-      const processedNodes = await Promise.all(nodes.map(async (node) => {
-        if (node.data && typeof node.data === 'object' && 'imageId' in node.data) {
-          const imageData = await this.getImageData(node.data.imageId as string);
-          if (imageData) {
-            return {
-              ...node,
-              data: {
-                ...node.data,
-                blobUrl: imageData.blobUrl,
-              },
-            };
-          }
-        }
-        return node;
-      }));
 
-      return processedNodes.map(n => ({
+      // Process image nodes to restore blob URLs
+      const processedNodes = await Promise.all(
+        nodes.map(async (node) => {
+          // Check for native image components (imageId in state)
+          if (
+            node.data && 
+            typeof node.data === 'object' && 
+            'componentType' in node.data && 
+            node.data.componentType === 'native' &&
+            'nativeType' in node.data &&
+            node.data.nativeType === 'image' &&
+            'state' in node.data &&
+            typeof node.data.state === 'object' &&
+            node.data.state &&
+            'imageId' in node.data.state
+          ) {
+            const imageId = node.data.state.imageId as string;
+            const imageData = await this.getImageData(imageId);
+            if (imageData) {
+              console.log(`✅ Restored blob URL for image ${imageId}`);
+              return {
+                ...node,
+                data: {
+                  ...node.data,
+                  state: {
+                    ...node.data.state,
+                    blobUrl: imageData.blobUrl,
+                  },
+                },
+              };
+            } else {
+              console.warn(`⚠️ Failed to restore image data for imageId: ${imageId}`);
+            }
+          }
+          // Also check for legacy format (imageId directly in node.data)
+          else if (node.data && typeof node.data === 'object' && 'imageId' in node.data) {
+            const imageData = await this.getImageData(node.data.imageId as string);
+            if (imageData) {
+              console.log(`✅ Restored blob URL for legacy image ${node.data.imageId}`);
+              return {
+                ...node,
+                data: {
+                  ...node.data,
+                  blobUrl: imageData.blobUrl,
+                },
+              };
+            }
+          }
+          return node;
+        }),
+      );
+
+      return processedNodes.map((n) => ({
         id: n.id,
         type: n.type || 'aiComponent',
         position: n.position,
@@ -293,7 +342,6 @@ export class StorageService {
    * Save edges to IndexedDB
    */
   async saveEdges(edges: Edge[]): Promise<boolean> {
-    
     // Wait for initialization to complete if not ready
     if (!this.indexedDBReady) {
       try {
@@ -303,7 +351,7 @@ export class StorageService {
         return false;
       }
     }
-    
+
     if (!this.indexedDBReady) {
       console.error('❌ IndexedDB still not ready after initialization wait');
       return false;
@@ -312,11 +360,26 @@ export class StorageService {
     try {
       // Get current nodes to save complete canvas
       const nodes = await this.loadNodes();
-      
-      // Extract image references
+
+      // Extract image references from native image components
       const imageReferences: string[] = [];
       for (const node of nodes) {
-        if (node.data && typeof node.data === 'object' && 'imageId' in node.data) {
+        if (
+          node.data && 
+          typeof node.data === 'object' && 
+          'componentType' in node.data && 
+          node.data.componentType === 'native' &&
+          'nativeType' in node.data &&
+          node.data.nativeType === 'image' &&
+          'state' in node.data &&
+          typeof node.data.state === 'object' &&
+          node.data.state &&
+          'imageId' in node.data.state
+        ) {
+          imageReferences.push(node.data.state.imageId as string);
+        }
+        // Also check for legacy format
+        else if (node.data && typeof node.data === 'object' && 'imageId' in node.data) {
           imageReferences.push(node.data.imageId as string);
         }
       }
@@ -331,7 +394,7 @@ export class StorageService {
           nodeCount: nodes.length,
           edgeCount: edges.length,
           imageReferences,
-          componentCount: nodes.filter(n => n.type === 'aiComponent').length,
+          componentCount: nodes.filter((n) => n.type === 'aiComponent').length,
         },
       });
 
@@ -355,7 +418,7 @@ export class StorageService {
         return [];
       }
     }
-    
+
     if (!this.indexedDBReady) {
       console.error('❌ IndexedDB still not ready after initialization wait');
       return [];
@@ -363,8 +426,8 @@ export class StorageService {
 
     try {
       const canvas = await indexedDBUtils.getCanvas();
-      
-      if (!canvas || !canvas.edges) {
+
+      if (!canvas?.edges) {
         return [];
       }
 
@@ -379,7 +442,7 @@ export class StorageService {
    * Export canvas with enhanced format
    */
   async exportCanvas(nodes: Node[], edges: Edge[]): Promise<ExportedCanvas> {
-    const exportedNodes: ExportedNode[] = nodes.map(node => ({
+    const exportedNodes: ExportedNode[] = nodes.map((node) => ({
       id: node.id,
       type: node.type || 'aiComponent',
       position: node.position,
@@ -410,10 +473,12 @@ export class StorageService {
     try {
       // Validate canvas data with Zod
       const canvas = exportedCanvasSchema.parse(canvasData);
-      
+
       // Validate version compatibility
       if (!this.isVersionCompatible(canvas.version)) {
-        console.warn(`⚠️ Importing canvas from version ${canvas.version}, current version is ${this.STORAGE_VERSION}`);
+        console.warn(
+          `⚠️ Importing canvas from version ${canvas.version}, current version is ${this.STORAGE_VERSION}`,
+        );
       }
 
       // Handle version differences
@@ -430,14 +495,16 @@ export class StorageService {
       for (const exportedNode of processedCanvas.nodes) {
         try {
           const validatedData = this.validateAndEnhanceNodeData(exportedNode.data);
-          
+
           // Skip compiled code validation for native components
           if (!('componentType' in validatedData && validatedData.componentType === 'native')) {
             // Validate compiled code if present for regular components
             if (validatedData.compiledCode) {
               const isValidCompiled = this.validateCompiledCode(validatedData.compiledCode);
               if (!isValidCompiled) {
-                console.warn(`⚠️ Invalid compiled code for node ${validatedData.id}, will recompile on demand`);
+                console.warn(
+                  `⚠️ Invalid compiled code for node ${validatedData.id}, will recompile on demand`,
+                );
                 validatedData.compiledCode = undefined;
               }
             }
@@ -468,7 +535,7 @@ export class StorageService {
     } catch (error) {
       if (error instanceof z.ZodError) {
         console.error('Canvas validation failed:', error.issues);
-        throw new Error(`Invalid canvas format: ${error.issues.map(e => e.message).join(', ')}`);
+        throw new Error(`Invalid canvas format: ${error.issues.map((e) => e.message).join(', ')}`);
       }
       console.error('Failed to import canvas:', error);
       throw error;
@@ -496,7 +563,6 @@ export class StorageService {
    */
   async cleanupStorage(): Promise<void> {
     try {
-
       // Remove old cache entries
       this.cleanupCache();
 
@@ -505,7 +571,6 @@ export class StorageService {
 
       // Update cleanup timestamp
       this.updateStorageStats({ lastCleanup: Date.now() });
-
     } catch (error) {
       console.error('Failed to cleanup storage:', error);
     }
@@ -522,7 +587,6 @@ export class StorageService {
       localStorage.removeItem(this.STATS_KEY);
       localStorage.removeItem('reactflow-nodes'); // Legacy key
       localStorage.removeItem('componentPipelineCache');
-      
     } catch (error) {
       console.error('Failed to clear storage:', error);
     }
@@ -531,30 +595,32 @@ export class StorageService {
   /**
    * Remove callback functions from node data before saving to IndexedDB
    */
-  private sanitizeNodeDataForStorage(nodeData: UnifiedComponentNode | NativeComponentNode): UnifiedComponentNode | NativeComponentNode {
+  private sanitizeNodeDataForStorage(
+    nodeData: UnifiedComponentNode | NativeComponentNode,
+  ): UnifiedComponentNode | NativeComponentNode {
     if (!nodeData || typeof nodeData !== 'object') {
       return nodeData;
     }
 
     // Create a copy without callback functions
     const sanitized = { ...nodeData };
-    
+
     // Remove common callback functions that can't be serialized
     const callbackKeys = [
-      'onDelete', 
-      'onEdit', 
-      'onDuplicate', 
+      'onDelete',
+      'onEdit',
+      'onDuplicate',
       'onCompilationComplete',
       'onScreenshotCapture',
       'onStateUpdate',
       'handleDeleteComponent',
       'handleRegenerateComponent',
       'handleDuplicateComponent',
-      'handleCompilationComplete'
+      'handleCompilationComplete',
     ];
 
     // Remove any property that is a function
-    Object.keys(sanitized).forEach(key => {
+    Object.keys(sanitized).forEach((key) => {
       const value = (sanitized as unknown as Record<string, unknown>)[key];
       if (typeof value === 'function' || callbackKeys.includes(key)) {
         delete (sanitized as unknown as Record<string, unknown>)[key];
@@ -571,9 +637,9 @@ export class StorageService {
     if (!nodeData || typeof nodeData !== 'object') {
       throw new Error('Invalid node data');
     }
-    
+
     const data = nodeData as Record<string, unknown>;
-    
+
     // Check if it's a native component
     if (data.componentType === 'native' && data.nativeType && data.state) {
       // It's already a NativeComponentNode, return as is
@@ -607,7 +673,9 @@ export class StorageService {
   /**
    * Validate and enhance imported node data
    */
-  private validateAndEnhanceNodeData(nodeData: unknown): UnifiedComponentNode | NativeComponentNode {
+  private validateAndEnhanceNodeData(
+    nodeData: unknown,
+  ): UnifiedComponentNode | NativeComponentNode {
     const enhanced = this.enhanceNodeData(nodeData);
 
     // For native components, validate state instead of code
@@ -631,101 +699,18 @@ export class StorageService {
   }
 
   /**
-   * Save data to storage with compression if needed
-   * @deprecated - Legacy method kept for potential future use
-   * @private
-   */
-  // @ts-ignore - Legacy method kept for potential future use
-  private async _saveToStorage(key: string, data: unknown): Promise<boolean> {
-    try {
-      const serialized = JSON.stringify(data);
-      const payload = serialized.length > this.COMPRESSION_THRESHOLD 
-        ? await this.compressData(serialized)
-        : { compressed: false, data: serialized, originalSize: serialized.length, compressedSize: serialized.length };
-
-      localStorage.setItem(key, JSON.stringify(payload));
-      return true;
-    } catch (error) {
-      // Handle storage quota exceeded
-      if (error instanceof DOMException && error.code === 22) {
-        console.warn('localStorage quota exceeded, attempting cleanup...');
-        await this.cleanupStorage();
-        
-        // Try again after cleanup
-        try {
-          const serialized = JSON.stringify(data);
-          const payload = await this.compressData(serialized);
-          localStorage.setItem(key, JSON.stringify(payload));
-          return true;
-        } catch (retryError) {
-          console.error('Storage failed even after cleanup:', retryError);
-          return false;
-        }
-      }
-      
-      console.error(`Failed to save to storage (${key}):`, error);
-      return false;
-    }
-  }
-
-  /**
-   * Load data from storage with decompression and validation
-   * @deprecated - Legacy method kept for potential future use
-   */
-  // @ts-ignore - Legacy method kept for potential future use
-  private async _loadFromStorage(key: string): Promise<unknown> {
-    try {
-      const stored = localStorage.getItem(key);
-      if (!stored) return null;
-
-      const rawPayload = JSON.parse(stored);
-      
-      // Handle compressed data
-      if (rawPayload.compressed) {
-        const payload = compressedDataSchema.parse(rawPayload);
-        const decompressed = await this.decompressData(payload);
-        return JSON.parse(decompressed);
-      }
-
-      // Handle both new format and legacy direct data
-      const data = rawPayload.data ? JSON.parse(rawPayload.data) : rawPayload;
-      
-      // Validate storage data structure for nodes/edges
-      if (key === this.NODES_KEY || key === this.EDGES_KEY) {
-        return storageDataSchema.parse(data);
-      }
-      
-      return data;
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        console.error(`Storage validation failed for ${key}:`, error.issues);
-        return null;
-      }
-      console.error(`Failed to load from storage (${key}):`, error);
-      return null;
-    }
-  }
-
-  /**
    * Compress data using built-in compression or simple encoding
    */
   private async compressData(data: string): Promise<CompressedData> {
     // For now, use simple compression (could be enhanced with proper compression library)
     const compressed = this.simpleCompress(data);
-    
+
     return {
       compressed: true,
       data: compressed,
       originalSize: data.length,
       compressedSize: compressed.length,
     };
-  }
-
-  /**
-   * Decompress data
-   */
-  private async decompressData(payload: CompressedData): Promise<string> {
-    return this.simpleDecompress(payload.data);
   }
 
   /**
@@ -736,90 +721,6 @@ export class StorageService {
       return btoa(unescape(encodeURIComponent(data)));
     } catch {
       return data; // Fallback to uncompressed
-    }
-  }
-
-  /**
-   * Simple decompression
-   */
-  private simpleDecompress(data: string): string {
-    try {
-      return decodeURIComponent(escape(atob(data)));
-    } catch {
-      return data; // Fallback to assume uncompressed
-    }
-  }
-
-  /**
-   * Get version information
-   * @deprecated - Legacy method kept for potential future use
-   */
-  // @ts-ignore - Legacy method kept for potential future use
-  private _getVersionInfo(): StorageVersionInfo | null {
-    try {
-      const stored = localStorage.getItem(this.VERSION_KEY);
-      if (!stored) return null;
-      const parsed = JSON.parse(stored);
-      return storageVersionInfoSchema.parse(parsed);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        console.error('Version info validation failed:', error.issues);
-      }
-      return null;
-    }
-  }
-
-  /**
-   * Set version information
-   */
-  private setVersionInfo(versionInfo: StorageVersionInfo): void {
-    localStorage.setItem(this.VERSION_KEY, JSON.stringify(versionInfo));
-  }
-
-  /**
-   * Migrate storage between versions
-   * @deprecated - Legacy method kept for potential future use
-   */
-  // @ts-ignore - Legacy method kept for potential future use
-  private async _migrateStorage(oldVersion: StorageVersionInfo | null): Promise<void> {
-    // Handle migration from legacy format
-    if (!oldVersion) {
-      this.migrateLegacyStorage();
-    }
-
-    // Migrate to IndexedDB if available
-    if (this.indexedDBReady) {
-      // Try to migrate from localStorage automatically
-      await indexedDBUtils.migrateFromLocalStorage();
-      await indexedDBUtils.migrate(oldVersion);
-    }
-
-    // Set new version info
-    this.setVersionInfo({
-      version: this.STORAGE_VERSION,
-      appVersion: this.APP_VERSION,
-      compilerVersion: this.COMPILER_VERSION,
-      migratedAt: Date.now(),
-    });
-  }
-
-  /**
-   * Migrate from legacy localStorage format
-   */
-  private migrateLegacyStorage(): void {
-    try {
-      const legacyNodes = localStorage.getItem('reactflow-nodes');
-      if (legacyNodes) {
-        const nodes = JSON.parse(legacyNodes);
-        
-        // Convert to new format and save
-        this.saveNodes(nodes);
-        
-        // Remove legacy key
-        localStorage.removeItem('reactflow-nodes');
-      }
-    } catch (error) {
-      console.warn('Failed to migrate legacy storage:', error);
     }
   }
 
@@ -844,8 +745,11 @@ export class StorageService {
 
       // Check for basic React component structure
       const hasReactImport = compiledCode.includes('React') || compiledCode.includes('react');
-      const hasComponent = compiledCode.includes('Component') || compiledCode.includes('function') || compiledCode.includes('=>');
-      
+      const hasComponent =
+        compiledCode.includes('Component') ||
+        compiledCode.includes('function') ||
+        compiledCode.includes('=>');
+
       return hasReactImport || hasComponent; // Should have either React or be a component
     } catch {
       return false;
@@ -860,18 +764,18 @@ export class StorageService {
       return [];
     }
 
-    const nodeIds = new Set(nodes.map(node => node.id));
-    
+    const nodeIds = new Set(nodes.map((node) => node.id));
+
     return edges.filter((edge: unknown) => {
       // Type guard to check if edge has required properties
       if (typeof edge !== 'object' || edge === null) {
         return false;
       }
-      
+
       const edgeObj = edge as Record<string, unknown>;
-      
+
       // Validate edge structure
-      if (!edgeObj.id || !edgeObj.source || !edgeObj.target) {
+      if (!(edgeObj.id && edgeObj.source && edgeObj.target)) {
         console.warn('⚠️ Skipping edge with missing required fields:', edge);
         return false;
       }
@@ -881,7 +785,7 @@ export class StorageService {
       const target = String(edgeObj.target);
 
       // Validate edge references existing nodes
-      if (!nodeIds.has(source) || !nodeIds.has(target)) {
+      if (!(nodeIds.has(source) && nodeIds.has(target))) {
         console.warn(`⚠️ Skipping edge ${id} with invalid node references: ${source} -> ${target}`);
         return false;
       }
@@ -897,7 +801,7 @@ export class StorageService {
     if (!canvasData || typeof canvasData !== 'object') {
       return canvasData;
     }
-    
+
     const canvas = canvasData as Record<string, unknown>;
     const version = canvas.version;
 
@@ -906,28 +810,32 @@ export class StorageService {
       return {
         ...canvas,
         version: this.STORAGE_VERSION,
-        nodes: Array.isArray(canvas.nodes) ? (canvas.nodes as unknown[]).map((node: unknown) => {
-          if (!node || typeof node !== 'object') return node;
-          const n = node as Record<string, unknown>;
-          const nodeData = n.data as Record<string, unknown> || {};
-          
-          return {
-            ...n,
-            data: {
-              ...nodeData,
-              // Convert legacy fields to unified structure
-              originalCode: nodeData.code || nodeData.originalCode || '',
-              source: 'ai-generated',
-              format: 'jsx',
-              description: nodeData.prompt || nodeData.description || '',
-              metadata: {
-                prompt: nodeData.prompt,
-                generationTime: nodeData.generationTime,
-                aiProvider: 'cerebras',
-              },
-            },
-          };
-        }) : [],
+        nodes: Array.isArray(canvas.nodes)
+          ? (canvas.nodes as unknown[]).map((node: unknown) => {
+              if (!node || typeof node !== 'object') {
+                return node;
+              }
+              const n = node as Record<string, unknown>;
+              const nodeData = (n.data as Record<string, unknown>) || {};
+
+              return {
+                ...n,
+                data: {
+                  ...nodeData,
+                  // Convert legacy fields to unified structure
+                  originalCode: nodeData.code || nodeData.originalCode || '',
+                  source: 'ai-generated',
+                  format: 'jsx',
+                  description: nodeData.prompt || nodeData.description || '',
+                  metadata: {
+                    prompt: nodeData.prompt,
+                    generationTime: nodeData.generationTime,
+                    aiProvider: 'cerebras',
+                  },
+                },
+              };
+            })
+          : [],
       };
     }
 
@@ -956,9 +864,9 @@ export class StorageService {
    */
   private calculateStorageUsage(): { totalSize: number; usagePercent: number } {
     let totalSize = 0;
-    
+
     for (const key in localStorage) {
-      if (Object.prototype.hasOwnProperty.call(localStorage, key)) {
+      if (Object.hasOwn(localStorage, key)) {
         totalSize += localStorage[key].length;
       }
     }
@@ -974,7 +882,7 @@ export class StorageService {
    */
   private checkStorageSize(): void {
     const usage = this.calculateStorageUsage();
-    
+
     if (usage.usagePercent > this.CLEANUP_THRESHOLD * 100) {
       console.warn(`⚠️ Storage usage at ${usage.usagePercent.toFixed(1)}%, cleaning up...`);
       this.cleanupStorage();
@@ -1028,7 +936,9 @@ export class StorageService {
   private loadStorageStats(): Partial<StorageStats> {
     try {
       const stored = localStorage.getItem(this.STATS_KEY);
-      if (!stored) return {};
+      if (!stored) {
+        return {};
+      }
       const parsed = JSON.parse(stored);
       return storageStatsSchema.parse(parsed);
     } catch (error) {
@@ -1057,17 +967,24 @@ export class StorageService {
    */
   scheduleAutomaticCleanup(): void {
     // Check storage usage every 5 minutes
-    setInterval(() => {
-      this.checkStorageSize();
-    }, 5 * 60 * 1000);
+    setInterval(
+      () => {
+        this.checkStorageSize();
+      },
+      5 * 60 * 1000,
+    );
 
     // Run full cleanup every hour if needed
-    setInterval(() => {
-      const usage = this.calculateStorageUsage();
-      if (usage.usagePercent > 60) { // Clean if over 60% full
-        this.cleanupStorage();
-      }
-    }, 60 * 60 * 1000);
+    setInterval(
+      () => {
+        const usage = this.calculateStorageUsage();
+        if (usage.usagePercent > 60) {
+          // Clean if over 60% full
+          this.cleanupStorage();
+        }
+      },
+      60 * 60 * 1000,
+    );
   }
 
   /**
@@ -1082,7 +999,7 @@ export class StorageService {
   } {
     const usage = this.calculateStorageUsage();
     const stats = this.loadStorageStats();
-    
+
     let recommendation: string | undefined;
     if (usage.usagePercent > 80) {
       recommendation = 'High storage usage. Consider clearing cache or old components.';
@@ -1118,7 +1035,7 @@ export class StorageService {
    */
   async forceCleanup(): Promise<void> {
     await this.cleanupStorage();
-    
+
     // Also cleanup IndexedDB if available
     if (this.indexedDBReady) {
       try {
@@ -1127,7 +1044,7 @@ export class StorageService {
         console.warn('Could not cleanup IndexedDB:', error);
       }
     }
-    
+
     // Also cleanup component pipeline cache
     try {
       const ComponentPipeline = (await import('./ComponentPipeline.ts')).ComponentPipeline;
@@ -1141,7 +1058,11 @@ export class StorageService {
   /**
    * Save image data to IndexedDB storage
    */
-  async saveImageData(imageData: ArrayBuffer, format: string, dimensions: { width: number; height: number }): Promise<string | null> {
+  async saveImageData(
+    imageData: ArrayBuffer,
+    format: string,
+    dimensions: { width: number; height: number },
+  ): Promise<string | null> {
     if (!this.indexedDBReady) {
       console.warn('IndexedDB not available for image storage');
       return null;
@@ -1176,7 +1097,9 @@ export class StorageService {
   /**
    * Get image data from IndexedDB storage
    */
-  async getImageData(imageId: string): Promise<{ data: ArrayBuffer; format: string; blobUrl: string } | null> {
+  async getImageData(
+    imageId: string,
+  ): Promise<{ data: ArrayBuffer; format: string; blobUrl: string } | null> {
     if (!this.indexedDBReady) {
       console.warn('IndexedDB not available for image retrieval');
       return null;
@@ -1222,9 +1145,11 @@ export class StorageService {
   /**
    * Get storage usage statistics including IndexedDB
    */
-  async getEnhancedStorageStats(): Promise<StorageStats & { indexedDBQuota?: { usage: number; quota: number; usagePercentage: number } }> {
+  async getEnhancedStorageStats(): Promise<
+    StorageStats & { indexedDBQuota?: { usage: number; quota: number; usagePercentage: number } }
+  > {
     const localStorageStats = this.getStorageStats();
-    
+
     if (this.indexedDBReady) {
       try {
         const quotaInfo = await indexedDBUtils.getStorageQuota();
@@ -1251,10 +1176,28 @@ export class StorageService {
     try {
       // Extract image IDs from current nodes
       const imageIds: string[] = [];
-      
+
       for (const node of currentNodes) {
-        // Check for ImageNode types that reference images
-        if (node.data && typeof node.data === 'object') {
+        // Check for native image components
+        if (
+          node.data && 
+          typeof node.data === 'object' && 
+          'componentType' in node.data && 
+          node.data.componentType === 'native' &&
+          'nativeType' in node.data &&
+          node.data.nativeType === 'image' &&
+          'state' in node.data &&
+          typeof node.data.state === 'object' &&
+          node.data.state &&
+          'imageId' in node.data.state
+        ) {
+          const imageId = node.data.state.imageId as string;
+          if (typeof imageId === 'string') {
+            imageIds.push(imageId);
+          }
+        }
+        // Also check for legacy format
+        else if (node.data && typeof node.data === 'object') {
           const data = node.data as Record<string, unknown>;
           if (data.imageId && typeof data.imageId === 'string') {
             imageIds.push(data.imageId);
@@ -1298,7 +1241,9 @@ export class StorageService {
     };
   }> {
     const canvas = this.indexedDBReady ? await indexedDBUtils.getCanvas().catch(() => null) : null;
-    const migrationInfo = this.indexedDBReady ? await indexedDBUtils.getMigrationInfo().catch(() => null) : null;
+    const migrationInfo = this.indexedDBReady
+      ? await indexedDBUtils.getMigrationInfo().catch(() => null)
+      : null;
 
     return {
       indexedDBReady: this.indexedDBReady,
@@ -1323,7 +1268,7 @@ export class StorageService {
 
     try {
       // Convert to enhanced node format (sanitizing callback functions)
-      const enhancedNodes: ExportedNode[] = nodes.map(node => ({
+      const enhancedNodes: ExportedNode[] = nodes.map((node) => ({
         id: node.id,
         type: node.type || 'aiComponent',
         position: node.position,
@@ -1332,10 +1277,25 @@ export class StorageService {
         height: node.height,
       }));
 
-      // Extract image references
+      // Extract image references from native image components
       const imageReferences: string[] = [];
       for (const node of enhancedNodes) {
-        if (node.data && typeof node.data === 'object' && 'imageId' in node.data) {
+        if (
+          node.data && 
+          typeof node.data === 'object' && 
+          'componentType' in node.data && 
+          node.data.componentType === 'native' &&
+          'nativeType' in node.data &&
+          node.data.nativeType === 'image' &&
+          'state' in node.data &&
+          typeof node.data.state === 'object' &&
+          node.data.state &&
+          'imageId' in node.data.state
+        ) {
+          imageReferences.push(node.data.state.imageId as string);
+        }
+        // Also check for legacy format
+        else if (node.data && typeof node.data === 'object' && 'imageId' in node.data) {
           imageReferences.push(node.data.imageId as string);
         }
       }
@@ -1350,7 +1310,7 @@ export class StorageService {
           nodeCount: enhancedNodes.length,
           edgeCount: edges.length,
           imageReferences,
-          componentCount: enhancedNodes.filter(n => n.type === 'aiComponent').length,
+          componentCount: enhancedNodes.filter((n) => n.type === 'aiComponent').length,
         },
       });
 

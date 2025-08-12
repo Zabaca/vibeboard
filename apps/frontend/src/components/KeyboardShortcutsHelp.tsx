@@ -17,8 +17,10 @@ interface ShortcutSection {
 const KeyboardShortcutsHelp: React.FC<KeyboardShortcutsHelpProps> = ({ isOpen, onClose }) => {
   // Handle escape key
   React.useEffect(() => {
-    if (!isOpen) return;
-    
+    if (!isOpen) {
+      return;
+    }
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         onClose();
@@ -29,7 +31,9 @@ const KeyboardShortcutsHelp: React.FC<KeyboardShortcutsHelpProps> = ({ isOpen, o
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   const shortcutSections: ShortcutSection[] = [
     {
@@ -38,14 +42,14 @@ const KeyboardShortcutsHelp: React.FC<KeyboardShortcutsHelpProps> = ({ isOpen, o
         {
           keys: ['Ctrl', 'V'],
           description: 'Paste images or text from clipboard',
-          icon: '📋'
+          icon: '📋',
         },
         {
           keys: ['Click canvas first'],
           description: 'Focus canvas to enable paste functionality',
-          icon: '👆'
-        }
-      ]
+          icon: '👆',
+        },
+      ],
     },
     {
       title: 'Component Management',
@@ -53,14 +57,14 @@ const KeyboardShortcutsHelp: React.FC<KeyboardShortcutsHelpProps> = ({ isOpen, o
         {
           keys: ['Ctrl', 'Shift', 'P'],
           description: 'Import component from code',
-          icon: '📥'
+          icon: '📥',
         },
         {
           keys: ['Ctrl', 'Shift', 'I'],
           description: 'Import component from URL (Dev mode)',
-          icon: '🔗'
-        }
-      ]
+          icon: '🔗',
+        },
+      ],
     },
     {
       title: 'Native Components (Single Keys)',
@@ -68,24 +72,24 @@ const KeyboardShortcutsHelp: React.FC<KeyboardShortcutsHelpProps> = ({ isOpen, o
         {
           keys: ['T'],
           description: 'Add text component',
-          icon: '📝'
+          icon: '📝',
         },
         {
           keys: ['R'],
           description: 'Add rectangle shape',
-          icon: '🟦'
+          icon: '🟦',
         },
         {
           keys: ['C'],
           description: 'Add triangle shape',
-          icon: '🔺'
+          icon: '🔺',
         },
         {
           keys: ['S'],
           description: 'Add sticky note',
-          icon: '📝'
-        }
-      ]
+          icon: '📝',
+        },
+      ],
     },
     {
       title: 'Canvas Controls',
@@ -93,22 +97,21 @@ const KeyboardShortcutsHelp: React.FC<KeyboardShortcutsHelpProps> = ({ isOpen, o
         {
           keys: ['Drag header'],
           description: 'Move components around',
-          icon: '👆'
+          icon: '👆',
         },
         {
           keys: ['Click + Drag'],
           description: 'Pan around canvas',
-          icon: '🖱️'
+          icon: '🖱️',
         },
         {
           keys: ['Mouse wheel'],
           description: 'Zoom in/out',
-          icon: '🔍'
-        }
-      ]
-    }
+          icon: '🔍',
+        },
+      ],
+    },
   ];
-
 
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
@@ -174,15 +177,22 @@ const KeyboardShortcutsHelp: React.FC<KeyboardShortcutsHelpProps> = ({ isOpen, o
               ⌨️
             </div>
             <div>
-              <h2 id="shortcuts-title" style={{ margin: 0, fontSize: '20px', fontWeight: '600', color: '#111827' }}>
+              <h2
+                id="shortcuts-title"
+                style={{ margin: 0, fontSize: '20px', fontWeight: '600', color: '#111827' }}
+              >
                 Keyboard Shortcuts
               </h2>
-              <p id="shortcuts-description" style={{ margin: 0, fontSize: '14px', color: '#6b7280' }}>
+              <p
+                id="shortcuts-description"
+                style={{ margin: 0, fontSize: '14px', color: '#6b7280' }}
+              >
                 Speed up your workflow with these shortcuts
               </p>
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
             style={{
               background: 'none',
@@ -211,8 +221,8 @@ const KeyboardShortcutsHelp: React.FC<KeyboardShortcutsHelpProps> = ({ isOpen, o
 
         {/* Shortcut Sections */}
         <div style={{ display: 'grid', gap: '24px' }}>
-          {shortcutSections.map((section, sectionIndex) => (
-            <div key={sectionIndex}>
+          {shortcutSections.map((section) => (
+            <div key={section.title}>
               <h3
                 style={{
                   margin: '0 0 12px 0',
@@ -224,9 +234,9 @@ const KeyboardShortcutsHelp: React.FC<KeyboardShortcutsHelpProps> = ({ isOpen, o
                 {section.title}
               </h3>
               <div style={{ display: 'grid', gap: '8px' }}>
-                {section.shortcuts.map((shortcut, shortcutIndex) => (
+                {section.shortcuts.map((shortcut) => (
                   <div
-                    key={shortcutIndex}
+                    key={`${section.title}-${shortcut.description}`}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -238,16 +248,14 @@ const KeyboardShortcutsHelp: React.FC<KeyboardShortcutsHelpProps> = ({ isOpen, o
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      {shortcut.icon && (
-                        <span style={{ fontSize: '18px' }}>{shortcut.icon}</span>
-                      )}
+                      {shortcut.icon && <span style={{ fontSize: '18px' }}>{shortcut.icon}</span>}
                       <span style={{ fontSize: '14px', color: '#374151' }}>
                         {shortcut.description}
                       </span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                       {shortcut.keys.map((key, keyIndex) => (
-                        <React.Fragment key={keyIndex}>
+                        <React.Fragment key={`${section.title}-${shortcut.description}-${keyIndex}`}>
                           {keyIndex > 0 && (
                             <span style={{ fontSize: '12px', color: '#9ca3af', margin: '0 2px' }}>
                               +

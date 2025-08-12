@@ -1,23 +1,24 @@
-import { useState, useEffect } from 'react';
-import ReactFlowCanvas from './components/ReactFlowCanvas';
+import { useEffect, useState } from 'react';
 import { ESMTestComponent } from './components/ESMTestComponent';
+import ReactFlowCanvas from './components/ReactFlowCanvas';
 import { posthogService } from './services/posthog';
 import './App.css';
 
 function App() {
   const [testMode, setTestMode] = useState(false);
   const isDevelopment = import.meta.env.DEV;
-  
+
   // Initialize PostHog analytics
   useEffect(() => {
     posthogService.init();
   }, []);
-  
+
   return (
     <div className="app" style={{ width: '100vw', height: '100vh', margin: 0, padding: 0 }}>
       {/* Toggle button - only show in development */}
       {isDevelopment && (
         <button
+          type="button"
           onClick={() => setTestMode(!testMode)}
           style={{
             position: 'fixed',
@@ -37,7 +38,7 @@ function App() {
           {testMode ? '🎨 Canvas Mode' : '🧪 Test ESM'}
         </button>
       )}
-      
+
       {/* Content - in production, always show ReactFlowCanvas */}
       {isDevelopment && testMode ? <ESMTestComponent /> : <ReactFlowCanvas />}
     </div>

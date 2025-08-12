@@ -89,10 +89,6 @@ export default defineConfig({
   },
   // Optimize deps to exclude our shims from pre-bundling
   optimizeDeps: {
-    exclude: [
-      '/shims/react.js',
-      '/shims/react-dom.js',
-      '/shims/react-jsx-runtime.js',
-    ],
+    exclude: ['/shims/react.js', '/shims/react-dom.js', '/shims/react-jsx-runtime.js'],
   },
 });

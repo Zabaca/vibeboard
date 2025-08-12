@@ -1,5 +1,5 @@
-import React, { memo, useState, useRef, useEffect } from 'react';
-import { Handle, Position, NodeResizer, type NodeProps } from '@xyflow/react';
+import { Handle, type NodeProps, NodeResizer, Position } from '@xyflow/react';
+import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
 import type { ComponentState } from '../../types/native-component.types.ts';
 import TextCustomizer from './TextCustomizer.tsx';
 
@@ -10,12 +10,12 @@ interface TextNodeData {
   state: ComponentState;
   source: 'native';
   id: string;
-  
+
   // UI-specific fields
   presentationMode?: boolean;
   onDelete?: (nodeId: string) => void;
   onUpdateState?: (nodeId: string, newState: ComponentState) => void;
-  
+
   // Index signature for React Flow compatibility
   [key: string]: unknown;
 }
@@ -27,28 +27,38 @@ interface TextNodeProps extends NodeProps {
 const TextNode = ({ id, data, selected = false }: TextNodeProps) => {
   const { state, presentationMode, onDelete, onUpdateState } = data;
   const [isEditing, setIsEditing] = useState(false);
-  const [tempText, setTempText] = useState(state.text || 'Text');
   const [showCustomizer, setShowCustomizer] = useState(false);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-
-  // Auto-focus and select text when editing starts
-  useEffect(() => {
-    if (isEditing && textAreaRef.current) {
-      textAreaRef.current.focus();
-      textAreaRef.current.select();
-      // Auto-resize textarea to fit content
-      adjustTextAreaHeight();
-    }
-  }, [isEditing]);
+  
+  const [tempText, setTempText] = useState(state.text || 'Text');
+  
 
   // Adjust textarea height based on content
-  const adjustTextAreaHeight = () => {
+  const adjustTextAreaHeight = useCallback(() => {
     if (textAreaRef.current) {
       textAreaRef.current.style.height = 'auto';
       textAreaRef.current.style.height = `${textAreaRef.current.scrollHeight}px`;
     }
-  };
+  }, []);
+
+  // Note: We don't sync tempText with state.text like in some other components
+  // because it interferes with typing. StickyNote doesn't have this sync either.
+
+  // Auto-focus and select text when editing starts (only once)
+  const hasInitializedEditingRef = useRef(false);
+  useEffect(() => {
+    if (isEditing && textAreaRef.current && !hasInitializedEditingRef.current) {
+      textAreaRef.current.focus();
+      textAreaRef.current.select();
+      hasInitializedEditingRef.current = true;
+      // Auto-resize textarea to fit content
+      adjustTextAreaHeight();
+    } else if (!isEditing) {
+      // Reset the flag when editing ends
+      hasInitializedEditingRef.current = false;
+    }
+  }, [isEditing, adjustTextAreaHeight]);
 
   const handleTextSubmit = () => {
     setIsEditing(false);
@@ -67,12 +77,13 @@ const TextNode = ({ id, data, selected = false }: TextNodeProps) => {
   };
 
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setTempText(e.target.value);
+    const newValue = e.target.value;
+    setTempText(newValue);
     adjustTextAreaHeight();
   };
 
   const startEditing = () => {
-    if (!presentationMode && !state.locked) {
+    if (!(presentationMode || state.locked)) {
       setIsEditing(true);
     }
   };
@@ -160,18 +171,22 @@ const TextNode = ({ id, data, selected = false }: TextNodeProps) => {
               fontWeight: state.fontWeight || '400',
               textAlign: state.textAlign || 'left',
               color: state.textColor || '#111827',
-              cursor: !presentationMode && !state.locked ? 'text' : 'default',
+              cursor: presentationMode || state.locked ? 'default' : 'text',
               userSelect: presentationMode ? 'text' : 'none',
               whiteSpace: 'pre-wrap',
               wordBreak: 'break-word',
               lineHeight: 1.5,
               padding: '4px 6px',
               borderRadius: '4px',
-              background: selected && !presentationMode ? 'rgba(99, 102, 241, 0.05)' : 'transparent',
-              border: selected && !presentationMode ? '1px dashed rgba(99, 102, 241, 0.3)' : '1px solid transparent',
+              background:
+                selected && !presentationMode ? 'rgba(99, 102, 241, 0.05)' : 'transparent',
+              border:
+                selected && !presentationMode
+                  ? '1px dashed rgba(99, 102, 241, 0.3)'
+                  : '1px solid transparent',
               transition: 'all 0.2s ease',
             }}
-            title={!presentationMode && !state.locked ? 'Click to edit text' : undefined}
+            title={presentationMode || state.locked ? undefined : 'Click to edit text'}
           >
             {state.text || 'Text'}
           </div>
@@ -179,7 +194,7 @@ const TextNode = ({ id, data, selected = false }: TextNodeProps) => {
       </div>
 
       {/* Control buttons - only show if not in presentation mode and not locked */}
-      {!presentationMode && !state.locked && selected && (
+      {!(presentationMode || state.locked) && selected && (
         <div
           className="nodrag"
           style={{
@@ -196,6 +211,7 @@ const TextNode = ({ id, data, selected = false }: TextNodeProps) => {
         >
           {/* Text formatting button */}
           <button
+            type="button"
             onClick={() => setShowCustomizer(!showCustomizer)}
             style={{
               background: showCustomizer ? '#eef2ff' : 'transparent',
@@ -212,7 +228,14 @@ const TextNode = ({ id, data, selected = false }: TextNodeProps) => {
             }}
             title="Text formatting"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <path d="M4 7V4h16v3" />
               <path d="M9 20h6" />
               <path d="M12 4v16" />
@@ -221,6 +244,7 @@ const TextNode = ({ id, data, selected = false }: TextNodeProps) => {
 
           {/* Lock button */}
           <button
+            type="button"
             onClick={() => onUpdateState?.(id, { ...state, locked: true })}
             style={{
               background: 'transparent',
@@ -237,7 +261,14 @@ const TextNode = ({ id, data, selected = false }: TextNodeProps) => {
             }}
             title="Lock text"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <rect x="5" y="11" width="14" height="11" rx="2" ry="2" />
               <path d="M7 11V7a5 5 0 0110 0v4" />
             </svg>
@@ -246,6 +277,7 @@ const TextNode = ({ id, data, selected = false }: TextNodeProps) => {
           {/* Delete button */}
           {onDelete && (
             <button
+              type="button"
               onClick={() => onDelete(id)}
               style={{
                 background: 'transparent',
@@ -262,7 +294,14 @@ const TextNode = ({ id, data, selected = false }: TextNodeProps) => {
               }}
               title="Delete text"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
                 <path d="M3 6h18" />
                 <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6" />
                 <path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2" />
@@ -287,7 +326,14 @@ const TextNode = ({ id, data, selected = false }: TextNodeProps) => {
           onClick={() => onUpdateState?.(id, { ...state, locked: false })}
           title="Click to unlock"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#6b7280"
+            strokeWidth="2"
+          >
             <rect x="5" y="11" width="14" height="11" rx="2" ry="2" />
             <path d="M7 11V7a5 5 0 0110 0v4" />
           </svg>

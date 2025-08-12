@@ -1,6 +1,6 @@
-import React, { Suspense, useState, useEffect, useRef } from 'react';
-import { esmExecutor } from '../utils/esmExecutor.ts';
+import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import type { ESMExecutionResult } from '../utils/esmExecutor.ts';
+import { esmExecutor } from '../utils/esmExecutor.ts';
 
 /**
  * AsyncComponentLoader - Handles async loading of ESM components with proper error boundaries
@@ -30,7 +30,7 @@ interface LoaderState {
 
 // Error boundary component for runtime errors
 class ComponentErrorBoundary extends React.Component<
-  { 
+  {
     children: React.ReactNode;
     onError?: (error: Error) => void;
     fallback?: React.ComponentType<{ error: Error; retry: () => void }>;
@@ -63,12 +63,12 @@ class ComponentErrorBoundary extends React.Component<
         const Fallback = this.props.fallback;
         return <Fallback error={this.state.error} retry={this.props.retry} />;
       }
-      
+
       return (
         <div className="async-component-error">
           <h3>Component Error</h3>
           <p>{this.state.error.message}</p>
-          <button onClick={this.props.retry}>Retry</button>
+          <button type="button" onClick={this.props.retry}>Retry</button>
         </div>
       );
     }
@@ -90,7 +90,7 @@ const DefaultErrorComponent: React.FC<{ error: Error; retry: () => void }> = ({ 
   <div className="async-component-error">
     <h3>Failed to load component</h3>
     <p>{error.message}</p>
-    <button onClick={retry}>Retry</button>
+    <button type="button" onClick={retry}>Retry</button>
   </div>
 );
 
@@ -112,14 +112,14 @@ export const AsyncComponentLoader: React.FC<AsyncComponentLoaderProps> = ({
     component: null,
     error: null,
   });
-  
+
   const loadAttempts = useRef(0);
   const maxRetries = 3;
 
   // Load component function
-  const loadComponent = async () => {
+  const loadComponent = useCallback(async () => {
     // Check if we have either code or moduleUrl
-    if (!code && !moduleUrl) {
+    if (!(code || moduleUrl)) {
       setState({
         status: 'error',
         component: null,
@@ -128,52 +128,55 @@ export const AsyncComponentLoader: React.FC<AsyncComponentLoaderProps> = ({
       return;
     }
 
-    setState(prev => ({ ...prev, status: 'loading', error: null }));
+    setState((prev) => ({ ...prev, status: 'loading', error: null }));
     loadAttempts.current++;
 
     try {
       let result: ESMExecutionResult;
-      
+
       if (moduleUrl) {
         // Check if this is a CDN URL that can be imported directly
-        const isCDNUrl = moduleUrl.startsWith('https://esm.sh/') || 
-                        moduleUrl.startsWith('https://cdn.jsdelivr.net/') ||
-                        moduleUrl.startsWith('https://unpkg.com/');
-        
+        const isCDNUrl =
+          moduleUrl.startsWith('https://esm.sh/') ||
+          moduleUrl.startsWith('https://cdn.jsdelivr.net/') ||
+          moduleUrl.startsWith('https://unpkg.com/');
+
         if (isCDNUrl && moduleUrl.includes('?external=react')) {
           // DIRECT CDN IMPORT - No blob URL needed!
           if (debug) {
             console.log('🚀 Direct CDN import (no blob):', moduleUrl);
           }
-          
+
           try {
             // Direct ES module import - import maps work normally
             const module = await import(/* @vite-ignore */ moduleUrl);
-            
+
             // Extract component using enhanced logic
             let component = null;
-            
+
             if (debug) {
               console.log('🔍 Analyzing CDN module exports:', Object.keys(module));
               console.log('🔍 Module.default type:', typeof module.default);
               console.log('🔍 Module.default:', module.default);
             }
-            
+
             // 1. Check for default export (most common)
             if (module.default && typeof module.default === 'function') {
               component = module.default;
-            } 
+            }
             // 2. Check for named 'Component' export
             else if (module.Component && typeof module.Component === 'function') {
               component = module.Component;
-            } 
+            }
             // 3. Check for any capitalized function export (React component naming convention)
             else {
               const moduleRecord = module as Record<string, unknown>;
               for (const key in moduleRecord) {
-                if (typeof moduleRecord[key] === 'function' && 
-                    key !== '__esModule' && 
-                    /^[A-Z]/.test(key)) {
+                if (
+                  typeof moduleRecord[key] === 'function' &&
+                  key !== '__esModule' &&
+                  /^[A-Z]/.test(key)
+                ) {
                   component = moduleRecord[key] as React.ComponentType;
                   if (debug) {
                     console.log(`🎯 Found component via capitalized export: ${key}`);
@@ -182,7 +185,7 @@ export const AsyncComponentLoader: React.FC<AsyncComponentLoaderProps> = ({
                 }
               }
             }
-            
+
             // 4. If still no component, check if default export might be an object with a component
             if (!component && module.default && typeof module.default === 'object') {
               const defaultObj = module.default as Record<string, unknown>;
@@ -196,11 +199,11 @@ export const AsyncComponentLoader: React.FC<AsyncComponentLoaderProps> = ({
                 }
               }
             }
-            
+
             if (!component) {
               throw new Error('No valid React component found in CDN module');
             }
-            
+
             result = {
               success: true,
               component,
@@ -210,7 +213,7 @@ export const AsyncComponentLoader: React.FC<AsyncComponentLoaderProps> = ({
                 moduleSize: 0, // Unknown for direct imports
               },
             };
-            
+
             if (debug) {
               console.log('✅ Direct CDN import successful!');
             }
@@ -221,31 +224,33 @@ export const AsyncComponentLoader: React.FC<AsyncComponentLoaderProps> = ({
             }
             // For CDN URLs, direct import failure means the URL/component is invalid
             // No need to fall back to blob method for CDN URLs
-            throw new Error(`Direct CDN import failed: ${directImportError instanceof Error ? directImportError.message : String(directImportError)}`);
+            throw new Error(
+              `Direct CDN import failed: ${directImportError instanceof Error ? directImportError.message : String(directImportError)}`,
+            );
           }
         } else {
           // TRADITIONAL FETCH + BLOB METHOD (for local files and non-CDN URLs)
           if (debug) {
             console.log('📦 Loading component via fetch+blob method:', moduleUrl);
           }
-          
+
           // Fetch the module content
           const response = await fetch(moduleUrl);
           if (!response.ok) {
             throw new Error(`Failed to fetch module: ${response.statusText}`);
           }
-          
+
           const moduleCode = await response.text();
           if (debug) {
-            console.log('📄 Fetched module code:', moduleCode.substring(0, 200) + '...');
+            console.log('📄 Fetched module code:', `${moduleCode.substring(0, 200)}...`);
           }
-          
+
           // Process through ESM executor to handle React imports properly
           result = await esmExecutor.executeModule(moduleCode, {
             debug,
             cache,
           });
-          
+
           // Update result with URL metadata
           if (result.success) {
             result.moduleUrl = moduleUrl;
@@ -268,9 +273,9 @@ export const AsyncComponentLoader: React.FC<AsyncComponentLoaderProps> = ({
           error: null,
           metadata: result.metadata,
         });
-        
+
         onLoad?.(result);
-        
+
         if (debug && result.metadata) {
           console.log(`✅ Component loaded in ${result.metadata.loadTime.toFixed(2)}ms`);
         }
@@ -279,29 +284,29 @@ export const AsyncComponentLoader: React.FC<AsyncComponentLoaderProps> = ({
       }
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      
+
       if (debug) {
         console.error('❌ Component loading failed:', err);
       }
-      
+
       setState({
         status: 'error',
         component: null,
         error: err,
       });
-      
+
       onError?.(err);
-      
+
       // Auto-retry with exponential backoff
       if (loadAttempts.current < maxRetries) {
-        const delay = Math.pow(2, loadAttempts.current) * 1000;
+        const delay = 2 ** loadAttempts.current * 1000;
         if (debug) {
           console.log(`🔄 Retrying in ${delay}ms (attempt ${loadAttempts.current}/${maxRetries})`);
         }
         setTimeout(loadComponent, delay);
       }
     }
-  };
+  }, [code, moduleUrl, debug, cache, onError, onLoad]);
 
   // Effect to load component when code or moduleUrl changes
   useEffect(() => {
@@ -309,7 +314,7 @@ export const AsyncComponentLoader: React.FC<AsyncComponentLoaderProps> = ({
       loadAttempts.current = 0;
       loadComponent();
     }
-  }, [code, moduleUrl]);
+  }, [loadComponent, code, moduleUrl]);
 
   // Retry function
   const retry = () => {
@@ -317,30 +322,25 @@ export const AsyncComponentLoader: React.FC<AsyncComponentLoaderProps> = ({
     loadComponent();
   };
 
-
   // Render based on state
   const renderContent = () => {
     switch (state.status) {
       case 'idle':
       case 'loading':
         return fallback;
-      
+
       case 'error':
         if (state.error) {
           const ErrorComponent = errorFallback;
           return <ErrorComponent error={state.error} retry={retry} />;
         }
         return null;
-      
+
       case 'success':
         if (state.component) {
           const Component = state.component;
           return (
-            <ComponentErrorBoundary
-              onError={onError}
-              fallback={errorFallback}
-              retry={retry}
-            >
+            <ComponentErrorBoundary onError={onError} fallback={errorFallback} retry={retry}>
               <Suspense fallback={fallback}>
                 <Component />
               </Suspense>
@@ -348,7 +348,7 @@ export const AsyncComponentLoader: React.FC<AsyncComponentLoaderProps> = ({
           );
         }
         return null;
-      
+
       default:
         return null;
     }
@@ -360,18 +360,20 @@ export const AsyncComponentLoader: React.FC<AsyncComponentLoaderProps> = ({
     className,
     `status-${state.status}`,
     presentationMode ? 'presentation-mode' : '',
-  ].filter(Boolean).join(' ');
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   return (
     <div className={containerClass} style={style}>
       {renderContent()}
-      
+
       {/* Debug info */}
       {debug && state.metadata && (
         <div className="debug-info">
           <small>
-            Load time: {state.metadata.loadTime.toFixed(2)}ms | 
-            Size: {(state.metadata.moduleSize / 1024).toFixed(2)}KB
+            Load time: {state.metadata.loadTime.toFixed(2)}ms | Size:{' '}
+            {(state.metadata.moduleSize / 1024).toFixed(2)}KB
             {state.metadata.dependencies && ` | Deps: ${state.metadata.dependencies.length}`}
           </small>
         </div>
@@ -386,7 +388,7 @@ export const LazyComponent: React.FC<{
   fallback?: React.ReactNode;
 }> = ({ importFn, fallback = <DefaultLoadingComponent /> }) => {
   const Component = React.lazy(importFn);
-  
+
   return (
     <Suspense fallback={fallback}>
       <Component />
@@ -401,7 +403,7 @@ export function useAsyncComponent(
     debug?: boolean;
     cache?: boolean;
     autoLoad?: boolean;
-  } = {}
+  } = {},
 ) {
   const [state, setState] = useState<LoaderState>({
     status: 'idle',
@@ -409,7 +411,7 @@ export function useAsyncComponent(
     error: null,
   });
 
-  const load = async () => {
+  const load = useCallback(async () => {
     if (!code) {
       setState({
         status: 'error',
@@ -419,7 +421,7 @@ export function useAsyncComponent(
       return;
     }
 
-    setState(prev => ({ ...prev, status: 'loading', error: null }));
+    setState((prev) => ({ ...prev, status: 'loading', error: null }));
 
     try {
       const result = await esmExecutor.executeModule(code, {
@@ -445,13 +447,13 @@ export function useAsyncComponent(
         error: err,
       });
     }
-  };
+  }, [code, options.debug, options.cache]);
 
   useEffect(() => {
     if (options.autoLoad && code) {
       load();
     }
-  }, [code, options.autoLoad]);
+  }, [load, options.autoLoad, code]);
 
   return {
     ...state,

@@ -24,8 +24,8 @@ interface ErrorBoundaryState {
 
 // Enhanced Error boundary component with detailed error info
 class ErrorBoundary extends React.Component<
-  { 
-    children: React.ReactNode; 
+  {
+    children: React.ReactNode;
     code: string;
     onError?: (error: ErrorInfo) => void;
   },
@@ -49,10 +49,10 @@ class ErrorBoundary extends React.Component<
 
     // Try to extract line/column from stack trace
     const stackLines = error.stack?.split('\n') || [];
-    const relevantLine = stackLines.find(line => 
-      line.includes('eval') || line.includes('Function')
+    const relevantLine = stackLines.find(
+      (line) => line.includes('eval') || line.includes('Function'),
     );
-    
+
     if (relevantLine) {
       const match = relevantLine.match(/:(\d+):(\d+)/);
       if (match) {
@@ -70,7 +70,7 @@ class ErrorBoundary extends React.Component<
       componentStack: errorInfo.componentStack,
       errorBoundary: 'GeneratedApp',
     });
-    
+
     if (this.props.onError && this.state.error) {
       this.props.onError(this.state.error);
     }
@@ -108,15 +108,15 @@ ${this.props.code}`;
             overflow: 'auto',
           }}
         >
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center',
-            marginBottom: '8px' 
-          }}>
-            <div style={{ fontWeight: 'bold' }}>
-              🚨 Runtime Error
-            </div>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '8px',
+            }}
+          >
+            <div style={{ fontWeight: 'bold' }}>🚨 Runtime Error</div>
             <button
               onClick={handleCopy}
               style={{
@@ -136,27 +136,25 @@ ${this.props.code}`;
               📋 Copy
             </button>
           </div>
-          <div style={{ marginBottom: '8px' }}>
-            {this.state.error.message}
-          </div>
+          <div style={{ marginBottom: '8px' }}>{this.state.error.message}</div>
           {this.state.error.line && (
             <div style={{ fontSize: '11px', color: '#991b1b' }}>
               Line {this.state.error.line}, Column {this.state.error.column}
             </div>
           )}
           <details style={{ marginTop: '8px' }}>
-            <summary style={{ cursor: 'pointer', userSelect: 'none' }}>
-              View Code
-            </summary>
-            <pre style={{ 
-              fontSize: '10px', 
-              overflow: 'auto',
-              maxHeight: '150px',
-              padding: '8px',
-              backgroundColor: 'white',
-              borderRadius: '4px',
-              marginTop: '4px',
-            }}>
+            <summary style={{ cursor: 'pointer', userSelect: 'none' }}>View Code</summary>
+            <pre
+              style={{
+                fontSize: '10px',
+                overflow: 'auto',
+                maxHeight: '150px',
+                padding: '8px',
+                backgroundColor: 'white',
+                borderRadius: '4px',
+                marginTop: '4px',
+              }}
+            >
               {this.props.code}
             </pre>
           </details>
@@ -167,13 +165,18 @@ ${this.props.code}`;
   }
 }
 
-const GeneratedApp = ({ code, component, presentationMode = false, onCompilationComplete }: GeneratedAppProps) => {
+const GeneratedApp = ({
+  code,
+  component,
+  presentationMode = false,
+  onCompilationComplete,
+}: GeneratedAppProps) => {
   const [Component, setComponent] = useState<React.ComponentType | null>(null);
   const [error, setError] = useState<ErrorInfo | null>(null);
   const [showDebug, setShowDebug] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const pipelineRef = useRef<ComponentPipeline | null>(null);
-  
+
   // Get or create pipeline instance
   if (!pipelineRef.current) {
     pipelineRef.current = new ComponentPipeline();
@@ -187,7 +190,9 @@ const GeneratedApp = ({ code, component, presentationMode = false, onCompilation
   // Intersection Observer to detect when component enters viewport (lazy rendering)
   useEffect(() => {
     const container = containerRef.current;
-    if (!container) return;
+    if (!container) {
+      return;
+    }
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -200,7 +205,7 @@ const GeneratedApp = ({ code, component, presentationMode = false, onCompilation
       {
         rootMargin: '50px', // Start loading 50px before component is visible
         threshold: 0.1, // Trigger when 10% of component is visible
-      }
+      },
     );
 
     observer.observe(container);
@@ -216,7 +221,7 @@ const GeneratedApp = ({ code, component, presentationMode = false, onCompilation
     let hash = 0;
     for (let i = 0; i < codeToHash.length; i++) {
       const char = codeToHash.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash; // Convert to 32bit integer
     }
     return Math.abs(hash).toString(36);
@@ -227,20 +232,27 @@ const GeneratedApp = ({ code, component, presentationMode = false, onCompilation
 
   // Fallback for intersection observer - process stored components after a delay
   useEffect(() => {
-    const hasStoredCode = component?.compiledAt && (component?.originalCode || component?.compiledCode);
-    
+    const hasStoredCode =
+      component?.compiledAt && (component?.originalCode || component?.compiledCode);
+
     if (hasStoredCode && !isInViewport && !hasBeenRendered) {
       const fallbackTimer = setTimeout(() => {
         setIsInViewport(true);
       }, 500); // Short delay to let intersection observer work first
-      
+
       return () => clearTimeout(fallbackTimer);
     }
-  }, [component?.compiledAt, component?.originalCode, component?.compiledCode, isInViewport, hasBeenRendered]);
+  }, [
+    component?.compiledAt,
+    component?.originalCode,
+    component?.compiledCode,
+    isInViewport,
+    hasBeenRendered,
+  ]);
 
   useEffect(() => {
     // Only process component if it has been rendered (lazy transpilation) or is in viewport
-    if (!isInViewport && !hasBeenRendered) {
+    if (!(isInViewport || hasBeenRendered)) {
       return;
     }
 
@@ -259,7 +271,7 @@ const GeneratedApp = ({ code, component, presentationMode = false, onCompilation
         // Determine what code to use
         let codeToUse: string | undefined;
         let needsCompilation = false;
-        
+
         if (component) {
           // If we have a UnifiedComponentNode, check for compiled code first
           if (component.compiledCode) {
@@ -273,7 +285,7 @@ const GeneratedApp = ({ code, component, presentationMode = false, onCompilation
           codeToUse = code;
           needsCompilation = true;
         }
-        
+
         if (!codeToUse || codeToUse.trim() === '') {
           setError({ message: 'No code provided' });
           setIsProcessing(false);
@@ -282,7 +294,7 @@ const GeneratedApp = ({ code, component, presentationMode = false, onCompilation
 
         let transpiledCode: string;
         let pipelineComponent: UnifiedComponentNode | undefined;
-        
+
         // If we need compilation, use the pipeline (lazy transpilation)
         if (needsCompilation && pipelineRef.current) {
           const pipelineResult = await pipelineRef.current.processComponent(
@@ -291,21 +303,29 @@ const GeneratedApp = ({ code, component, presentationMode = false, onCompilation
               useCache: true,
               validateOutput: true,
               debug: false, // Disable debug mode to reduce CPU usage
-            }
+            },
           );
-          
-          if (!pipelineResult.success) {
+
+          if (!pipelineResult.success || !pipelineResult.component) {
             setError({
               message: pipelineResult.error || 'Pipeline processing failed',
-              code: codeToUse
+              code: codeToUse,
             });
             setIsProcessing(false);
             return;
           }
-          
-          pipelineComponent = pipelineResult.component!;
-          transpiledCode = pipelineComponent.compiledCode!;
-          
+
+          pipelineComponent = pipelineResult.component;
+          if (!pipelineComponent.compiledCode) {
+            setError({
+              message: 'No compiled code available',
+              code: codeToUse,
+            });
+            setIsProcessing(false);
+            return;
+          }
+          transpiledCode = pipelineComponent.compiledCode;
+
           // Notify parent of compilation completion (lazy compilation cache update)
           if (onCompilationComplete && pipelineComponent.compiledHash) {
             onCompilationComplete(transpiledCode, pipelineComponent.compiledHash);
@@ -318,14 +338,16 @@ const GeneratedApp = ({ code, component, presentationMode = false, onCompilation
         // ESM-ONLY EXECUTION: All components are processed as ESM modules
         try {
           const { esmExecutor } = await import('../utils/esmExecutor.ts');
-          
+
           const esmResult = await esmExecutor.executeModule(transpiledCode, {
             debug: false,
             cache: true,
           });
 
           if (esmResult.success && esmResult.component) {
-            setComponent(() => esmResult.component as React.ComponentType<Record<string, never>> | null)
+            setComponent(
+              () => esmResult.component as React.ComponentType<Record<string, never>> | null,
+            );
             setProcessedHash(codeHash); // Mark this code as processed
           } else {
             const errorInfo: ErrorInfo = {
@@ -354,7 +376,15 @@ const GeneratedApp = ({ code, component, presentationMode = false, onCompilation
     };
 
     processComponent();
-  }, [codeHash, isInViewport, hasBeenRendered, processedHash, component, code, onCompilationComplete]);
+  }, [
+    codeHash,
+    isInViewport,
+    hasBeenRendered,
+    processedHash,
+    component,
+    code,
+    onCompilationComplete,
+  ]);
 
   // Compilation/transpilation error display
   if (error) {
@@ -386,17 +416,21 @@ ${code || component?.originalCode || ''}`;
           overflow: 'auto',
         }}
       >
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '8px',
-        }}>
-          <div style={{
-            color: '#dc2626',
-            fontWeight: 'bold',
-            fontSize: '13px',
-          }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '8px',
+          }}
+        >
+          <div
+            style={{
+              color: '#dc2626',
+              fontWeight: 'bold',
+              fontSize: '13px',
+            }}
+          >
             ⚠️ Compilation Error
           </div>
           <button
@@ -418,12 +452,14 @@ ${code || component?.originalCode || ''}`;
             📋 Copy
           </button>
         </div>
-        <div style={{
-          color: '#991b1b',
-          fontSize: '12px',
-          fontFamily: 'monospace',
-          marginBottom: '8px',
-        }}>
+        <div
+          style={{
+            color: '#991b1b',
+            fontSize: '12px',
+            fontFamily: 'monospace',
+            marginBottom: '8px',
+          }}
+        >
           {error.message}
         </div>
         {error.line && (
@@ -448,16 +484,18 @@ ${code || component?.originalCode || ''}`;
           {showDebug ? 'Hide' : 'Show'} Debug Info
         </button>
         {showDebug && (
-          <pre style={{
-            marginTop: '8px',
-            padding: '8px',
-            backgroundColor: 'white',
-            borderRadius: '4px',
-            fontSize: '10px',
-            overflow: 'auto',
-            flexGrow: 1,
-            border: '1px solid #fecaca',
-          }}>
+          <pre
+            style={{
+              marginTop: '8px',
+              padding: '8px',
+              backgroundColor: 'white',
+              borderRadius: '4px',
+              fontSize: '10px',
+              overflow: 'auto',
+              flexGrow: 1,
+              border: '1px solid #fecaca',
+            }}
+          >
             {code || component?.originalCode || ''}
           </pre>
         )}
@@ -480,41 +518,66 @@ ${code || component?.originalCode || ''}`;
           height: '100%',
         }}
       >
-        <div style={{
-          animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-          marginBottom: '12px',
-        }}>
+        <div
+          style={{
+            animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            marginBottom: '12px',
+          }}
+        >
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" style={{ color: '#6366f1' }}>
-            <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <path
+              d="M12 2L2 7L12 12L22 7L12 2Z"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M2 17L12 22L22 17"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M2 12L12 17L22 12"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </svg>
         </div>
         <div style={{ fontSize: '14px', fontWeight: '500' }}>
-          {!hasBeenRendered && !isInViewport ? 'Component ready...' : 
-           isProcessing ? 'Processing component...' : 'Initializing component...'}
+          {hasBeenRendered || isInViewport
+            ? isProcessing
+              ? 'Processing component...'
+              : 'Initializing component...'
+            : 'Component ready...'}
         </div>
         <div style={{ fontSize: '12px', marginTop: '4px', opacity: 0.7 }}>
-          {!hasBeenRendered && !isInViewport ? 'Will transpile when visible (lazy loading)' :
-           component?.compiledCode ? 'Loading pre-compiled component' : 
-           'Transpiling JSX to JavaScript'}
+          {hasBeenRendered || isInViewport
+            ? component?.compiledCode
+              ? 'Loading pre-compiled component'
+              : 'Transpiling JSX to JavaScript'
+            : 'Will transpile when visible (lazy loading)'}
         </div>
       </div>
     );
   }
 
   return (
-    <ErrorBoundary 
+    <ErrorBoundary
       code={code || component?.originalCode || ''}
       onError={(error) => {
         console.error('Runtime error in generated component:', error);
       }}
     >
-      <div 
+      <div
         ref={containerRef}
-        style={{ 
-          width: '100%', 
-          height: '100%', 
+        style={{
+          width: '100%',
+          height: '100%',
           backgroundColor: presentationMode ? 'transparent' : 'white',
           position: 'relative',
           overflow: 'auto',
@@ -529,9 +592,11 @@ ${code || component?.originalCode || ''}`;
 // Memoize the component to prevent re-renders unless props actually change
 export default React.memo(GeneratedApp, (prevProps, nextProps) => {
   // Only re-render if any of these props actually changed
-  return prevProps.code === nextProps.code && 
-         prevProps.presentationMode === nextProps.presentationMode &&
-         prevProps.component?.originalCode === nextProps.component?.originalCode &&
-         prevProps.component?.compiledCode === nextProps.component?.compiledCode &&
-         prevProps.component?.compiledHash === nextProps.component?.compiledHash;
+  return (
+    prevProps.code === nextProps.code &&
+    prevProps.presentationMode === nextProps.presentationMode &&
+    prevProps.component?.originalCode === nextProps.component?.originalCode &&
+    prevProps.component?.compiledCode === nextProps.component?.compiledCode &&
+    prevProps.component?.compiledHash === nextProps.component?.compiledHash
+  );
 });

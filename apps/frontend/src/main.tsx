@@ -1,7 +1,5 @@
-import { StrictMode } from 'react';
-import { createRoot } from 'react-dom/client';
-import React from 'react';
-import ReactDOM from 'react-dom/client';
+import React, { StrictMode } from 'react';
+import ReactDOM, { createRoot } from 'react-dom/client';
 import './index.css';
 import './styles/prism-overrides.css';
 import App from './App.tsx';

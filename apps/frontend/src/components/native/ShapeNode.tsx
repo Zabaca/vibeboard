@@ -1,5 +1,5 @@
-import React, { memo, useState, useRef, useEffect } from 'react';
-import { Handle, Position, NodeResizer, type NodeProps } from '@xyflow/react';
+import { Handle, type NodeProps, NodeResizer, Position } from '@xyflow/react';
+import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
 import type { ComponentState } from '../../types/native-component.types.ts';
 import ShapeCustomizer from './ShapeCustomizer.tsx';
 
@@ -10,7 +10,7 @@ interface ShapeNodeData {
   state: ComponentState;
   source: 'native';
   id: string;
-  
+
   // UI-specific fields
   presentationMode?: boolean;
   onDelete?: (nodeId: string) => void;
@@ -35,14 +35,14 @@ const ShapeNode = ({ id, data, selected = false }: ShapeNodeProps) => {
     }
   }, [isEditingText]);
 
-  const handleTextSubmit = () => {
+  const handleTextSubmit = useCallback(() => {
     setIsEditingText(false);
     if (onUpdateState && tempText !== (state as unknown as { text?: string }).text) {
       onUpdateState(id as string, { ...state, text: tempText });
     }
-  };
+  }, [onUpdateState, id, state, tempText]);
 
-  const handleTextKeyDown = (e: React.KeyboardEvent) => {
+  const handleTextKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       handleTextSubmit();
@@ -51,58 +51,56 @@ const ShapeNode = ({ id, data, selected = false }: ShapeNodeProps) => {
       setTempText(state.text || '');
       setIsEditingText(false);
     }
-  };
+  }, [handleTextSubmit, state.text]);
+
+  const handleTextEdit = useCallback(() => {
+    if (!(presentationMode || state.locked)) {
+      setIsEditingText(true);
+    }
+  }, [presentationMode, state.locked]);
 
   // Render different shapes based on shapeType
-  const renderShape = () => {
-    const { shapeType = 'rectangle', fillColor = '#ffffff', strokeColor = '#6366f1', strokeWidth = 2 } = state;
-    
+  const renderShape = useCallback(() => {
+    const {
+      shapeType = 'rectangle',
+      fillColor = '#ffffff',
+      strokeColor = '#6366f1',
+      strokeWidth = 2,
+    } = state;
+
     switch (shapeType) {
       case 'rectangle':
-        return (
-          <rect
-            x="0"
-            y="0"
-            width="100%"
-            height="100%"
-            fill={fillColor}
-            stroke={strokeColor}
-            strokeWidth={strokeWidth}
-            rx="8"
-            ry="8"
-          />
-        );
-      
       case 'square':
         return (
           <rect
-            x="0"
-            y="0"
-            width="100%"
-            height="100%"
+            x="2"
+            y="2"
+            width="96"
+            height="96"
             fill={fillColor}
             stroke={strokeColor}
             strokeWidth={strokeWidth}
+            vectorEffect="non-scaling-stroke"
             rx="8"
             ry="8"
           />
         );
-      
+
       case 'triangle':
         return (
           <polygon
-            points="50,10 90,90 10,90"
+            points="50,5 95,85 5,85"
             fill={fillColor}
             stroke={strokeColor}
             strokeWidth={strokeWidth}
-            transform="scale(1.8) translate(-22, -22)"
+            vectorEffect="non-scaling-stroke"
           />
         );
-      
+
       default:
         return null;
     }
-  };
+  }, [state]);
 
   return (
     <div
@@ -140,6 +138,8 @@ const ShapeNode = ({ id, data, selected = false }: ShapeNodeProps) => {
       <svg
         width="100%"
         height="100%"
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
         style={{
           position: 'absolute',
           top: 0,
@@ -189,21 +189,21 @@ const ShapeNode = ({ id, data, selected = false }: ShapeNodeProps) => {
           />
         ) : (
           <div
-            onDoubleClick={() => !presentationMode && !state.locked && setIsEditingText(true)}
+            onDoubleClick={handleTextEdit}
             style={{
               textAlign: state.textAlign || 'center',
               fontSize: state.fontSize || 16,
               fontFamily: state.fontFamily || 'Inter, system-ui, sans-serif',
               fontWeight: state.fontWeight || '400',
               color: state.textColor || '#111827',
-              cursor: !presentationMode && !state.locked ? 'text' : 'default',
+              cursor: presentationMode || state.locked ? 'default' : 'text',
               userSelect: 'none',
               wordBreak: 'break-word',
               overflow: 'hidden',
               width: '100%',
               padding: '4px',
             }}
-            title={!presentationMode && !state.locked ? 'Double-click to edit text' : undefined}
+            title={presentationMode || state.locked ? undefined : 'Double-click to edit text'}
           >
             {state.text || ''}
           </div>
@@ -211,7 +211,7 @@ const ShapeNode = ({ id, data, selected = false }: ShapeNodeProps) => {
       </div>
 
       {/* Control buttons - only show if not in presentation mode and not locked */}
-      {!presentationMode && !state.locked && (
+      {!(presentationMode || state.locked) && (
         <div
           className="nodrag"
           style={{
@@ -228,6 +228,7 @@ const ShapeNode = ({ id, data, selected = false }: ShapeNodeProps) => {
         >
           {/* Customize button */}
           <button
+            type="button"
             onClick={() => setShowCustomizer(!showCustomizer)}
             style={{
               background: showCustomizer ? '#eef2ff' : 'transparent',
@@ -244,7 +245,14 @@ const ShapeNode = ({ id, data, selected = false }: ShapeNodeProps) => {
             }}
             title="Customize shape"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <circle cx="12" cy="12" r="3" />
               <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1" />
             </svg>
@@ -252,6 +260,7 @@ const ShapeNode = ({ id, data, selected = false }: ShapeNodeProps) => {
 
           {/* Lock button */}
           <button
+            type="button"
             onClick={() => onUpdateState?.(id, { ...state, locked: true })}
             style={{
               background: 'transparent',
@@ -268,7 +277,14 @@ const ShapeNode = ({ id, data, selected = false }: ShapeNodeProps) => {
             }}
             title="Lock shape"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <rect x="5" y="11" width="14" height="11" rx="2" ry="2" />
               <path d="M7 11V7a5 5 0 0110 0v4" />
             </svg>
@@ -277,6 +293,7 @@ const ShapeNode = ({ id, data, selected = false }: ShapeNodeProps) => {
           {/* Delete button */}
           {onDelete && (
             <button
+              type="button"
               onClick={() => onDelete(id)}
               style={{
                 background: 'transparent',
@@ -293,7 +310,14 @@ const ShapeNode = ({ id, data, selected = false }: ShapeNodeProps) => {
               }}
               title="Delete shape"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
                 <path d="M3 6h18" />
                 <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6" />
                 <path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2" />
@@ -318,7 +342,14 @@ const ShapeNode = ({ id, data, selected = false }: ShapeNodeProps) => {
           onClick={() => onUpdateState?.(id, { ...state, locked: false })}
           title="Click to unlock"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#6b7280"
+            strokeWidth="2"
+          >
             <rect x="5" y="11" width="14" height="11" rx="2" ry="2" />
             <path d="M7 11V7a5 5 0 0110 0v4" />
           </svg>

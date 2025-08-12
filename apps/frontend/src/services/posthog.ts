@@ -5,8 +5,9 @@ class PostHogService {
 
   init() {
     // Only initialize in production or if explicitly enabled in development
-    const shouldInitialize = import.meta.env.PROD || import.meta.env.VITE_ENABLE_POSTHOG_DEV === 'true';
-    
+    const shouldInitialize =
+      import.meta.env.PROD || import.meta.env.VITE_ENABLE_POSTHOG_DEV === 'true';
+
     if (!shouldInitialize) {
       console.log('📊 PostHog analytics disabled in development');
       return;
@@ -15,7 +16,7 @@ class PostHogService {
     const apiKey = import.meta.env.VITE_PUBLIC_POSTHOG_KEY;
     const apiHost = import.meta.env.VITE_PUBLIC_POSTHOG_HOST;
 
-    if (!apiKey || !apiHost) {
+    if (!(apiKey && apiHost)) {
       console.warn('PostHog configuration missing');
       return;
     }
@@ -82,7 +83,10 @@ class PostHogService {
   }
 
   // Track component interaction
-  trackComponentInteraction(action: 'edit' | 'delete' | 'duplicate' | 'regenerate', componentId: string) {
+  trackComponentInteraction(
+    action: 'create' | 'edit' | 'delete' | 'duplicate' | 'regenerate',
+    componentId: string,
+  ) {
     this.track('component_interaction', {
       action,
       component_id: componentId,

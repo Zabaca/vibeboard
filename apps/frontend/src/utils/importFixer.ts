@@ -39,26 +39,31 @@ export class ImportFixer {
   static fixImports(code: string): ImportFixResult {
     try {
       // Check if this is ESM code with React imports
-      const reactImportMatch = code.match(/import\s+React(?:\s*,\s*{([^}]*)})?[\s\S]*?from\s+['"]react['"];?/);
-      
+      const reactImportMatch = code.match(
+        /import\s+React(?:\s*,\s*{([^}]*)})?[\s\S]*?from\s+['"]react['"];?/,
+      );
+
       if (!reactImportMatch) {
         // No React import found, can't fix
         return {
           success: true,
           code,
-          warnings: ['No React import found, skipping import fixing']
+          warnings: ['No React import found, skipping import fixing'],
         };
       }
 
       // Extract currently imported hooks
-      const currentImports = reactImportMatch[1] 
-        ? reactImportMatch[1].split(',').map(imp => imp.trim()).filter(imp => imp.length > 0)
+      const currentImports = reactImportMatch[1]
+        ? reactImportMatch[1]
+            .split(',')
+            .map((imp) => imp.trim())
+            .filter((imp) => imp.length > 0)
         : [];
 
       // Find hooks used in the code but not imported
       const usedHooks = new Set<string>();
-      
-      for (const hook of this.REACT_HOOKS) {
+
+      for (const hook of ImportFixer.REACT_HOOKS) {
         // Look for hook usage patterns: hookName( or hookName.
         const hookPattern = new RegExp(`\\b${hook}\\s*\\(`, 'g');
         if (hookPattern.test(code)) {
@@ -67,15 +72,13 @@ export class ImportFixer {
       }
 
       // Find missing imports
-      const missingImports = Array.from(usedHooks).filter(
-        hook => !currentImports.includes(hook)
-      );
+      const missingImports = Array.from(usedHooks).filter((hook) => !currentImports.includes(hook));
 
       if (missingImports.length === 0) {
         return {
           success: true,
           code,
-          warnings: ['All React hooks are properly imported']
+          warnings: ['All React hooks are properly imported'],
         };
       }
 
@@ -86,22 +89,22 @@ export class ImportFixer {
       // Replace the old import statement
       const fixedCode = code.replace(
         /import\s+React(?:\s*,\s*{[^}]*})?[\s\S]*?from\s+['"]react['"];?/,
-        newImportStatement
+        newImportStatement,
       );
 
       return {
         success: true,
         code: fixedCode,
         addedImports: missingImports,
-        warnings: missingImports.length > 0 
-          ? [`Added missing React hook imports: ${missingImports.join(', ')}`]
-          : []
+        warnings:
+          missingImports.length > 0
+            ? [`Added missing React hook imports: ${missingImports.join(', ')}`]
+            : [],
       };
-
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : String(error)
+        error: error instanceof Error ? error.message : String(error),
       };
     }
   }
@@ -110,10 +113,10 @@ export class ImportFixer {
    * Check if code has missing React hook imports without fixing
    */
   static validateImports(code: string): { valid: boolean; missingImports: string[] } {
-    const result = this.fixImports(code);
+    const result = ImportFixer.fixImports(code);
     return {
       valid: !result.addedImports || result.addedImports.length === 0,
-      missingImports: result.addedImports || []
+      missingImports: result.addedImports || [],
     };
   }
 }

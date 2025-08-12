@@ -1,5 +1,5 @@
 const GrowthChart = () => {
-  const [revenueData, setRevenueData] = useState([
+  const [revenueData, _setRevenueData] = useState([
     { month: 'Jan', value: 12000 },
     { month: 'Feb', value: 19000 },
     { month: 'Mar', value: 15000 },
@@ -8,7 +8,7 @@ const GrowthChart = () => {
     { month: 'Jun', value: 25000 },
   ]);
 
-  const [userData, setUserData] = useState([
+  const [userData, _setUserData] = useState([
     { month: 'Jan', value: 320 },
     { month: 'Feb', value: 450 },
     { month: 'Mar', value: 580 },
@@ -61,7 +61,7 @@ const GrowthChart = () => {
     transition: 'all 0.3s ease',
   };
 
-  const userBarStyle = {
+  const _userBarStyle = {
     height: '8px',
     backgroundColor: '#10b981',
     borderRadius: '4px',
@@ -97,7 +97,7 @@ const GrowthChart = () => {
   };
 
   const getMaxValue = (data) => {
-    return Math.max(...data.map(item => item.value));
+    return Math.max(...data.map((item) => item.value));
   };
 
   const renderChart = (data, color, title, formatFn) => {
@@ -107,13 +107,21 @@ const GrowthChart = () => {
       <div style={chartWrapperStyle}>
         <div style={chartTitleStyle}>
           <svg style={iconStyle} viewBox="0 0 24 24" fill="none">
-            <path d="M12 20V10M18 20V4M6 20v-4" stroke={color} strokeWidth="2" strokeLinecap="round" />
+            <path
+              d="M12 20V10M18 20V4M6 20v-4"
+              stroke={color}
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
           </svg>
           {title}
         </div>
         <div style={chartGridStyle}>
           {data.map((item, index) => (
-            <div key={index} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div
+              key={index}
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+            >
               <div style={valueLabelStyle}>{formatFn(item.value)}</div>
               <div
                 style={{
@@ -139,4 +147,4 @@ const GrowthChart = () => {
   );
 };
 
-const Component = GrowthChart;
+const _Component = GrowthChart;

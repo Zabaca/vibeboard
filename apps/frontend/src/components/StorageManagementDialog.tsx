@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { storageService } from '../services/StorageService.ts';
 import { indexedDBUtils } from '../utils/indexedDBUtils.ts';
 
@@ -23,18 +23,12 @@ const StorageManagementDialog: React.FC<StorageManagementDialogProps> = ({ isOpe
   const [isLoading, setIsLoading] = useState(false);
   const [isCleaningUp, setIsCleaningUp] = useState(false);
 
-  useEffect(() => {
-    if (isOpen) {
-      loadStorageInfo();
-    }
-  }, [isOpen]);
-
-  const loadStorageInfo = async (): Promise<void> => {
+  const loadStorageInfo = useCallback(async (): Promise<void> => {
     setIsLoading(true);
     try {
       const stats = await storageService.getEnhancedStorageStats();
       const usage = storageService.getStorageUsageSummary();
-      
+
       let imageCount = 0;
       let indexedDBUsage = 0;
       let indexedDBQuota = 0;
@@ -44,7 +38,7 @@ const StorageManagementDialog: React.FC<StorageManagementDialogProps> = ({ isOpe
         try {
           const images = await indexedDBUtils.listImages();
           imageCount = images.length;
-          
+
           const quotaInfo = await indexedDBUtils.getStorageQuota();
           indexedDBUsage = quotaInfo.usage;
           indexedDBQuota = quotaInfo.quota;
@@ -68,7 +62,7 @@ const StorageManagementDialog: React.FC<StorageManagementDialogProps> = ({ isOpe
       console.error('Failed to load storage info:', error);
     }
     setIsLoading(false);
-  };
+  }, []);
 
   const handleCleanup = async (): Promise<void> => {
     setIsCleaningUp(true);
@@ -82,7 +76,11 @@ const StorageManagementDialog: React.FC<StorageManagementDialogProps> = ({ isOpe
   };
 
   const handleClearAll = async (): Promise<void> => {
-    if (!confirm('Are you sure you want to clear all storage? This will delete all saved components and images.')) {
+    if (
+      !confirm(
+        'Are you sure you want to clear all storage? This will delete all saved components and images.',
+      )
+    ) {
       return;
     }
 
@@ -102,18 +100,28 @@ const StorageManagementDialog: React.FC<StorageManagementDialogProps> = ({ isOpe
   };
 
   const formatBytes = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) {
+      return '0 Bytes';
+    }
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+    return `${parseFloat((bytes / k ** i).toFixed(2))} ${sizes[i]}`;
   };
 
   const formatDate = (timestamp: number): string => {
     return new Date(timestamp).toLocaleString();
   };
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    if (isOpen) {
+      loadStorageInfo();
+    }
+  }, [isOpen, loadStorageInfo]);
+
+  if (!isOpen) {
+    return null;
+  }
 
   return (
     <div
@@ -160,6 +168,7 @@ const StorageManagementDialog: React.FC<StorageManagementDialogProps> = ({ isOpe
             Storage Management
           </h2>
           <button
+            type="button"
             onClick={onClose}
             style={{
               background: 'none',
@@ -189,15 +198,34 @@ const StorageManagementDialog: React.FC<StorageManagementDialogProps> = ({ isOpe
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               {/* LocalStorage Info */}
               <div>
-                <h3 style={{ margin: '0 0 12px 0', fontSize: '16px', fontWeight: '500', color: '#374151' }}>
+                <h3
+                  style={{
+                    margin: '0 0 12px 0',
+                    fontSize: '16px',
+                    fontWeight: '500',
+                    color: '#374151',
+                  }}
+                >
                   LocalStorage
                 </h3>
                 <div style={{ backgroundColor: '#f9fafb', padding: '12px', borderRadius: '8px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      marginBottom: '8px',
+                    }}
+                  >
                     <span>Size:</span>
                     <span>{formatBytes(storageInfo.localStorageSize)}</span>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      marginBottom: '8px',
+                    }}
+                  >
                     <span>Usage:</span>
                     <span>{storageInfo.localStorageUsagePercent.toFixed(1)}%</span>
                   </div>
@@ -206,12 +234,25 @@ const StorageManagementDialog: React.FC<StorageManagementDialogProps> = ({ isOpe
                     <span>{storageInfo.nodeCount}</span>
                   </div>
                   {/* Usage bar */}
-                  <div style={{ marginTop: '12px', width: '100%', height: '6px', backgroundColor: '#e5e7eb', borderRadius: '3px' }}>
+                  <div
+                    style={{
+                      marginTop: '12px',
+                      width: '100%',
+                      height: '6px',
+                      backgroundColor: '#e5e7eb',
+                      borderRadius: '3px',
+                    }}
+                  >
                     <div
                       style={{
                         width: `${Math.min(storageInfo.localStorageUsagePercent, 100)}%`,
                         height: '100%',
-                        backgroundColor: storageInfo.localStorageUsagePercent > 80 ? '#ef4444' : storageInfo.localStorageUsagePercent > 60 ? '#f59e0b' : '#10b981',
+                        backgroundColor:
+                          storageInfo.localStorageUsagePercent > 80
+                            ? '#ef4444'
+                            : storageInfo.localStorageUsagePercent > 60
+                              ? '#f59e0b'
+                              : '#10b981',
                         borderRadius: '3px',
                         transition: 'width 0.3s ease',
                       }}
@@ -222,21 +263,46 @@ const StorageManagementDialog: React.FC<StorageManagementDialogProps> = ({ isOpe
 
               {/* IndexedDB Info */}
               <div>
-                <h3 style={{ margin: '0 0 12px 0', fontSize: '16px', fontWeight: '500', color: '#374151' }}>
+                <h3
+                  style={{
+                    margin: '0 0 12px 0',
+                    fontSize: '16px',
+                    fontWeight: '500',
+                    color: '#374151',
+                  }}
+                >
                   IndexedDB {!storageService.isIndexedDBReady() && '(Not Available)'}
                 </h3>
                 <div style={{ backgroundColor: '#f9fafb', padding: '12px', borderRadius: '8px' }}>
                   {storageService.isIndexedDBReady() ? (
                     <>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          marginBottom: '8px',
+                        }}
+                      >
                         <span>Usage:</span>
                         <span>{formatBytes(storageInfo.indexedDBUsage)}</span>
                       </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          marginBottom: '8px',
+                        }}
+                      >
                         <span>Quota:</span>
                         <span>{formatBytes(storageInfo.indexedDBQuota)}</span>
                       </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          marginBottom: '8px',
+                        }}
+                      >
                         <span>Usage:</span>
                         <span>{storageInfo.indexedDBUsagePercent.toFixed(1)}%</span>
                       </div>
@@ -245,12 +311,25 @@ const StorageManagementDialog: React.FC<StorageManagementDialogProps> = ({ isOpe
                         <span>{storageInfo.imageCount}</span>
                       </div>
                       {/* Usage bar */}
-                      <div style={{ marginTop: '12px', width: '100%', height: '6px', backgroundColor: '#e5e7eb', borderRadius: '3px' }}>
+                      <div
+                        style={{
+                          marginTop: '12px',
+                          width: '100%',
+                          height: '6px',
+                          backgroundColor: '#e5e7eb',
+                          borderRadius: '3px',
+                        }}
+                      >
                         <div
                           style={{
                             width: `${Math.min(storageInfo.indexedDBUsagePercent, 100)}%`,
                             height: '100%',
-                            backgroundColor: storageInfo.indexedDBUsagePercent > 80 ? '#ef4444' : storageInfo.indexedDBUsagePercent > 60 ? '#f59e0b' : '#10b981',
+                            backgroundColor:
+                              storageInfo.indexedDBUsagePercent > 80
+                                ? '#ef4444'
+                                : storageInfo.indexedDBUsagePercent > 60
+                                  ? '#f59e0b'
+                                  : '#10b981',
                             borderRadius: '3px',
                             transition: 'width 0.3s ease',
                           }}
@@ -268,7 +347,14 @@ const StorageManagementDialog: React.FC<StorageManagementDialogProps> = ({ isOpe
               {/* Last Cleanup */}
               {storageInfo.lastCleanup && (
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#6b7280', fontSize: '14px' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      color: '#6b7280',
+                      fontSize: '14px',
+                    }}
+                  >
                     <span>Last cleanup:</span>
                     <span>{formatDate(storageInfo.lastCleanup)}</span>
                   </div>
@@ -276,8 +362,16 @@ const StorageManagementDialog: React.FC<StorageManagementDialogProps> = ({ isOpe
               )}
 
               {/* Action Buttons */}
-              <div style={{ display: 'flex', gap: '12px', borderTop: '1px solid #e5e7eb', paddingTop: '20px' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  gap: '12px',
+                  borderTop: '1px solid #e5e7eb',
+                  paddingTop: '20px',
+                }}
+              >
                 <button
+                  type="button"
                   onClick={() => void loadStorageInfo()}
                   disabled={isLoading}
                   style={{
@@ -293,8 +387,9 @@ const StorageManagementDialog: React.FC<StorageManagementDialogProps> = ({ isOpe
                 >
                   Refresh
                 </button>
-                
+
                 <button
+                  type="button"
                   onClick={() => void handleCleanup()}
                   disabled={isLoading || isCleaningUp}
                   style={{
@@ -304,14 +399,15 @@ const StorageManagementDialog: React.FC<StorageManagementDialogProps> = ({ isOpe
                     borderRadius: '6px',
                     padding: '8px 16px',
                     fontSize: '14px',
-                    cursor: (isLoading || isCleaningUp) ? 'not-allowed' : 'pointer',
-                    opacity: (isLoading || isCleaningUp) ? 0.6 : 1,
+                    cursor: isLoading || isCleaningUp ? 'not-allowed' : 'pointer',
+                    opacity: isLoading || isCleaningUp ? 0.6 : 1,
                   }}
                 >
                   {isCleaningUp ? 'Cleaning...' : 'Cleanup'}
                 </button>
 
                 <button
+                  type="button"
                   onClick={() => void handleClearAll()}
                   disabled={isLoading}
                   style={{

@@ -1646,7 +1646,7 @@ const ReactFlowCanvas: React.FC = () => {
         onNodeContextMenu={handleNodeContextMenu}
         fitView={false}
         defaultViewport={{ x: 0, y: 0, zoom: 1 }}
-        panOnDrag={false}  // Disable pane dragging to avoid conflicts
+        panOnDrag={true}  // Enable pane dragging
         nodesDraggable={true}  // Explicitly enable node dragging
         nodesConnectable={true} // Enable node connections
         elementsSelectable={true} // Enable selection

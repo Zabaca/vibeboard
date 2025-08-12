@@ -79,12 +79,12 @@ export class URLImportService {
 
       // Fetch component code
       const fetchResult = await this.fetchComponent(url, options);
-      if (!fetchResult.success) {
-        return { success: false, error: fetchResult.error };
+      if (!fetchResult.success || !fetchResult.code) {
+        return { success: false, error: fetchResult.error || 'No code received' };
       }
 
       // Create component node (but don't cache yet)
-      const component = this.createComponentFromCode(fetchResult.code!, url);
+      const component = this.createComponentFromCode(fetchResult.code, url);
 
       // Return fetch result separately - will cache after successful processing
       return {

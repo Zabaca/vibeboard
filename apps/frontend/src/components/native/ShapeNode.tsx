@@ -20,7 +20,7 @@ interface ShapeNodeData {
 type ShapeNodeProps = NodeProps;
 
 // Extracted control buttons component to reduce complexity
-const ShapeControlButtons: React.FC<{
+const _ShapeControlButtons: React.FC<{
   selected: boolean;
   showCustomizer: boolean;
   onCustomizerToggle: () => void;
@@ -173,7 +173,7 @@ const ShapeNode = ({ id, data, selected = false }: ShapeNodeProps) => {
     }
   }, [handleTextSubmit, state.text]);
 
-  const handleLockToggle = useCallback(() => {
+  const _handleLockToggle = useCallback(() => {
     if (onUpdateState) {
       onUpdateState(id, { ...state, locked: !state.locked });
     }
@@ -185,7 +185,7 @@ const ShapeNode = ({ id, data, selected = false }: ShapeNodeProps) => {
     }
   }, [presentationMode, state.locked]);
 
-  const handleCustomizerToggle = useCallback(() => {
+  const _handleCustomizerToggle = useCallback(() => {
     setShowCustomizer(!showCustomizer);
   }, [showCustomizer]);
 

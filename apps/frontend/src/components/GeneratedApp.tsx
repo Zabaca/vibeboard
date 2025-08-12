@@ -306,7 +306,7 @@ const GeneratedApp = ({
             },
           );
 
-          if (!pipelineResult.success) {
+          if (!pipelineResult.success || !pipelineResult.component) {
             setError({
               message: pipelineResult.error || 'Pipeline processing failed',
               code: codeToUse,
@@ -315,8 +315,16 @@ const GeneratedApp = ({
             return;
           }
 
-          pipelineComponent = pipelineResult.component!;
-          transpiledCode = pipelineComponent.compiledCode!;
+          pipelineComponent = pipelineResult.component;
+          if (!pipelineComponent.compiledCode) {
+            setError({
+              message: 'No compiled code available',
+              code: codeToUse,
+            });
+            setIsProcessing(false);
+            return;
+          }
+          transpiledCode = pipelineComponent.compiledCode;
 
           // Notify parent of compilation completion (lazy compilation cache update)
           if (onCompilationComplete && pipelineComponent.compiledHash) {

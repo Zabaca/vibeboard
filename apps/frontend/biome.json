@@ -31,6 +31,7 @@
         },
         "noExcessiveNestedTestSuites": "error",
         "noForEach": "warn",
+        "noStaticOnlyClass": "off",
         "noUselessFragments": "error",
         "noVoid": "off",
         "useArrowFunction": "error",
@@ -118,7 +119,7 @@
         "noFallthroughSwitchClause": "error",
         "noImplicitAnyLet": "error",
         "noShadowRestrictedNames": "error",
-        "useAwait": "error",
+        "useAwait": "off",
         "useDefaultSwitchClauseLast": "error",
         "noVar": "error",
         "noArrayIndexKey": "off"

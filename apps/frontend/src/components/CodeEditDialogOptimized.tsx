@@ -676,7 +676,7 @@ const CodeEditDialogOptimized: React.FC<CodeEditDialogOptimizedProps> = ({
           sizeKB: screenshotResult.sizeKB || 0,
         };
 
-        let updatedMetadata: VisionMetadata;
+        let updatedMetadata: VisionMetadata | null = null;
         setCurrentVisionMetadata((prevMetadata) => {
           updatedMetadata = {
             ...prevMetadata,
@@ -686,14 +686,16 @@ const CodeEditDialogOptimized: React.FC<CodeEditDialogOptimizedProps> = ({
         });
 
         // Save screenshot metadata back to parent component immediately
-        if (nodeId && onVisionMetadataUpdate) {
-          onVisionMetadataUpdate(nodeId, updatedMetadata!);
+        if (nodeId && onVisionMetadataUpdate && updatedMetadata) {
+          onVisionMetadataUpdate(nodeId, updatedMetadata);
         }
 
         // Always trigger vision analysis when capturing a new screenshot
         // This function is only called when we need a fresh analysis
-        console.log('🔍 New screenshot captured - triggering vision analysis');
-        await performVisionAnalysis(screenshotResult.dataUrl, updatedMetadata!);
+        if (updatedMetadata) {
+          console.log('🔍 New screenshot captured - triggering vision analysis');
+          await performVisionAnalysis(screenshotResult.dataUrl, updatedMetadata);
+        }
       } else {
         console.error('❌ Screenshot capture failed:', screenshotResult.error);
       }

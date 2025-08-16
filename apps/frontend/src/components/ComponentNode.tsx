@@ -807,7 +807,7 @@ const ComponentNodeImpl = ({ id, data, selected = false }: ComponentNodeProps) =
         <div
           ref={contentRef} // Ref for screenshot capture
           data-component-content="true"
-          className="nodrag" // Prevent dragging when interacting with AI component
+          className="nodrag nowheel" // Prevent dragging and wheel events from React Flow
           style={{
             flex: 1,
             overflow: 'auto',

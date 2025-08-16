@@ -141,6 +141,8 @@ const ReactFlowCanvas: React.FC = () => {
   
   // Track if we've loaded from storage to prevent race conditions
   const [hasLoadedFromStorage, setHasLoadedFromStorage] = useState(false);
+  // Track selected nodes to disable zoom when components are active
+  const [selectedNodes, setSelectedNodes] = useState<string[]>([]);
 
   // Helper function to check if paste should be ignored (input focused)
   const shouldIgnorePaste = useCallback((target: EventTarget | null): boolean => {
@@ -1666,6 +1668,21 @@ const ReactFlowCanvas: React.FC = () => {
         onNodeDragStop={(_event, _node) => {
           // Drag completed - final position applied via onNodesChange
         }}
+        onSelectionChange={useCallback((elements) => {
+          // Track selected nodes to control zoom behavior
+          const nodeIds = elements.nodes.map(node => node.id);
+          setSelectedNodes(prevIds => {
+            // Only update if the selection actually changed
+            if (prevIds.length !== nodeIds.length || 
+                !prevIds.every(id => nodeIds.includes(id))) {
+              return nodeIds;
+            }
+            return prevIds;
+          });
+        }, [])}
+        zoomOnScroll={true} // Enable zoom - nowheel class will handle component content
+        panOnScroll={false} // Keep pan on scroll disabled
+        zoomOnPinch={true} // Enable pinch zoom
       >
         <Background color="#aaa" gap={16} />
         {!presentationMode && <Controls />}

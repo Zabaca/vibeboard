@@ -206,30 +206,26 @@ const ReactFlowCanvas: React.FC = () => {
     (nodeId: string) => {
       console.log('🗑️ Deleting component:', nodeId);
       
-      // Add error resilience for AI component cleanup
-      try {
-        setNodes((nds) => {
-          const remainingNodes = nds.filter((node) => node.id !== nodeId);
-          console.log(`📊 Nodes after deletion: ${remainingNodes.length} remaining`);
-          return remainingNodes;
-        });
+      // STEP 1: Remove from React Flow state FIRST (before unmounting)
+      // This ensures the node is gone from the UI even if cleanup fails
+      setNodes((nds) => {
+        const remainingNodes = nds.filter((node) => node.id !== nodeId);
+        console.log(`📊 Nodes after deletion: ${remainingNodes.length} remaining`);
+        return remainingNodes;
+      });
+      
+      // STEP 2: Track the deletion
+      posthogService.trackComponentInteraction('delete', nodeId);
+      
+      // STEP 3: Allow React to unmount the component with cleanup
+      // Use setTimeout to let React process the state change first
+      setTimeout(() => {
+        console.log('✅ Component deletion completed - node removed from state');
         
-        posthogService.trackComponentInteraction('delete', nodeId);
-        
-        // Add a small delay to allow any cleanup errors to be caught by global handlers
-        setTimeout(() => {
-          console.log('✅ Component deletion completed successfully');
-        }, 100);
-        
-      } catch (error) {
-        console.error('❌ Error during component deletion:', error);
-        
-        // Even if deletion fails, still try to remove the node to prevent stuck state
-        setNodes((nds) => nds.filter((node) => node.id !== nodeId));
-        
-        // Show user-friendly notification
-        console.warn('⚠️ Component deleted but cleanup may have encountered issues');
-      }
+        // Component cleanup will happen naturally as React unmounts
+        // Any cleanup errors will be caught by global error handlers
+        // but the node is already gone from the UI
+      }, 10);
     },
     [setNodes],
   );

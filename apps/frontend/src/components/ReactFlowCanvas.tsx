@@ -42,7 +42,6 @@ import GenerationDialog from './GenerationDialog.tsx';
 import ImportComponentDialog from './ImportComponentDialog.tsx';
 import { ImportFromURLDialog } from './ImportFromURLDialog.tsx';
 import KeyboardShortcutsHelp from './KeyboardShortcutsHelp.tsx';
-import CSVSpreadsheet from './native/CSVSpreadsheet.tsx';
 import ImageNode from './native/ImageNode.tsx';
 import NativeComponentContextMenu from './native/NativeComponentContextMenu.tsx';
 import NativeComponentsToolbar from './native/NativeComponentsToolbar.tsx';
@@ -58,7 +57,6 @@ const nodeTypes = {
   text: TextNode as unknown as React.ComponentType<NodeProps>,
   sticky: StickyNote as unknown as React.ComponentType<NodeProps>,
   image: ImageNode as unknown as React.ComponentType<NodeProps>,
-  csv: CSVSpreadsheet as unknown as React.ComponentType<NodeProps>,
 };
 
 const ReactFlowCanvas: React.FC = () => {
@@ -453,7 +451,7 @@ const ReactFlowCanvas: React.FC = () => {
       // Create the node
       const newNode: Node = {
         id: nodeId,
-        type: 'csv',
+        type: 'aiComponent',
         position,
         width: calculatedWidth,
         height: calculatedHeight,

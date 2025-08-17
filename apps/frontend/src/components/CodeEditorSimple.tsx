@@ -24,6 +24,7 @@ const CodeEditorSimple: React.FC<CodeEditorSimpleProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const onChangeRef = useRef(onChange);
+  const initialValueRef = useRef(value);
 
   // Keep onChange ref updated
   useEffect(() => {
@@ -37,7 +38,7 @@ const CodeEditorSimple: React.FC<CodeEditorSimpleProps> = ({
 
     // Create the editor state with minimal extensions
     const startState = EditorState.create({
-      doc: value || '',
+      doc: initialValueRef.current || '', // Use ref to get initial value
       extensions: [
         // Language support
         javascript({ jsx: true }),
@@ -101,7 +102,7 @@ const CodeEditorSimple: React.FC<CodeEditorSimpleProps> = ({
       view.destroy();
       viewRef.current = null;
     };
-  }, [readOnly, value]);
+  }, [readOnly]); // Removed 'value' to prevent editor recreation
 
   // Update content when value prop changes
   useEffect(() => {

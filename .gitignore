@@ -43,3 +43,9 @@ apps/frontend/bit-components/
 
 # Monorepo
 .turbo
+
+# MCP Configuration (keep dev template, ignore local config)
+.mcp.json
+
+# Claude Code session tracking
+.claude-session-id

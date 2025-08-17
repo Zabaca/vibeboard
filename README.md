@@ -69,13 +69,24 @@ The frontend will be available at http://localhost:5173
    cp .env.example .env
    ```
 
-2. **Configure your environment variables** in `.env`:
+2. **Get your API keys**:
+   - **Cerebras API Key** (Required): Get from [Cerebras Cloud](https://cloud.cerebras.ai/)
+     - Used for AI component generation
+     - Free tier available with generous limits
+   - **Groq API Key** (Optional): Get from [Groq Console](https://console.groq.com/)
+     - Used for vision analysis and component screenshot refinement
+     - Free tier available
+
+3. **Configure your environment variables** in `.env`:
    ```bash
-   # Edit .env and add your Cerebras API key
-   VITE_CEREBRAS_API_KEY=your-actual-api-key
+   # Required: Cerebras API key for AI component generation
+   VITE_CEREBRAS_API_KEY=your-cerebras-api-key-here
+   
+   # Optional: Groq API key for vision analysis features
+   VITE_GROQ_API_KEY=your-groq-api-key-here
    ```
 
-3. **Load environment with direnv** (recommended):
+4. **Load environment with direnv** (recommended):
    ```bash
    # Install direnv if not already installed
    # macOS: brew install direnv
@@ -182,7 +193,8 @@ export default function MyComponent() {
    - Publish directory: `apps/frontend/dist`
    - Functions directory: `apps/frontend/netlify/functions`
 3. Set environment variables:
-   - `CEREBRAS_API_KEY`: Your Cerebras API key
+   - `VITE_CEREBRAS_API_KEY`: Your Cerebras API key (required)
+   - `VITE_GROQ_API_KEY`: Your Groq API key (optional, for vision features)
    - `NODE_VERSION`: 20
 
 ### Manual Deployment

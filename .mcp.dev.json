@@ -1,0 +1,26 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest",
+        "--isolated"
+      ]
+    },
+    "temporal-bridge": {
+      "type": "stdio",
+      "command": "deno",
+      "args": [
+        "run",
+        "--allow-env",
+        "--allow-net",
+        "--allow-read",
+        "/home/uptown/Projects/zabaca/temporal-bridge/src/mcp-server.ts"
+      ],
+      "env": {
+        "ZEP_API_KEY": "${ZEP_API_KEY}",
+        "PROJECT_DIR": "/home/uptown/Projects/zabaca/vibeboard"
+      }
+    }
+  }
+}

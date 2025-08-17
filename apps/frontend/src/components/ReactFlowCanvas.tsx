@@ -142,7 +142,7 @@ const ReactFlowCanvas: React.FC = () => {
   // Track if we've loaded from storage to prevent race conditions
   const [hasLoadedFromStorage, setHasLoadedFromStorage] = useState(false);
   // Track selected nodes to disable zoom when components are active
-  const [selectedNodes, setSelectedNodes] = useState<string[]>([]);
+  const [, setSelectedNodes] = useState<string[]>([]);
 
   // Helper function to check if paste should be ignored (input focused)
   const shouldIgnorePaste = useCallback((target: EventTarget | null): boolean => {
@@ -1668,9 +1668,9 @@ const ReactFlowCanvas: React.FC = () => {
         onNodeDragStop={(_event, _node) => {
           // Drag completed - final position applied via onNodesChange
         }}
-        onSelectionChange={useCallback((elements) => {
+        onSelectionChange={useCallback((elements: { nodes: Array<{ id: string }> }) => {
           // Track selected nodes to control zoom behavior
-          const nodeIds = elements.nodes.map(node => node.id);
+          const nodeIds = elements.nodes.map((node: { id: string }) => node.id);
           setSelectedNodes(prevIds => {
             // Only update if the selection actually changed
             if (prevIds.length !== nodeIds.length || 

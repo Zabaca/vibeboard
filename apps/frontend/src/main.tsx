@@ -19,6 +19,39 @@ if (typeof window !== 'undefined') {
   window.React = React;
   window.ReactDOM = ReactDOM;
   console.log('✅ React and ReactDOM set on window object for singleton shims');
+  
+  // Global error handler for AI-generated component cleanup errors
+  window.addEventListener('error', (event) => {
+    // Check if this is likely a cleanup error from AI-generated components
+    if (event.error?.message?.includes('removeChild') || 
+        event.error?.message?.includes('Cannot read properties of null')) {
+      console.warn('🔧 AI Component cleanup error caught and handled:', event.error.message);
+      
+      // Prevent the error from bubbling up and crashing the app
+      event.preventDefault();
+      event.stopPropagation();
+      
+      // Optional: Track these errors for debugging
+      if (import.meta.env.DEV) {
+        console.groupCollapsed('🐛 Component Cleanup Error Details');
+        console.error('Error:', event.error);
+        console.trace('Stack trace');
+        console.groupEnd();
+      }
+      
+      return false; // Prevent default error handling
+    }
+  });
+  
+  // Also handle unhandled promise rejections from AI components
+  window.addEventListener('unhandledrejection', (event) => {
+    if (event.reason?.message?.includes('removeChild') ||
+        event.reason?.message?.includes('Cannot read properties of null')) {
+      console.warn('🔧 AI Component async cleanup error caught:', event.reason.message);
+      event.preventDefault();
+      return false;
+    }
+  });
 }
 
 const rootElement = document.getElementById('root');

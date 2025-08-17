@@ -34,6 +34,40 @@ export class ImportFixer {
   ];
 
   /**
+   * Fix unsafe cleanup patterns in AI-generated code
+   */
+  private static fixCleanupPatterns(code: string): string {
+    // Fix unsafe removeChild patterns
+    let fixedCode = code.replace(
+      /(\w+)\.current\.removeChild\(([^)]+)\)/g,
+      '$1.current?.removeChild?.($2)'
+    );
+    
+    // Fix unsafe DOM element access in cleanup
+    fixedCode = fixedCode.replace(
+      /return\s*\(\)\s*=>\s*{([^}]*containerRef\.current[^}]*removeChild[^}]*)}/g,
+      (match, cleanupBody) => {
+        if (!cleanupBody.includes('containerRef.current &&')) {
+          const saferCleanup = cleanupBody.replace(
+            /containerRef\.current/g,
+            'containerRef.current && containerRef.current'
+          );
+          return `return () => {${saferCleanup}}`;
+        }
+        return match;
+      }
+    );
+    
+    // Fix unsafe renderer.domElement access
+    fixedCode = fixedCode.replace(
+      /(\w+)\.domElement\.removeEventListener/g,
+      '$1.domElement?.removeEventListener'
+    );
+    
+    return fixedCode;
+  }
+
+  /**
    * Fix missing React hook imports in ESM code
    */
   static fixImports(code: string): ImportFixResult {
@@ -75,10 +109,16 @@ export class ImportFixer {
       const missingImports = Array.from(usedHooks).filter((hook) => !currentImports.includes(hook));
 
       if (missingImports.length === 0) {
+        // Still apply cleanup pattern fixes even if imports are correct
+        const cleanedCode = ImportFixer.fixCleanupPatterns(code);
+        const hasCleanupFixes = cleanedCode !== code;
+        
         return {
           success: true,
-          code,
-          warnings: ['All React hooks are properly imported'],
+          code: cleanedCode,
+          warnings: hasCleanupFixes 
+            ? ['All React hooks are properly imported', 'Applied safer cleanup patterns for DOM operations']
+            : ['All React hooks are properly imported'],
         };
       }
 
@@ -87,19 +127,29 @@ export class ImportFixer {
       const newImportStatement = `import React, { ${allImports.join(', ')} } from 'react';`;
 
       // Replace the old import statement
-      const fixedCode = code.replace(
+      let fixedCode = code.replace(
         /import\s+React(?:\s*,\s*{[^}]*})?[\s\S]*?from\s+['"]react['"];?/,
         newImportStatement,
       );
+
+      // Apply cleanup pattern fixes to prevent runtime errors
+      fixedCode = ImportFixer.fixCleanupPatterns(fixedCode);
+
+      const warnings = [];
+      if (missingImports.length > 0) {
+        warnings.push(`Added missing React hook imports: ${missingImports.join(', ')}`);
+      }
+      
+      // Check if cleanup patterns were fixed
+      if (fixedCode !== code.replace(/import\s+React(?:\s*,\s*{[^}]*})?[\s\S]*?from\s+['"]react['"];?/, newImportStatement)) {
+        warnings.push('Applied safer cleanup patterns for DOM operations');
+      }
 
       return {
         success: true,
         code: fixedCode,
         addedImports: missingImports,
-        warnings:
-          missingImports.length > 0
-            ? [`Added missing React hook imports: ${missingImports.join(', ')}`]
-            : [],
+        warnings,
       };
     } catch (error) {
       return {

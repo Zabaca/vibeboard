@@ -15,6 +15,11 @@
     "check": "pnpm --filter frontend check",
     "dev:all": "pnpm --parallel dev",
     "build:all": "pnpm -r build",
-    "frontend": "pnpm --filter frontend"
+    "frontend": "pnpm --filter frontend",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.5"
   }
 }

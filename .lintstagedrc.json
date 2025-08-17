@@ -1,0 +1,6 @@
+{
+  "apps/frontend/src/**/*.{ts,tsx}": [
+    "pnpm --filter frontend format",
+    "pnpm --filter frontend lint:check"
+  ]
+}

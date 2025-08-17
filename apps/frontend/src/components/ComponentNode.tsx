@@ -12,6 +12,8 @@ import GeneratedApp from './GeneratedApp.tsx';
 import ShapeNode from './native/ShapeNode.tsx';
 import TextNode from './native/TextNode.tsx';
 import StickyNote from './native/StickyNote.tsx';
+import ImageNode from './native/ImageNode.tsx';
+import CSVSpreadsheet from './native/CSVSpreadsheet.tsx';
 
 interface ComponentNodeData extends UnifiedComponentNode {
   // Legacy fields for backward compatibility
@@ -117,6 +119,24 @@ const ComponentNodeImpl = ({ id, data, selected = false }: ComponentNodeProps) =
           state: nativeData.state || defaultComponentStates.sticky
         };
         return <StickyNote key={id} {...nativeProps} data={stickyData} />;
+      }
+      case 'image': {
+        const imageData = { 
+          ...nativeData, 
+          nativeType: 'image' as const,
+          source: 'native' as const,
+          state: nativeData.state || defaultComponentStates.image
+        };
+        return <ImageNode key={id} {...nativeProps} data={imageData} />;
+      }
+      case 'csv': {
+        const csvData = { 
+          ...nativeData, 
+          nativeType: 'csv' as const,
+          source: 'native' as const,
+          state: nativeData.state || defaultComponentStates.csv
+        };
+        return <CSVSpreadsheet key={id} {...nativeProps} data={csvData} />;
       }
       default:
         return (

@@ -495,7 +495,7 @@ const CSVSpreadsheet = ({ id, data, selected = false }: CSVSpreadsheetNodeProps)
       </div>
 
       {/* Control buttons - only show if not in presentation mode and not locked */}
-      {!(presentationMode || state.locked) && selected && (
+      {!(presentationMode || state.locked) && (
         <div
           className="nodrag"
           style={{

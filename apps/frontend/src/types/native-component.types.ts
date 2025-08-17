@@ -8,7 +8,7 @@ import type { UnifiedComponentNode } from './component.types.ts';
 /**
  * Types of native components available in the whiteboard
  */
-export type NativeComponentType = 'shape' | 'text' | 'sticky' | 'image';
+export type NativeComponentType = 'shape' | 'text' | 'sticky' | 'image' | 'csv';
 
 /**
  * State interface for native component-specific properties
@@ -52,6 +52,17 @@ export interface ComponentState {
     originalSize?: { width: number; height: number };
     compressed: boolean; // Whether image was optimized
   };
+
+  // CSV-specific state
+  csvData?: string[][];
+  selectedCell?: {
+    row: number;
+    col: number;
+  };
+  readonly?: boolean;
+  maxRows?: number;
+  maxColumns?: number;
+  showHeaders?: boolean;
 }
 
 /**
@@ -131,5 +142,18 @@ export const defaultComponentStates: Record<NativeComponentType, ComponentState>
       pastedAt: Date.now(),
       compressed: false,
     },
+  },
+  csv: {
+    csvData: [['']],
+    selectedCell: {
+      row: 0,
+      col: 0,
+    },
+    readonly: false,
+    maxRows: 100,
+    maxColumns: 26,
+    showHeaders: true,
+    locked: false,
+    layer: 0,
   },
 };

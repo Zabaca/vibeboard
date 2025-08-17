@@ -32,6 +32,7 @@ import type {
 } from '../types/native-component.types.ts';
 import { defaultComponentStates } from '../types/native-component.types.ts';
 import { type ClipboardResult, readClipboard } from '../utils/clipboardUtils.ts';
+import { detectCSV } from '../utils/csvDetector.ts';
 import type { ScreenshotResult } from '../utils/screenshotUtils.ts';
 import { showPasteErrorToast, showPasteSuccessToast } from '../utils/toastUtils.ts';
 import CodeEditDialogOptimized from './CodeEditDialogOptimized.tsx';
@@ -41,6 +42,7 @@ import GenerationDialog from './GenerationDialog.tsx';
 import ImportComponentDialog from './ImportComponentDialog.tsx';
 import { ImportFromURLDialog } from './ImportFromURLDialog.tsx';
 import KeyboardShortcutsHelp from './KeyboardShortcutsHelp.tsx';
+import CSVSpreadsheet from './native/CSVSpreadsheet.tsx';
 import ImageNode from './native/ImageNode.tsx';
 import NativeComponentContextMenu from './native/NativeComponentContextMenu.tsx';
 import NativeComponentsToolbar from './native/NativeComponentsToolbar.tsx';
@@ -56,6 +58,7 @@ const nodeTypes = {
   text: TextNode as unknown as React.ComponentType<NodeProps>,
   sticky: StickyNote as unknown as React.ComponentType<NodeProps>,
   image: ImageNode as unknown as React.ComponentType<NodeProps>,
+  csv: CSVSpreadsheet as unknown as React.ComponentType<NodeProps>,
 };
 
 const ReactFlowCanvas: React.FC = () => {
@@ -412,6 +415,65 @@ const ReactFlowCanvas: React.FC = () => {
     [presentationMode, handleDeleteComponent, handleNativeComponentStateUpdate, setNodes],
   );
 
+  // Create CSVSpreadsheet node with content from paste
+  const handleCreateCSVNodeWithContent = useCallback(
+    async (csvData: string[][], position: { x: number; y: number }) => {
+      const nodeId = `csv-${Date.now()}`;
+      
+      // Create the native component state with CSV data
+      const defaultState = { ...defaultComponentStates.csv };
+      defaultState.csvData = csvData;
+      defaultState.selectedCell = { row: 0, col: 0 };
+      
+      // Create native component node data
+      const nativeNodeData: NativeComponentNode = {
+        id: nodeId,
+        componentType: 'native',
+        nativeType: 'csv',
+        state: defaultState,
+        source: 'native',
+        originalCode: '',
+        compiledCode: undefined,
+        description: `CSV spreadsheet (${csvData.length} rows × ${csvData[0]?.length || 0} columns)`,
+      };
+
+      // Calculate dynamic dimensions based on data size
+      const columnCount = csvData[0]?.length || 1;
+      const rowCount = csvData.length;
+      const minWidth = 400;
+      const minHeight = 300;
+      const maxWidth = 800;
+      const maxHeight = 600;
+      
+      // Calculate width: ~120px per column + padding
+      const calculatedWidth = Math.max(minWidth, Math.min(maxWidth, columnCount * 120 + 100));
+      // Calculate height: ~40px per row + header + controls
+      const calculatedHeight = Math.max(minHeight, Math.min(maxHeight, rowCount * 40 + 150));
+
+      // Create the node
+      const newNode: Node = {
+        id: nodeId,
+        type: 'csv',
+        position,
+        width: calculatedWidth,
+        height: calculatedHeight,
+        style: {
+          width: calculatedWidth,
+          height: calculatedHeight,
+        },
+        data: {
+          ...nativeNodeData,
+          presentationMode,
+          onDelete: handleDeleteComponent,
+          onUpdateState: handleNativeComponentStateUpdate,
+        },
+      };
+
+      setNodes((nds) => [...nds, newNode as Node<ComponentNodeData>]);
+    },
+    [presentationMode, handleDeleteComponent, handleNativeComponentStateUpdate, setNodes],
+  );
+
   // Handle paste events on the canvas
   const handleCanvasPaste = useCallback(
     async (e: ClipboardEvent) => {
@@ -442,17 +504,49 @@ const ReactFlowCanvas: React.FC = () => {
         const viewportCenter = getViewportCenter();
 
         if (clipboardResult.type === 'text' && clipboardResult.data) {
-          // Create TextNode with pasted text
-          await handleCreateTextNodeWithContent(clipboardResult.data, viewportCenter);
+          // First, try to detect if it's CSV data
+          console.log('🔍 Checking if pasted text is CSV format...');
+          const csvDetectionResult = detectCSV(clipboardResult.data);
+          
+          if (csvDetectionResult.isCSV && csvDetectionResult.parsedData) {
+            console.log('✅ CSV detected! Creating CSV spreadsheet node...', {
+              confidence: csvDetectionResult.confidence,
+              rows: csvDetectionResult.rowCount,
+              columns: csvDetectionResult.columnCount,
+            });
+            
+            // Create CSVSpreadsheet node with detected data
+            await handleCreateCSVNodeWithContent(csvDetectionResult.parsedData, viewportCenter);
 
-          // Show success toast
-          showPasteSuccessToast('text', clipboardResult.format);
+            // Show success toast for CSV
+            showPasteSuccessToast('text', 'CSV spreadsheet');
 
-          // Track paste event
-          posthogService.track('paste_text', {
-            format: clipboardResult.format,
-            textLength: clipboardResult.data.length,
-          });
+            // Track CSV paste event
+            posthogService.track('paste_csv', {
+              format: 'csv',
+              confidence: csvDetectionResult.confidence,
+              rowCount: csvDetectionResult.rowCount,
+              columnCount: csvDetectionResult.columnCount,
+              textLength: clipboardResult.data.length,
+            });
+          } else {
+            console.log('📝 Not CSV format, creating text node...', {
+              confidence: csvDetectionResult.confidence,
+              reason: csvDetectionResult.error,
+            });
+            
+            // Create TextNode with pasted text (fallback)
+            await handleCreateTextNodeWithContent(clipboardResult.data, viewportCenter);
+
+            // Show success toast
+            showPasteSuccessToast('text', clipboardResult.format);
+
+            // Track paste event
+            posthogService.track('paste_text', {
+              format: clipboardResult.format,
+              textLength: clipboardResult.data.length,
+            });
+          }
         } else if (clipboardResult.type === 'image' && clipboardResult.data) {
           // Create ImageNode with pasted image
           await handleCreateImageNodeWithContent(clipboardResult, viewportCenter);
@@ -480,6 +574,7 @@ const ReactFlowCanvas: React.FC = () => {
       getViewportCenter,
       handleCreateTextNodeWithContent,
       handleCreateImageNodeWithContent,
+      handleCreateCSVNodeWithContent,
     ],
   );
 

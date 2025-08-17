@@ -383,6 +383,65 @@ When contributing to Stiqr:
 6. Follow ESM-first principles
 7. Follow the coding standards below
 
+## Testing
+
+### Test Framework
+We use **Vitest** for all frontend tests:
+- Vitest with native TypeScript and ES module support
+- `jsdom` environment for DOM testing
+- Jest-compatible API with better performance
+
+### Test Location
+All tests should be placed in the `apps/frontend/src/tests/` directory:
+```
+apps/frontend/src/tests/
+├── csvDetector.test.ts
+├── esm-execution.test.ts
+└── [component-name].test.ts
+```
+
+### Test File Structure
+```typescript
+import { describe, it, expect } from 'vitest';
+import { functionToTest } from '../path/to/module';
+
+describe('Module Name', () => {
+  describe('Function Name', () => {
+    it('should do something specific', () => {
+      // Test implementation
+      expect(result).toBe(expected);
+      expect(result).toBeGreaterThan(threshold);
+    });
+  });
+});
+```
+
+### Running Tests
+```bash
+# Run all tests
+pnpm test
+
+# Run specific test file
+pnpm test csvDetector
+
+# Run with coverage
+pnpm test:coverage
+
+# Run in watch mode (interactive)
+pnpm test:watch
+
+# Run with UI (browser interface)
+pnpm test:ui
+```
+
+### Test Guidelines
+1. **Test utilities and core logic** - Focus on testing business logic, utilities, and data processing
+2. **Use descriptive test names** - Tests should read like specifications
+3. **Group related tests** - Use nested `describe` blocks for organization
+4. **Test edge cases** - Include error conditions, empty inputs, and boundary values
+5. **Keep tests focused** - One assertion per test when possible
+6. **Mock external dependencies** - Avoid testing external APIs or browser-specific features
+
 ## Coding Standards
 
 ### 🚫 ANTI-`any` RULE 🚫

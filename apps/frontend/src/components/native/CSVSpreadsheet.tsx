@@ -1,5 +1,5 @@
 import { Handle, type NodeProps, NodeResizer, Position } from '@xyflow/react';
-import React, { memo, useCallback, useEffect, useMemo, useRef } from 'react';
+import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ComponentState } from '../../types/native-component.types.ts';
 
 interface CSVSpreadsheetNodeData {
@@ -40,6 +40,9 @@ const CSVSpreadsheet = ({ id, data, selected = false }: CSVSpreadsheetNodeProps)
   const maxRows = state.maxRows || 100;
   const maxColumns = state.maxColumns || 26;
   const showHeaders = state.showHeaders !== false; // Default to true
+
+  // Local state for editing cell value to avoid re-render issues
+  const [editingCell, setEditingCell] = useState<{row: number, col: number, value: string} | null>(null);
 
   // Parse CSV text into 2D array
   const parseCSV = useCallback((text: string): CSVParseResult => {
@@ -147,10 +150,15 @@ const CSVSpreadsheet = ({ id, data, selected = false }: CSVSpreadsheetNodeProps)
     }
   }, [csvData, selectedCell, readonly, state.locked, maxRows, maxColumns, parseCSV, onUpdateState, id, state]);
 
-  // Handle cell value changes
+  // Handle cell value changes (local state only)
   const handleCellChange = useCallback((rowIndex: number, colIndex: number, value: string) => {
     if (readonly || state.locked) return;
+    setEditingCell({ row: rowIndex, col: colIndex, value });
+  }, [readonly, state.locked]);
 
+  // Commit cell value to state (on blur/enter)
+  const commitCellChange = useCallback((rowIndex: number, colIndex: number, value: string) => {
+    if (readonly || state.locked) return;
     const newData = [...csvData];
     if (newData[rowIndex]) {
       newData[rowIndex][colIndex] = value;
@@ -159,6 +167,7 @@ const CSVSpreadsheet = ({ id, data, selected = false }: CSVSpreadsheetNodeProps)
         onUpdateState(id, { ...state, csvData: newData });
       }
     }
+    setEditingCell(null);
   }, [csvData, readonly, state.locked, onUpdateState, id, state]);
 
   // Handle cell focus (selection)
@@ -438,9 +447,26 @@ const CSVSpreadsheet = ({ id, data, selected = false }: CSVSpreadsheetNodeProps)
               {row.map((cell, colIndex) => (
                 <input
                   key={`${rowIndex}-${colIndex}`}
-                  value={cell}
+                  value={
+                    editingCell?.row === rowIndex && editingCell?.col === colIndex
+                      ? editingCell.value
+                      : cell
+                  }
                   onChange={(e) => handleCellChange(rowIndex, colIndex, e.target.value)}
-                  onFocus={() => handleCellFocus(rowIndex, colIndex)}
+                  onFocus={() => {
+                    handleCellFocus(rowIndex, colIndex);
+                    setEditingCell({ row: rowIndex, col: colIndex, value: cell });
+                  }}
+                  onBlur={(e) => {
+                    if (editingCell?.row === rowIndex && editingCell?.col === colIndex) {
+                      commitCellChange(rowIndex, colIndex, e.target.value);
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && editingCell?.row === rowIndex && editingCell?.col === colIndex) {
+                      commitCellChange(rowIndex, colIndex, e.currentTarget.value);
+                    }
+                  }}
                   disabled={readonly || state.locked}
                   className="nodrag"
                   style={{
@@ -499,15 +525,18 @@ const CSVSpreadsheet = ({ id, data, selected = false }: CSVSpreadsheetNodeProps)
         <div
           className="nodrag"
           style={{
-            position: 'absolute',
-            top: '-36px',
+            position: 'fixed',
+            transform: 'translate(-100%, -100%)',
             right: '0',
+            top: '0',
             display: 'flex',
             gap: '4px',
             background: 'white',
             padding: '4px',
             borderRadius: '6px',
             boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            zIndex: 9999,
+            pointerEvents: 'auto',
           }}
         >
           {/* Lock button */}

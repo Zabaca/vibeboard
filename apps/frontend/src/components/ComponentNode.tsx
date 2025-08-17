@@ -130,6 +130,7 @@ const ComponentNodeImpl = ({ id, data, selected = false }: ComponentNodeProps) =
         return <ImageNode key={id} {...nativeProps} data={imageData} />;
       }
       case 'csv': {
+        console.log('Rendering CSV through ComponentNode:', { id, selected, nativeData });
         const csvData = { 
           ...nativeData, 
           nativeType: 'csv' as const,

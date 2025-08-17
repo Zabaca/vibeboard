@@ -23,23 +23,44 @@ if (typeof window !== 'undefined') {
   // Global error handler for AI-generated component cleanup errors
   window.addEventListener('error', (event) => {
     // Check if this is likely a cleanup error from AI-generated components
-    if (event.error?.message?.includes('removeChild') || 
-        event.error?.message?.includes('Cannot read properties of null')) {
+    const isCleanupError = event.error?.message?.includes('removeChild') || 
+                          event.error?.message?.includes('Cannot read properties of null') ||
+                          event.error?.message?.includes('parentNode') ||
+                          event.error?.message?.includes('appendChild');
+    
+    if (isCleanupError) {
       console.warn('🔧 AI Component cleanup error caught and handled:', event.error.message);
       
       // Prevent the error from bubbling up and crashing the app
       event.preventDefault();
       event.stopPropagation();
       
+      // Add recovery mechanism - ensure the app remains functional
+      setTimeout(() => {
+        // Force a gentle re-render if needed by dispatching a custom event
+        window.dispatchEvent(new CustomEvent('component-cleanup-recovered', {
+          detail: {
+            error: event.error?.message,
+            timestamp: Date.now()
+          }
+        }));
+      }, 50);
+      
       // Optional: Track these errors for debugging
       if (import.meta.env.DEV) {
         console.groupCollapsed('🐛 Component Cleanup Error Details');
         console.error('Error:', event.error);
+        console.log('Error source:', event.filename, 'Line:', event.lineno, 'Column:', event.colno);
         console.trace('Stack trace');
         console.groupEnd();
       }
       
       return false; // Prevent default error handling
+    }
+    
+    // For other errors, let them be handled normally but log them
+    if (import.meta.env.DEV) {
+      console.log('🚨 Unhandled error (not component cleanup):', event.error?.message);
     }
   });
   

@@ -37,24 +37,38 @@ export class ImportFixer {
    * Fix unsafe cleanup patterns in AI-generated code
    */
   private static fixCleanupPatterns(code: string): string {
-    // Fix unsafe removeChild patterns
-    let fixedCode = code.replace(
+    let fixedCode = code;
+    
+    // Fix unsafe removeChild patterns - be more comprehensive
+    fixedCode = fixedCode.replace(
       /(\w+)\.current\.removeChild\(([^)]+)\)/g,
-      '$1.current?.removeChild?.($2)'
+      'if ($1.current && $1.current.contains && $1.current.contains($2)) { $1.current.removeChild($2); }'
     );
     
-    // Fix unsafe DOM element access in cleanup
+    // Fix direct DOM element removeChild calls
     fixedCode = fixedCode.replace(
-      /return\s*\(\)\s*=>\s*{([^}]*containerRef\.current[^}]*removeChild[^}]*)}/g,
+      /(\w+)\.removeChild\(([^)]+)\)/g,
+      'if ($1 && $1.contains && typeof $1.contains === "function" && $1.contains($2)) { $1.removeChild($2); }'
+    );
+    
+    // Fix unsafe renderer.domElement.parentNode patterns (common in Three.js)
+    fixedCode = fixedCode.replace(
+      /(\w+)\.domElement\.parentNode\.removeChild\(([^)]+)\)/g,
+      'if ($1.domElement?.parentNode && $1.domElement.parentNode.contains && $1.domElement.parentNode.contains($2)) { $1.domElement.parentNode.removeChild($2); }'
+    );
+    
+    // Fix unsafe DOM element access in cleanup functions
+    fixedCode = fixedCode.replace(
+      /return\s*\(\)\s*=>\s*{([^}]*(?:containerRef|ref)\.current[^}]*(?:removeChild|appendChild)[^}]*)}/g,
       (match, cleanupBody) => {
-        if (!cleanupBody.includes('containerRef.current &&')) {
-          const saferCleanup = cleanupBody.replace(
-            /containerRef\.current/g,
-            'containerRef.current && containerRef.current'
-          );
-          return `return () => {${saferCleanup}}`;
-        }
-        return match;
+        // Wrap entire cleanup in try-catch
+        return `return () => {
+          try {
+            ${cleanupBody}
+          } catch (cleanupError) {
+            console.warn('🔧 Component cleanup handled safely:', cleanupError.message);
+          }
+        }`;
       }
     );
     
@@ -63,6 +77,14 @@ export class ImportFixer {
       /(\w+)\.domElement\.removeEventListener/g,
       '$1.domElement?.removeEventListener'
     );
+    
+    // Wrap Three.js specific cleanup methods
+    if (fixedCode.includes('THREE') || fixedCode.includes('renderer')) {
+      fixedCode = fixedCode.replace(
+        /(renderer\.dispose\(\)|renderer\.clear\(\)|scene\.dispose\(\))/g,
+        'try { $1 } catch (e) { console.warn("Three.js cleanup warning:", e); }'
+      );
+    }
     
     return fixedCode;
   }

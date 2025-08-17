@@ -204,8 +204,32 @@ const ReactFlowCanvas: React.FC = () => {
   // Define handlers first before using them in useEffect
   const handleDeleteComponent = useCallback(
     (nodeId: string) => {
-      setNodes((nds) => nds.filter((node) => node.id !== nodeId));
-      posthogService.trackComponentInteraction('delete', nodeId);
+      console.log('🗑️ Deleting component:', nodeId);
+      
+      // Add error resilience for AI component cleanup
+      try {
+        setNodes((nds) => {
+          const remainingNodes = nds.filter((node) => node.id !== nodeId);
+          console.log(`📊 Nodes after deletion: ${remainingNodes.length} remaining`);
+          return remainingNodes;
+        });
+        
+        posthogService.trackComponentInteraction('delete', nodeId);
+        
+        // Add a small delay to allow any cleanup errors to be caught by global handlers
+        setTimeout(() => {
+          console.log('✅ Component deletion completed successfully');
+        }, 100);
+        
+      } catch (error) {
+        console.error('❌ Error during component deletion:', error);
+        
+        // Even if deletion fails, still try to remove the node to prevent stuck state
+        setNodes((nds) => nds.filter((node) => node.id !== nodeId));
+        
+        // Show user-friendly notification
+        console.warn('⚠️ Component deleted but cleanup may have encountered issues');
+      }
     },
     [setNodes],
   );
@@ -1071,6 +1095,32 @@ const ReactFlowCanvas: React.FC = () => {
       }
     };
   }, [handleCreateNativeComponent, handleCanvasPaste, shouldIgnorePaste]);
+
+  // Component cleanup recovery: Listen for cleanup error recovery events
+  useEffect(() => {
+    const handleCleanupRecovery = (event: CustomEvent) => {
+      console.log('🔄 Component cleanup recovery triggered:', event.detail);
+      
+      // Ensure the canvas remains responsive after component cleanup errors
+      // This is a gentle way to ensure React Flow doesn't get stuck
+      if (reactFlowInstance.current) {
+        try {
+          // Force a viewport update to ensure canvas remains interactive
+          const viewport = reactFlowInstance.current.getViewport();
+          reactFlowInstance.current.setViewport(viewport);
+          console.log('✅ Canvas viewport refreshed after cleanup recovery');
+        } catch (error) {
+          console.warn('⚠️ Could not refresh viewport after cleanup recovery:', error);
+        }
+      }
+    };
+
+    window.addEventListener('component-cleanup-recovered', handleCleanupRecovery as EventListener);
+    
+    return () => {
+      window.removeEventListener('component-cleanup-recovered', handleCleanupRecovery as EventListener);
+    };
+  }, []);
 
   // Export canvas to JSON file
   const handleExportCanvas = useCallback(async () => {

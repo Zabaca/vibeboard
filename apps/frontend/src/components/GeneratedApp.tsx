@@ -28,6 +28,7 @@ class ErrorBoundary extends React.Component<
     children: React.ReactNode;
     code: string;
     onError?: (error: ErrorInfo) => void;
+    resetKey?: string; // Add reset key to force boundary reset
   },
   ErrorBoundaryState
 > {
@@ -35,9 +36,17 @@ class ErrorBoundary extends React.Component<
     children: React.ReactNode;
     code: string;
     onError?: (error: ErrorInfo) => void;
+    resetKey?: string;
   }) {
     super(props);
     this.state = { hasError: false, error: null };
+  }
+
+  componentDidUpdate(prevProps: typeof this.props) {
+    // Reset error state when resetKey changes
+    if (prevProps.resetKey !== this.props.resetKey && this.state.hasError) {
+      this.setState({ hasError: false, error: null });
+    }
   }
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
@@ -70,6 +79,12 @@ class ErrorBoundary extends React.Component<
       componentStack: errorInfo.componentStack,
       errorBoundary: 'GeneratedApp',
     });
+
+    // Don't let cleanup errors propagate further up
+    if (error.message.includes('removeChild') || 
+        error.message.includes('Cannot read properties of null')) {
+      console.warn('🔧 ErrorBoundary: Cleanup error contained, component will show error UI instead of crashing app');
+    }
 
     if (this.props.onError && this.state.error) {
       this.props.onError(this.state.error);
@@ -117,24 +132,44 @@ ${this.props.code}`;
             }}
           >
             <div style={{ fontWeight: 'bold' }}>🚨 Runtime Error</div>
-            <button
-              onClick={handleCopy}
-              style={{
-                padding: '4px 8px',
-                backgroundColor: '#dc2626',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                fontSize: '11px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-              }}
-              title="Copy error and code to clipboard"
-            >
-              📋 Copy
-            </button>
+            <div style={{ display: 'flex', gap: '4px' }}>
+              <button
+                onClick={() => this.setState({ hasError: false, error: null })}
+                style={{
+                  padding: '4px 8px',
+                  backgroundColor: '#16a34a',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  fontSize: '11px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                }}
+                title="Reset component and try again"
+              >
+                🔄 Reset
+              </button>
+              <button
+                onClick={handleCopy}
+                style={{
+                  padding: '4px 8px',
+                  backgroundColor: '#dc2626',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  fontSize: '11px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                }}
+                title="Copy error and code to clipboard"
+              >
+                📋 Copy
+              </button>
+            </div>
           </div>
           <div style={{ marginBottom: '8px' }}>{this.state.error.message}</div>
           {this.state.error.line && (
@@ -569,8 +604,18 @@ ${code || component?.originalCode || ''}`;
   return (
     <ErrorBoundary
       code={code || component?.originalCode || ''}
+      resetKey={`${component?.id || 'unknown'}-${processedHash || codeHash}`}
       onError={(error) => {
         console.error('Runtime error in generated component:', error);
+        
+        // Log additional context for debugging
+        console.log('🐛 Error context:', {
+          componentId: component?.id,
+          hasComponent: !!Component,
+          processedHash,
+          codeHash,
+          errorType: error.message.includes('removeChild') ? 'cleanup' : 'runtime'
+        });
       }}
     >
       <div

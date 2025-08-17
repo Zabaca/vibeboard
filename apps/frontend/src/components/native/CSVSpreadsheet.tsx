@@ -256,19 +256,21 @@ const CSVSpreadsheet = ({ id, data, selected = false }: CSVSpreadsheetNodeProps)
       style={{
         width: '100%',
         height: '100%',
-        minWidth: '300px',
+        minWidth: '400px',
         minHeight: '200px',
         position: 'relative',
         cursor: state.locked ? 'not-allowed' : 'move',
-        background: '#f8f9fa',
+        background: 'transparent',
         fontFamily: 'Segoe UI, Roboto, sans-serif',
         overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
       }}
     >
       {/* Node Resizer - only show if not locked */}
       {!state.locked && (
         <NodeResizer
-          minWidth={300}
+          minWidth={400}
           minHeight={200}
           isVisible={selected && !(presentationMode as boolean)}
           handleStyle={{
@@ -286,59 +288,15 @@ const CSVSpreadsheet = ({ id, data, selected = false }: CSVSpreadsheetNodeProps)
         />
       )}
 
-      {/* Header */}
-      <div
-        style={{
-          padding: '12px 16px',
-          backgroundColor: '#ffffff',
-          borderBottom: '1px solid #e0e0e0',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}
-      >
-        <div>
-          <h1
-            style={{
-              margin: 0,
-              color: '#212529',
-              fontSize: '18px',
-              fontWeight: '600',
-            }}
-          >
-            CSV Spreadsheet
-          </h1>
-          <p
-            style={{
-              color: '#6c757d',
-              marginTop: '4px',
-              fontSize: '13px',
-              margin: 0,
-            }}
-          >
-            {readonly ? 'Read-only view' : 'Click cells to edit, paste CSV data (Ctrl+V)'}
-          </p>
-        </div>
-        
-        {/* Row/Column info */}
-        <div
-          style={{
-            fontSize: '12px',
-            color: '#6c757d',
-          }}
-        >
-          {csvData.length} rows × {csvData[0]?.length || 0} columns
-        </div>
-      </div>
 
       {/* Spreadsheet content */}
       <div
         style={{
+          width: '100%',
           flex: 1,
           overflow: 'auto',
           padding: '16px',
-          backgroundColor: '#ffffff',
-          height: 'calc(100% - 80px)',
+          backgroundColor: 'transparent',
         }}
       >
         <div
@@ -526,10 +484,10 @@ const CSVSpreadsheet = ({ id, data, selected = false }: CSVSpreadsheetNodeProps)
           className="nodrag"
           style={{
             position: 'fixed',
-            transform: 'translate(-100%, -100%)',
-            right: '0',
-            top: '0',
+            top: '-30px',
+            right: '16px',
             display: 'flex',
+            alignItems: 'center',
             gap: '4px',
             background: 'white',
             padding: '4px',
@@ -539,6 +497,21 @@ const CSVSpreadsheet = ({ id, data, selected = false }: CSVSpreadsheetNodeProps)
             pointerEvents: 'auto',
           }}
         >
+          {/* Helper text */}
+          <div
+            style={{
+              fontSize: '11px',
+              color: '#6c757d',
+              fontWeight: '500',
+              whiteSpace: 'nowrap',
+              padding: '4px 8px',
+            }}
+          >
+            {readonly || state.locked 
+              ? 'Spreadsheet is read-only' 
+              : 'Click cells to edit • Paste CSV data (Ctrl+V)'
+            }
+          </div>
           {/* Lock button */}
           <button
             type="button"
@@ -665,24 +638,6 @@ const CSVSpreadsheet = ({ id, data, selected = false }: CSVSpreadsheetNodeProps)
         </>
       )}
 
-      {/* Footer tip */}
-      <div
-        style={{
-          position: 'absolute',
-          bottom: '4px',
-          left: '16px',
-          right: '16px',
-          color: '#6c757d',
-          fontSize: '12px',
-          fontWeight: '500',
-          textAlign: 'center',
-        }}
-      >
-        {readonly || state.locked 
-          ? 'Spreadsheet is read-only' 
-          : 'Click cells to edit • Paste CSV data (Ctrl+V)'
-        }
-      </div>
     </div>
   );
 };

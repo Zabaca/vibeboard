@@ -617,11 +617,11 @@ const ReactFlowCanvas: React.FC = () => {
         selectable: true,
         deletable: true,
         // Set initial dimensions for native components
-        width: type === 'sticky' ? 200 : 180,
-        height: type === 'sticky' ? 160 : 120,
+        width: type === 'sticky' ? 200 : (type === 'csv' ? 400 : 180),
+        height: type === 'sticky' ? 160 : (type === 'csv' ? 240 : 120),
         style: {
-          width: type === 'sticky' ? '200px' : '180px',
-          height: type === 'sticky' ? '160px' : '120px',
+          width: type === 'sticky' ? '200px' : (type === 'csv' ? '400px' : '180px'),
+          height: type === 'sticky' ? '160px' : (type === 'csv' ? '240px' : '120px'),
         },
         // Add these properties that React Flow expects for drag initialization
         selected: false,

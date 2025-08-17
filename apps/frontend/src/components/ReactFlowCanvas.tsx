@@ -418,8 +418,8 @@ const ReactFlowCanvas: React.FC = () => {
     async (csvData: string[][], position: { x: number; y: number }) => {
       const nodeId = `csv-${Date.now()}`;
       
-      // Create the native component state with CSV data
-      const defaultState = { ...defaultComponentStates.csv };
+      // Create a deep copy of the native component state with CSV data
+      const defaultState = JSON.parse(JSON.stringify(defaultComponentStates.csv));
       defaultState.csvData = csvData;
       defaultState.selectedCell = { row: 0, col: 0 };
       
@@ -582,8 +582,8 @@ const ReactFlowCanvas: React.FC = () => {
       const nodeId = `${type}-${Date.now()}`;
       const viewportCenter = getViewportCenter();
 
-      // Create the native component state based on type
-      const defaultState = { ...defaultComponentStates[type] };
+      // Create a deep copy of the native component state based on type
+      const defaultState = JSON.parse(JSON.stringify(defaultComponentStates[type]));
       if (type === 'shape' && subType) {
         defaultState.shapeType = subType as 'rectangle' | 'triangle' | 'square';
       }

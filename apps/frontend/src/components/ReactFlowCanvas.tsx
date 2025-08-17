@@ -203,29 +203,41 @@ const ReactFlowCanvas: React.FC = () => {
 
   // Define handlers first before using them in useEffect
   const handleDeleteComponent = useCallback(
-    (nodeId: string) => {
+    async (nodeId: string) => {
       console.log('🗑️ Deleting component:', nodeId);
       
-      // STEP 1: Remove from React Flow state FIRST (before unmounting)
-      // This ensures the node is gone from the UI even if cleanup fails
-      setNodes((nds) => {
-        const remainingNodes = nds.filter((node) => node.id !== nodeId);
-        console.log(`📊 Nodes after deletion: ${remainingNodes.length} remaining`);
-        return remainingNodes;
-      });
-      
-      // STEP 2: Track the deletion
-      posthogService.trackComponentInteraction('delete', nodeId);
-      
-      // STEP 3: Allow React to unmount the component with cleanup
-      // Use setTimeout to let React process the state change first
-      setTimeout(() => {
-        console.log('✅ Component deletion completed - node removed from state');
+      try {
+        // STEP 1: Remove from React Flow state AND immediately save to storage
+        // This prevents the node from coming back on refresh
+        let remainingNodes: Node<ComponentNodeData>[] = [];
         
-        // Component cleanup will happen naturally as React unmounts
-        // Any cleanup errors will be caught by global error handlers
-        // but the node is already gone from the UI
-      }, 10);
+        setNodes((nds) => {
+          remainingNodes = nds.filter((node) => node.id !== nodeId);
+          console.log(`📊 Nodes after deletion: ${remainingNodes.length} remaining`);
+          return remainingNodes;
+        });
+        
+        // STEP 2: Immediately save to storage (don't wait for debounced useEffect)
+        try {
+          await storageService.saveNodes(remainingNodes);
+          console.log('💾 Node deletion saved to storage immediately');
+        } catch (storageError) {
+          console.error('❌ Failed to save deletion to storage:', storageError);
+          // Still continue with the deletion - better to have it deleted from UI
+        }
+        
+        // STEP 3: Track the deletion
+        posthogService.trackComponentInteraction('delete', nodeId);
+        
+        console.log('✅ Component deletion completed - removed from state and storage');
+        
+      } catch (error) {
+        console.error('❌ Error during component deletion:', error);
+        
+        // Fallback: still try to remove from state even if storage fails
+        setNodes((nds) => nds.filter((node) => node.id !== nodeId));
+        console.warn('⚠️ Component removed from UI but storage may not be updated');
+      }
     },
     [setNodes],
   );

@@ -1,22 +1,24 @@
 /**
- * CSV Detection Utility
- * Detects if text content is in CSV format and provides confidence scoring
- * Uses d3-dsv for robust CSV parsing
+ * CSV/TSV Detection Utility
+ * Detects if text content is in CSV or TSV format and provides confidence scoring
+ * Uses d3-dsv for robust parsing of comma and tab-delimited data
  */
 
-import { csvParseRows } from 'd3-dsv';
+import { csvParseRows, tsvParseRows } from 'd3-dsv';
 
 export interface CSVDetectionResult {
   isCSV: boolean;
   confidence: number;
   rowCount: number;
   columnCount: number;
+  delimiter?: ',' | '\t';
+  format?: 'CSV' | 'TSV';
   parsedData?: string[][];
   error?: string;
 }
 
 interface CSVAnalysis {
-  hasCommas: boolean;
+  hasDelimiters: boolean;
   hasConsistentColumns: boolean;
   reasonableRatio: boolean;
   emptyRatio: number;
@@ -26,7 +28,7 @@ interface CSVAnalysis {
 }
 
 /**
- * Detect if text is in CSV format with confidence scoring
+ * Detect if text is in CSV or TSV format with confidence scoring
  */
 export function detectCSV(text: string): CSVDetectionResult {
   // Early validation
@@ -51,9 +53,30 @@ export function detectCSV(text: string): CSVDetectionResult {
     };
   }
 
+  // Try both CSV and TSV parsing, return the better result
+  const csvResult = tryParseWithDelimiter(trimmed, ',', 'CSV', csvParseRows);
+  const tsvResult = tryParseWithDelimiter(trimmed, '\t', 'TSV', tsvParseRows);
+
+  // Return the result with higher confidence
+  if (csvResult.confidence >= tsvResult.confidence) {
+    return csvResult;
+  } else {
+    return tsvResult;
+  }
+}
+
+/**
+ * Try parsing with a specific delimiter and return detection result
+ */
+function tryParseWithDelimiter(
+  text: string,
+  delimiter: ',' | '\t',
+  format: 'CSV' | 'TSV',
+  parseFunction: (text: string) => string[][]
+): CSVDetectionResult {
   try {
-    // Use d3-dsv to parse the CSV
-    const parsedData = csvParseRows(trimmed);
+    // Use d3-dsv to parse with the specific delimiter
+    const parsedData = parseFunction(text);
     
     if (!parsedData || parsedData.length === 0) {
       return {
@@ -61,9 +84,12 @@ export function detectCSV(text: string): CSVDetectionResult {
         confidence: 0,
         rowCount: 0,
         columnCount: 0,
-        error: 'No valid CSV data found',
+        delimiter,
+        format,
+        error: `No valid ${format} data found`,
       };
     }
+    
     const rowCount = parsedData.length;
     const columnCount = parsedData[0]?.length || 0;
 
@@ -74,11 +100,11 @@ export function detectCSV(text: string): CSVDetectionResult {
     const confidence = calculateConfidence(analysis, rowCount, columnCount);
 
     // Additional checks for non-CSV content
-    const looksLikeCode = isCodeLike(trimmed);
-    const looksLikeJSON = isJSONLike(trimmed);
+    const looksLikeCode = isCodeLike(text);
+    const looksLikeJSON = isJSONLike(text);
     const isMalformedCSV = detectMalformedCSV(parsedData);
     
-    // Determine if it's CSV based on strict boolean criteria
+    // Determine if it's CSV/TSV based on strict boolean criteria
     const isCSV = passesCSVRequirements(analysis, rowCount, columnCount) && 
                   !looksLikeCode && 
                   !looksLikeJSON && 
@@ -89,6 +115,8 @@ export function detectCSV(text: string): CSVDetectionResult {
       confidence,
       rowCount,
       columnCount,
+      delimiter,
+      format,
       parsedData: isCSV ? parsedData : undefined,
     };
   } catch (error) {
@@ -97,7 +125,9 @@ export function detectCSV(text: string): CSVDetectionResult {
       confidence: 0,
       rowCount: 0,
       columnCount: 0,
-      error: error instanceof Error ? error.message : 'Unknown error during CSV detection',
+      delimiter,
+      format,
+      error: error instanceof Error ? error.message : `Unknown error during ${format} detection`,
     };
   }
 }
@@ -112,12 +142,12 @@ export function isCSVFormat(text: string): boolean {
 
 
 /**
- * Analyze parsed CSV data for quality metrics
+ * Analyze parsed CSV/TSV data for quality metrics
  */
 function analyzeCSVData(data: string[][]): CSVAnalysis {
   if (!data || data.length === 0) {
     return {
-      hasCommas: false,
+      hasDelimiters: false,
       hasConsistentColumns: false,
       reasonableRatio: false,
       emptyRatio: 1,
@@ -132,8 +162,8 @@ function analyzeCSVData(data: string[][]): CSVAnalysis {
   const totalCells = columnCounts.reduce((sum, count) => sum + count, 0);
   const avgColumnsPerRow = totalCells / rowCount;
   
-  // Check if original text had commas (basic requirement)
-  const hasCommas = data.some(row => row.length > 1);
+  // Check if data has delimiters (multiple columns - basic requirement)
+  const hasDelimiters = data.some(row => row.length > 1);
 
   // Column consistency analysis
   const maxColumns = Math.max(...columnCounts);
@@ -161,7 +191,7 @@ function analyzeCSVData(data: string[][]): CSVAnalysis {
   const reasonableRatio = emptyRatio < 0.7;
 
   return {
-    hasCommas,
+    hasDelimiters,
     hasConsistentColumns,
     reasonableRatio,
     emptyRatio,
@@ -172,11 +202,11 @@ function analyzeCSVData(data: string[][]): CSVAnalysis {
 }
 
 /**
- * Strict boolean check for CSV requirements
+ * Strict boolean check for CSV/TSV requirements
  */
 function passesCSVRequirements(analysis: CSVAnalysis, rowCount: number, columnCount: number): boolean {
-  // Must have commas (multiple columns)
-  if (!analysis.hasCommas) return false;
+  // Must have delimiters (multiple columns)
+  if (!analysis.hasDelimiters) return false;
   
   // Must have at least 2 columns
   if (columnCount < 2) return false;
@@ -200,7 +230,7 @@ function calculateConfidence(analysis: CSVAnalysis, rowCount: number, columnCoun
   let score = 0;
 
   // Basic requirements (30% of score)
-  if (analysis.hasCommas) score += 0.30;
+  if (analysis.hasDelimiters) score += 0.30;
 
   // Column consistency (25% of score) - be more strict
   if (analysis.hasConsistentColumns) {
@@ -318,18 +348,20 @@ export function validateCSVDetection(result: CSVDetectionResult, options?: {
  * Get human-readable description of detection result
  */
 export function getDetectionDescription(result: CSVDetectionResult): string {
+  const formatName = result.format || 'CSV';
+  
   if (!result.isCSV) {
     if (result.error) {
-      return `Not CSV: ${result.error}`;
+      return `Not ${formatName}: ${result.error}`;
     }
     if (result.confidence > 0) {
-      return `Not CSV (confidence: ${(result.confidence * 100).toFixed(0)}%)`;
+      return `Not ${formatName} (confidence: ${(result.confidence * 100).toFixed(0)}%)`;
     }
-    return 'Not recognized as CSV format';
+    return `Not recognized as ${formatName} format`;
   }
 
   const confidence = (result.confidence * 100).toFixed(0);
-  return `CSV detected (${result.rowCount} rows, ${result.columnCount} columns, ${confidence}% confidence)`;
+  return `${formatName} detected (${result.rowCount} rows, ${result.columnCount} columns, ${confidence}% confidence)`;
 }
 
 /**

@@ -502,12 +502,15 @@ const ReactFlowCanvas: React.FC = () => {
         const viewportCenter = getViewportCenter();
 
         if (clipboardResult.type === 'text' && clipboardResult.data) {
-          // First, try to detect if it's CSV data
-          console.log('🔍 Checking if pasted text is CSV format...');
+          // First, try to detect if it's CSV or TSV data
+          console.log('🔍 Checking if pasted text is CSV/TSV format...');
           const csvDetectionResult = detectCSV(clipboardResult.data);
           
           if (csvDetectionResult.isCSV && csvDetectionResult.parsedData) {
-            console.log('✅ CSV detected! Creating CSV spreadsheet node...', {
+            const formatName = csvDetectionResult.format || 'CSV';
+            console.log(`✅ ${formatName} detected! Creating spreadsheet node...`, {
+              format: formatName,
+              delimiter: csvDetectionResult.delimiter,
               confidence: csvDetectionResult.confidence,
               rows: csvDetectionResult.rowCount,
               columns: csvDetectionResult.columnCount,
@@ -516,19 +519,20 @@ const ReactFlowCanvas: React.FC = () => {
             // Create CSVSpreadsheet node with detected data
             await handleCreateCSVNodeWithContent(csvDetectionResult.parsedData, viewportCenter);
 
-            // Show success toast for CSV
-            showPasteSuccessToast('text', 'CSV spreadsheet');
+            // Show success toast for CSV/TSV
+            showPasteSuccessToast('text', `${formatName} spreadsheet`);
 
-            // Track CSV paste event
+            // Track CSV/TSV paste event
             posthogService.track('paste_csv', {
-              format: 'csv',
+              format: csvDetectionResult.format?.toLowerCase() || 'csv',
+              delimiter: csvDetectionResult.delimiter,
               confidence: csvDetectionResult.confidence,
               rowCount: csvDetectionResult.rowCount,
               columnCount: csvDetectionResult.columnCount,
               textLength: clipboardResult.data.length,
             });
           } else {
-            console.log('📝 Not CSV format, creating text node...', {
+            console.log('📝 Not CSV/TSV format, creating text node...', {
               confidence: csvDetectionResult.confidence,
               reason: csvDetectionResult.error,
             });

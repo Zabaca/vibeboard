@@ -588,7 +588,7 @@ export function showScreenshotNotification(
     const notification = new Notification(title, {
       body: message,
       icon: type === 'success' ? '✅' : type === 'error' ? '❌' : '📸',
-      tag: 'vibeboard-screenshot',
+      tag: 'stiqr-screenshot',
     });
 
     // Auto close after 3 seconds

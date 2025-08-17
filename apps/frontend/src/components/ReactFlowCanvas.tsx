@@ -1690,6 +1690,34 @@ const ReactFlowCanvas: React.FC = () => {
       aria-label="AI Whiteboard Canvas - Click to focus, then press Ctrl+V to paste images or text, use arrow keys to navigate components"
       aria-describedby="canvas-instructions"
     >
+      {/* Made by Zabaca - Top Right */}
+      <a
+        href="https://www.zabaca.com"
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{
+          position: 'absolute',
+          top: '16px',
+          right: '16px',
+          fontSize: '11px',
+          color: '#6b7280',
+          fontWeight: '500',
+          textTransform: 'uppercase',
+          letterSpacing: '1px',
+          zIndex: 10,
+          opacity: 0.7,
+          textDecoration: 'none',
+          transition: 'opacity 0.2s ease',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.opacity = '1';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.opacity = '0.7';
+        }}
+      >
+        Made by Zabaca
+      </a>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -1789,19 +1817,18 @@ const ReactFlowCanvas: React.FC = () => {
                       letterSpacing: '-0.5px',
                     }}
                   >
-                    AI Whiteboard
+                    Stiqr
                   </h2>
                   <p
                     style={{
                       margin: 0,
-                      fontSize: '11px',
-                      opacity: 0.9,
+                      fontSize: '12px',
+                      opacity: 0.7,
                       fontWeight: '500',
-                      textTransform: 'uppercase',
-                      letterSpacing: '1px',
+                      marginTop: '-2px',
                     }}
                   >
-                    Made by Zabaca
+                    AI Whiteboard
                   </p>
                 </div>
               </div>
@@ -1874,38 +1901,7 @@ const ReactFlowCanvas: React.FC = () => {
                   Import Code
                 </button>
 
-                {isDevelopment && (
-                  <button
-                    onClick={() => setShowURLImport(true)}
-                    style={{
-                      backgroundColor: 'white',
-                      color: '#6366f1',
-                      border: 'none',
-                      borderRadius: '8px',
-                      padding: '10px 20px',
-                      fontSize: '14px',
-                      fontWeight: '600',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      transition: 'all 0.2s ease',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = 'translateY(-2px)';
-                      e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.15)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
-                    }}
-                    title="Import component from URL (Ctrl+Shift+I)"
-                  >
-                    <span>🔗</span>
-                    Import URL
-                  </button>
-                )}
+{/* Import URL button hidden per user request */}
 
                 <button
                   onClick={handleGenerateClick}
@@ -2457,15 +2453,6 @@ const ReactFlowCanvas: React.FC = () => {
                 }}
               >
                 Generating Component
-              </div>
-              <div
-                style={{
-                  fontSize: '14px',
-                  color: '#6b7280',
-                  marginBottom: '4px',
-                }}
-              >
-                Made by Zabaca
               </div>
               <div
                 style={{

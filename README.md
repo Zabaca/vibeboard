@@ -1,10 +1,10 @@
-# Vibeboard
+# Stiqr
 
 An AI-powered visual canvas platform for creating interactive component-based interfaces.
 
 ## Overview
 
-Vibeboard is a next-generation whiteboard platform built as a monorepo that combines:
+Stiqr is a next-generation whiteboard platform built as a monorepo that combines:
 - 🎨 Visual canvas with drag-and-drop interface
 - 🤖 AI-powered component generation
 - 📦 Dynamic component loading with ESM-first architecture
@@ -26,7 +26,7 @@ Vibeboard is a next-generation whiteboard platform built as a monorepo that comb
 ## Project Structure
 
 ```
-vibeboard/
+stiqr/
 ├── apps/
 │   ├── frontend/          # React frontend application
 │   └── backend/           # (Future) Backend services
@@ -47,8 +47,8 @@ vibeboard/
 
 ```bash
 # Clone the repository
-git clone [repository-url] vibeboard
-cd vibeboard
+git clone [repository-url] stiqr
+cd stiqr
 
 # Install all dependencies
 pnpm install
@@ -221,14 +221,20 @@ We welcome contributions! Please see our contributing guidelines for:
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) file for details
+AGPL-3.0 License - see [LICENSE](LICENSE) file for details.
+
+### Commercial Licensing
+
+Stiqr is available under the GNU Affero General Public License v3.0 (AGPLv3). This license requires that if you modify Stiqr and offer it as a network service, you must provide the complete source code of your modifications to users.
+
+For organizations that want to use Stiqr in proprietary applications or offer it as a managed service without open-sourcing their modifications, commercial licenses are available. Contact us for commercial licensing options.
 
 ## Support
 
 - 📧 Email: [support email]
-- 🐛 Issues: [GitHub Issues](https://github.com/[org]/vibeboard/issues)
-- 💬 Discussions: [GitHub Discussions](https://github.com/[org]/vibeboard/discussions)
+- 🐛 Issues: [GitHub Issues](https://github.com/[org]/stiqr/issues)
+- 💬 Discussions: [GitHub Discussions](https://github.com/[org]/stiqr/discussions)
 
 ---
 
-Built with ❤️ by the Vibeboard Team
+Built with ❤️ by [Zabaca](https://www.zabaca.com)

@@ -1,13 +1,13 @@
-# Vibeboard - Developer Guide
+# Stiqr - Developer Guide
 
 ## Overview
 
-Vibeboard is an AI-powered visual canvas platform for creating interactive component-based interfaces. It combines AI generation (Cerebras), visual canvas manipulation (React Flow), and native ES module execution in an ESM-first architecture with import maps for React singleton management.
+Stiqr is an AI-powered visual canvas platform for creating interactive component-based interfaces. It combines AI generation (Cerebras), visual canvas manipulation (React Flow), and native ES module execution in an ESM-first architecture with import maps for React singleton management.
 
 ## Project Structure
 
 ```
-vibeboard/                         # Monorepo root
+stiqr/                         # Monorepo root
 ├── apps/
 │   ├── frontend/                 # React frontend application
 │   │   ├── public/
@@ -374,7 +374,7 @@ pnpm lint
 
 ## Contributing
 
-When contributing to Vibeboard:
+When contributing to Stiqr:
 1. Follow the monorepo structure
 2. Keep components in appropriate directories
 3. Update types when adding features

@@ -60,7 +60,7 @@ export class ImportFixer {
     // Fix unsafe DOM element access in cleanup functions
     fixedCode = fixedCode.replace(
       /return\s*\(\)\s*=>\s*{([^}]*(?:containerRef|ref)\.current[^}]*(?:removeChild|appendChild)[^}]*)}/g,
-      (match, cleanupBody) => {
+      (_match, cleanupBody) => {
         // Wrap entire cleanup in try-catch
         return `return () => {
           try {

@@ -54,7 +54,7 @@ graph TB
     %% Processing Paths (URL-Only Architecture)
     subgraph "ComponentPipeline Service"
         PIPELINE_AI["processAIComponent()"]
-        PIPELINE_LIB["processLibraryComponent()<br/>(delegates to URL)"]
+        %% Removed PIPELINE_LIB - now unified under PIPELINE_URL
         PIPELINE_URL["processURLComponent()<br/>(unified entry point)"]
         PIPELINE_GENERIC["processComponent()<br/>(generic)"]
     end
@@ -65,7 +65,6 @@ graph TB
     end
 
     %% Component Sources
-    COMPILED["compiledComponents.generated.ts<br/>(Pre-compiled cache)"]
     MANIFEST["componentManifest.ts<br/>(URL-only manifest)"]
     PUBLIC_COMPONENTS["public/components/<br/>(Built-in ESM modules)"]
 
@@ -99,10 +98,9 @@ graph TB
     %% AI Generation path
     AI --> PIPELINE_AI
     
-    %% Library path (URL-Only)
+    %% Library path (URL-Only with JSX transpilation)
     LIB --> MANIFEST
-    MANIFEST --> |"provides URL"| PIPELINE_LIB
-    PIPELINE_LIB --> |"delegates to"| PIPELINE_URL
+    MANIFEST --> |"provides URL"| PIPELINE_URL
     
     %% Import code path
     IMPORT_CODE --> PIPELINE_GENERIC
@@ -135,7 +133,6 @@ graph TB
     
     %% All pipelines produce UnifiedComponentNode
     PIPELINE_AI --> UNIFIED
-    PIPELINE_LIB --> UNIFIED
     PIPELINE_URL --> UNIFIED
     PIPELINE_GENERIC --> UNIFIED
     
@@ -182,7 +179,7 @@ graph TB
     class UNIFIED,NODE_DATA,RESTORED_DATA,LOADED_DATA data
     class CANVAS,FLOW_NODE,COMPONENT_NODE canvas
     class GENERATED_APP,BLOB,IMPORT,RENDER render
-    class COMPILED,PREBUILT legacy
+    %% Legacy classes removed - no more compiled cache
     class IMG_NODE,SPREAD_NODE,TEXT_NODE,NATIVE_TOOLBAR,NATIVE_DATA native
     class IMG_CHECK,CSV_CHECK decision
     class VALIDATE,MIGRATE,VALIDATE_NODES,LOAD_NODES,PROCESS_IMAGES,ATTACH_CALLBACKS,STORAGE storage
@@ -198,12 +195,13 @@ graph TB
 
 ### 2. **Component Library** 📚
 - **Input**: User selects from component library
-- **Processing**: URL-only architecture:
+- **Processing**: URL-only architecture with JSX transpilation:
   - **Manifest**: `componentManifest.ts` provides component URL
-  - **Pipeline**: `ComponentPipeline.processLibraryComponent()` → `processURLComponent()`
-  - **Loading**: Fetch component from URL (local `/components/` or CDN)
-- **Output**: `UnifiedComponentNode` with URL-loaded component
-- **Notes**: Unified architecture - all components load via URLs
+  - **Pipeline**: `ComponentPipeline.processURLComponent()` (unified entry point)
+  - **Loading**: Fetch component from URL → JSX transpilation → Execution
+  - **Transpilation**: JSX components are transpiled using Babel at runtime
+- **Output**: `UnifiedComponentNode` with transpiled, executable component
+- **Notes**: All library components now follow same pipeline as AI-generated components
 
 ### 3. **URL Import** 🔗
 - **Input**: CDN URL (esm.sh, unpkg, etc.)
@@ -274,10 +272,13 @@ interface NativeComponentNode {
 ### ComponentPipeline
 Handles code-based components with these methods:
 - `processAIComponent()` - AI-generated components
-- `processLibraryComponent()` - Legacy library components (OLD path)
-- `processManifestComponent()` - Async library components (NEW path)
-- `processURLComponent()` - External CDN components
+- `processURLComponent()` - Unified URL processing (library + external components)
 - `processComponent()` - Generic component processing
+
+**Key Feature: JSX Transpilation**
+- Detects JSX syntax in URL-loaded components
+- Uses `esmTranspiler.transpile()` to convert JSX → JavaScript
+- Ensures all components follow unified execution pipeline
 
 ### StorageService
 Handles persistence with these key methods:
@@ -309,33 +310,42 @@ All components eventually flow through the centralized storage system:
 - **Image handling**: Special processing for blob URLs in image components
 - **Version migration**: Handles schema changes between app versions
 
-## Current Architectural Challenges
+## Architecture Resolution: URL-Based Loading with JSX Transpilation
 
-### Async Component Loading Problem
-The NEW component library path (`componentManifest.ts` → `processManifestComponent()`) creates `UnifiedComponentNode` objects with:
-- Empty `originalCode` (no source available)
-- Empty `compiledCode` (already compiled)
-- Fake `moduleUrl` (e.g., `'builtin:simple-counter'`)
+### ✅ Problem Solved: Unified Component Pipeline
+The migration to URL-based loading with JSX transpilation has resolved previous architectural challenges:
 
-This causes issues in `GeneratedApp.tsx` which expects either:
-- Real importable URLs
-- Source code to convert to blob URLs
+**Before (Problems):**
+- Dual manifest system (JSON + TypeScript)
+- Build-time compilation vs runtime loading
+- Async component loading issues
+- Storage round-trip failures
 
-### Storage Round-Trip Issues
-Since all components are saved/loaded from storage, async-loaded components with incomplete data will:
-1. Be saved with empty code fields
-2. Fail to render after app restart
-3. Cannot be properly restored from storage
+**After (Solutions):**
+- **Single TypeScript manifest** (`componentManifest.ts`)
+- **Unified URL-based loading** for all component sources
+- **Runtime JSX transpilation** using existing Babel pipeline
+- **Complete storage round-trips** with full component code
 
-## Potential Solutions
+### Key Improvements
 
-1. **Extend GeneratedApp** to handle direct component instances
-2. **Create parallel rendering path** for async components
-3. **Make async components behave like native components**
-4. **Extend UnifiedComponentNode** to support component instances
-5. **Create hybrid data structure** for different component types
+1. **JSX Transpilation Pipeline**
+   - Library components with JSX are transpiled at runtime
+   - Uses same `esmTranspiler` as AI-generated components
+   - Maintains source code for proper storage/restore
+
+2. **Unified Architecture**
+   - All components (AI, library, URL) follow same execution path
+   - No special cases or parallel rendering paths needed
+   - Consistent behavior across all component sources
+
+3. **Complete Data Preservation**
+   - `originalCode` contains full JSX source
+   - `compiledCode` contains transpiled JavaScript
+   - `moduleUrl` contains executable blob URL
+   - Storage/restore works seamlessly for all component types
 
 ---
 
-*Last updated: 2025-08-18*
-*Diagram reflects current implementation with both OLD and NEW library paths*
+*Last updated: 2025-08-19*
+*Architecture fully migrated to URL-based loading with JSX transpilation*

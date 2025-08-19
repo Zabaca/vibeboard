@@ -308,6 +308,116 @@ export class ComponentPipeline {
   }
 
   /**
+   * Process a component from the manifest (with loader or URL)
+   */
+  async processManifestComponent(
+    manifest: {
+      id: string;
+      name: string;
+      description: string;
+      loader?: () => Promise<{ default: React.ComponentType }>;
+      url?: string;
+      source: 'builtin' | 'user' | 'external';
+      category?: string;
+      tags?: string[];
+      author?: string;
+      version?: string;
+    },
+    _options: PipelineOptions = {},
+  ): Promise<PipelineResult> {
+    const startTime = performance.now();
+
+    try {
+      let component: React.ComponentType | null = null;
+      let moduleUrl: string | undefined;
+
+      // Handle loader function (built-in components)
+      if (manifest.loader) {
+        const module = await manifest.loader();
+        component = module.default || module;
+        // For loader-based components, we don't have a URL but they're already optimized
+        moduleUrl = `builtin:${manifest.id}`;
+      }
+      // Handle URL loading (user/external components)
+      else if (manifest.url) {
+        // Check if it's a relative URL (local file) or absolute URL (CDN)
+        const isRelativeUrl = manifest.url.startsWith('/') || manifest.url.startsWith('./');
+        
+        if (isRelativeUrl) {
+          // Local file - use dynamic import
+          const module = await import(/* @vite-ignore */ manifest.url);
+          component = module.default || module;
+          moduleUrl = manifest.url;
+        } else {
+          // CDN URL - validate and import
+          const isCDNUrl =
+            manifest.url.startsWith('https://esm.sh/') ||
+            manifest.url.startsWith('https://cdn.jsdelivr.net/') ||
+            manifest.url.startsWith('https://unpkg.com/') ||
+            manifest.url.startsWith('https://cdn.skypack.dev/');
+
+          if (!isCDNUrl && manifest.source === 'external') {
+            return {
+              success: false,
+              error: 'External components must use a valid CDN URL',
+              processingTime: performance.now() - startTime,
+            };
+          }
+
+          const module = await import(/* @vite-ignore */ manifest.url);
+          component = module.default || module;
+          moduleUrl = manifest.url;
+        }
+      } else {
+        return {
+          success: false,
+          error: 'Component must have either a loader function or URL',
+          processingTime: performance.now() - startTime,
+        };
+      }
+
+      if (!component) {
+        throw new Error('No valid React component found');
+      }
+
+      // Create UnifiedComponentNode for manifest-based component
+      const unifiedComponent: UnifiedComponentNode = {
+        id: manifest.id,
+        name: manifest.name,
+        description: manifest.description,
+        originalCode: '', // No source code for async-loaded components
+        compiledCode: '', // Component is already compiled
+        source: manifest.source === 'builtin' ? 'library' : manifest.source === 'user' ? 'url-import' : 'url-import',
+        format: 'esm',
+        sourceUrl: moduleUrl,
+        compiledAt: Date.now(),
+        compilerVersion: this.compilerVersion,
+        metadata: {
+          category: manifest.category,
+          tags: manifest.tags,
+          author: manifest.author,
+          version: manifest.version,
+        },
+      };
+
+      return {
+        success: true,
+        component: unifiedComponent,
+        processingTime: performance.now() - startTime,
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error('Manifest component loading error:', errorMessage);
+
+      return {
+        success: false,
+        error: `Failed to load component: ${errorMessage}`,
+        processingTime: performance.now() - startTime,
+      };
+    }
+  }
+
+  /**
    * Import a component from CDN URL
    */
   async processURLComponent(

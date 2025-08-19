@@ -18,8 +18,7 @@ import {
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import '@xyflow/react/dist/style.css';
 
-import { getCompiledComponent } from '../data/compiledComponents.generated.ts';
-import { type PrebuiltComponent } from '../data/prebuiltComponents.ts';
+import { type ComponentManifestEntry } from '../data/componentManifest.ts';
 import { ComponentPipeline } from '../services/ComponentPipeline.ts';
 import CerebrasService from '../services/cerebras.ts';
 import { posthogService } from '../services/posthog.ts';
@@ -42,21 +41,20 @@ import GenerationDialog from './GenerationDialog.tsx';
 import ImportComponentDialog from './ImportComponentDialog.tsx';
 import { ImportFromURLDialog } from './ImportFromURLDialog.tsx';
 import KeyboardShortcutsHelp from './KeyboardShortcutsHelp.tsx';
-import ImageNode from './native/ImageNode.tsx';
 import NativeComponentContextMenu from './native/NativeComponentContextMenu.tsx';
 import NativeComponentsToolbar from './native/NativeComponentsToolbar.tsx';
-import ShapeNode from './native/ShapeNode.tsx';
-import StickyNote from './native/StickyNote.tsx';
-import TextNode from './native/TextNode.tsx';
 import StorageManagementDialog from './StorageManagementDialog.tsx';
+import UnifiedNativeNode from './UnifiedNativeNode.tsx';
 
 // Define nodeTypes outside of component to prevent re-renders
 const nodeTypes = {
   aiComponent: ComponentNode,
-  shape: ShapeNode as unknown as React.ComponentType<NodeProps>,
-  text: TextNode as unknown as React.ComponentType<NodeProps>,
-  sticky: StickyNote as unknown as React.ComponentType<NodeProps>,
-  image: ImageNode as unknown as React.ComponentType<NodeProps>,
+  native: UnifiedNativeNode as unknown as React.ComponentType<NodeProps>,
+  // Legacy types for backward compatibility (will be migrated to 'native')
+  shape: UnifiedNativeNode as unknown as React.ComponentType<NodeProps>,
+  text: UnifiedNativeNode as unknown as React.ComponentType<NodeProps>,
+  sticky: UnifiedNativeNode as unknown as React.ComponentType<NodeProps>,
+  image: UnifiedNativeNode as unknown as React.ComponentType<NodeProps>,
 };
 
 const ReactFlowCanvas: React.FC = () => {
@@ -234,7 +232,7 @@ const ReactFlowCanvas: React.FC = () => {
       
       console.log('✅ Component deletion completed - removed from state and storage');
     },
-    [setNodes],
+    [],
   );
 
   // Handle native component state updates
@@ -255,7 +253,7 @@ const ReactFlowCanvas: React.FC = () => {
         }),
       );
     },
-    [setNodes],
+    [],
   );
 
   // Create TextNode with content from paste
@@ -282,7 +280,7 @@ const ReactFlowCanvas: React.FC = () => {
       // Create the node
       const newNode: Node = {
         id: nodeId,
-        type: 'text',
+        type: 'native',
         position,
         width: Math.max(150, Math.min(400, text.length * 8)), // Dynamic width based on text length
         height: Math.max(50, Math.min(300, text.split('\n').length * 20)), // Dynamic height based on line count
@@ -300,7 +298,7 @@ const ReactFlowCanvas: React.FC = () => {
 
       setNodes((nds) => [...nds, newNode as Node<ComponentNodeData>]);
     },
-    [presentationMode, handleDeleteComponent, handleNativeComponentStateUpdate, setNodes],
+    [presentationMode, handleDeleteComponent, handleNativeComponentStateUpdate],
   );
 
   // Create ImageNode with content from paste
@@ -385,7 +383,7 @@ const ReactFlowCanvas: React.FC = () => {
         // Create the node
         const newNode: Node = {
           id: nodeId,
-          type: 'image',
+          type: 'native',
           position,
           width: nodeWidth,
           height: nodeHeight,
@@ -410,7 +408,7 @@ const ReactFlowCanvas: React.FC = () => {
         );
       }
     },
-    [presentationMode, handleDeleteComponent, handleNativeComponentStateUpdate, setNodes],
+    [presentationMode, handleDeleteComponent, handleNativeComponentStateUpdate],
   );
 
   // Create CSVSpreadsheet node with content from paste
@@ -451,7 +449,7 @@ const ReactFlowCanvas: React.FC = () => {
       // Create the node
       const newNode: Node = {
         id: nodeId,
-        type: 'aiComponent',
+        type: 'native',
         position,
         width: calculatedWidth,
         height: calculatedHeight,
@@ -469,7 +467,7 @@ const ReactFlowCanvas: React.FC = () => {
 
       setNodes((nds) => [...nds, newNode as Node<ComponentNodeData>]);
     },
-    [presentationMode, handleDeleteComponent, handleNativeComponentStateUpdate, setNodes],
+    [presentationMode, handleDeleteComponent, handleNativeComponentStateUpdate],
   );
 
   // Handle paste events on the canvas
@@ -614,7 +612,7 @@ const ReactFlowCanvas: React.FC = () => {
       // Create the React Flow node with our custom type
       const newNode: Node<ComponentNodeData> = {
         id: nodeId,
-        type: 'aiComponent', // Use our ComponentNode for consistent appearance
+        type: 'native', // Use UnifiedNativeNode for native components
         position: viewportCenter,
         data: nativeNodeData,
         draggable: true,
@@ -665,7 +663,7 @@ const ReactFlowCanvas: React.FC = () => {
         }),
       );
     },
-    [setNodes],
+    [],
   );
 
   // Handle screenshot capture from ComponentNode
@@ -1020,7 +1018,7 @@ const ReactFlowCanvas: React.FC = () => {
         }),
       );
     },
-    [setNodes],
+    [],
   );
 
   const handleCancelEdit = useCallback(() => {
@@ -1077,7 +1075,7 @@ const ReactFlowCanvas: React.FC = () => {
       setNodes((nds) => [...nds, newNode]);
       posthogService.trackComponentInteraction('duplicate', nodeId);
     },
-    [nodes, setNodes],
+    [nodes],
   );
 
   // Handle bring to front
@@ -1095,7 +1093,7 @@ const ReactFlowCanvas: React.FC = () => {
         return newNodes;
       });
     },
-    [setNodes],
+    [],
   );
 
   // Handle send to back
@@ -1113,7 +1111,7 @@ const ReactFlowCanvas: React.FC = () => {
         return newNodes;
       });
     },
-    [setNodes],
+    [],
   );
 
   // Add canvas focus detection and paste event handling
@@ -1321,7 +1319,9 @@ const ReactFlowCanvas: React.FC = () => {
   // Load saved nodes from storage on mount
   useEffect(() => {
     // Only load once to prevent race conditions with node creation
-    if (hasLoadedFromStorage) return;
+    if (hasLoadedFromStorage) {
+      return;
+    }
     
     const loadStoredData = async () => {
       try {
@@ -1382,8 +1382,6 @@ const ReactFlowCanvas: React.FC = () => {
     // Initialize automatic cleanup scheduling
     storageService.scheduleAutomaticCleanup();
 
-    // Warm up cache with library components in background
-    componentPipeline.warmCacheWithLibraryComponents();
   }, [
     hasLoadedFromStorage,
     setNodes,
@@ -1392,8 +1390,7 @@ const ReactFlowCanvas: React.FC = () => {
     handleRegenerateComponent,
     presentationMode,
     handleDuplicateComponent,
-    handleCompilationComplete, // Warm up cache with library components in background
-    componentPipeline.warmCacheWithLibraryComponents,
+    handleCompilationComplete,
     handleNativeComponentStateUpdate,
     handleScreenshotCapture,
   ]);
@@ -1497,57 +1494,50 @@ const ReactFlowCanvas: React.FC = () => {
   );
 
   const handleAddPrebuiltComponent = useCallback(
-    async (component: PrebuiltComponent) => {
-      // Check for pre-compiled version first
-      const compiled = getCompiledComponent(component.id);
-
-      let nodeData: ComponentNodeData;
-
-      if (compiled) {
-        // Use pre-compiled component directly
-        nodeData = {
-          ...compiled,
-          id: `node-${Date.now()}`,
-          // Legacy compatibility fields
-          code: compiled.compiledCode,
-          prompt: compiled.name || component.name,
-          generationTime: 0,
-          presentationMode,
-          onDelete: handleDeleteComponent,
-          onRegenerate: handleRegenerateComponent,
-          onDuplicate: handleDuplicateComponent,
-          onCompilationComplete: handleCompilationComplete,
-        };
-      } else {
-        // Fallback: compile at runtime using pipeline
-        console.log(`⚙️ Compiling component at runtime: ${component.name}`);
-        const result = await componentPipeline.processLibraryComponent(component, {
+    async (manifestEntry: ComponentManifestEntry) => {
+      // Use the new manifest-based loading
+      console.log(`⚡ Loading component asynchronously: ${manifestEntry.name}`);
+      
+      // Show loading state
+      setIsGenerating(true);
+      
+      try {
+        const result = await componentPipeline.processURLComponent(manifestEntry.url, {}, {
           useCache: true,
           validateOutput: true,
         });
 
         if (!(result.success && result.component)) {
-          console.error(`Failed to process component: ${result.error}`);
-          setGenerationError(result.error || 'Failed to process component');
+          console.error(`Failed to load component: ${result.error}`);
+          setGenerationError(result.error || 'Failed to load component');
           return;
         }
 
-        nodeData = {
+        const nodeData: ComponentNodeData = {
           ...result.component,
           id: `node-${Date.now()}`,
+          name: manifestEntry.name,
+          description: manifestEntry.description,
           // Legacy compatibility fields
-          code: result.component.compiledCode || result.component.originalCode,
-          prompt: result.component.name || component.name,
+          code: result.component.compiledCode || result.component.originalCode || '',
+          prompt: result.component.name || manifestEntry.name,
           generationTime: 0,
           presentationMode,
           onDelete: handleDeleteComponent,
           onRegenerate: handleRegenerateComponent,
           onDuplicate: handleDuplicateComponent,
           onCompilationComplete: handleCompilationComplete,
+          // Add manifest metadata
+          metadata: {
+            ...result.component.metadata,
+            category: manifestEntry.category,
+            tags: manifestEntry.tags,
+            author: manifestEntry.author,
+            version: manifestEntry.version,
+          },
         };
-      }
 
-      // Create a new node with the processed component
+        // Create a new node with the processed component
       const viewportCenter = getViewportCenter();
       const newNode: Node<ComponentNodeData> = {
         id: nodeData.id,
@@ -1570,6 +1560,12 @@ const ReactFlowCanvas: React.FC = () => {
       };
 
       setNodes((nds) => [...nds, newNode]);
+      } catch (error) {
+        console.error('Error loading component:', error);
+        setGenerationError(error instanceof Error ? error.message : 'Failed to load component');
+      } finally {
+        setIsGenerating(false);
+      }
     },
     [
       setNodes,

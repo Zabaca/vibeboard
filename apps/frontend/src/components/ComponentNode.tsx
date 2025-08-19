@@ -377,36 +377,33 @@ const ComponentNodeImpl = ({ id, data, selected = false }: ComponentNodeProps) =
 
   // Memoize the GeneratedApp component to prevent re-renders unless data changes
   const generatedAppComponent = useMemo(() => {
-    // Check if this is a URL-imported ES module
+    // Check if this is a URL-loaded ES module (either external URL or built-in library)
     const isUrlImport =
-      unifiedComponent.source === 'url-import' &&
+      (unifiedComponent.source === 'url-import' || unifiedComponent.source === 'library') &&
       unifiedComponent.sourceUrl &&
       (unifiedComponent.format === 'esm' || unifiedComponent.sourceUrl.endsWith('.js'));
 
-    // 🐛 DEBUG: Let's see what's happening with URL imports
-    if (unifiedComponent.source === 'url-import') {
-      console.log('🔍 ComponentNode: URL import detected!');
-      console.log('  - source:', unifiedComponent.source);
-      console.log('  - sourceUrl:', unifiedComponent.sourceUrl);
-      console.log('  - format:', unifiedComponent.format);
-      console.log('  - isUrlImport:', isUrlImport);
-      console.log('  - nodeData.sourceUrl:', nodeData.sourceUrl);
-      console.log('  - Full nodeData:', nodeData);
-    }
 
     if (isUrlImport && unifiedComponent.sourceUrl) {
       // Use AsyncComponentLoader for URL-imported ES modules
-      // This properly handles dynamic imports without compilation
-      return (
-        <AsyncComponentLoader
-          moduleUrl={unifiedComponent.sourceUrl}
-          presentationMode={presentationMode}
-          debug={false}
-          cache={true}
-          fallback={<div style={{ padding: '20px', textAlign: 'center' }}>Loading module...</div>}
-          onError={(error) => console.error('Module load error:', error)}
-        />
-      );
+      // If we have transpiled code, use that instead of fetching the URL again
+      const loaderProps: any = {
+        presentationMode,
+        debug: false,
+        cache: true,
+        fallback: <div style={{ padding: '20px', textAlign: 'center' }}>Loading module...</div>,
+        onError: (error: Error) => console.error('Module load error:', error),
+      };
+
+      if (unifiedComponent.compiledCode) {
+        // Use the transpiled code directly (for local components)
+        loaderProps.code = unifiedComponent.compiledCode;
+      } else {
+        // Fall back to fetching the URL (for external CDN components)
+        loaderProps.moduleUrl = unifiedComponent.sourceUrl;
+      }
+
+      return <AsyncComponentLoader {...loaderProps} />;
     }
 
     // Use GeneratedApp for AI-generated code that needs compilation

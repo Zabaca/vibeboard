@@ -377,21 +377,20 @@ const ComponentNodeImpl = ({ id, data, selected = false }: ComponentNodeProps) =
 
   // Memoize the GeneratedApp component to prevent re-renders unless data changes
   const generatedAppComponent = useMemo(() => {
-    // Check if this is a URL-imported ES module
+    // Check if this is a URL-loaded ES module (either external URL or built-in library)
     const isUrlImport =
-      unifiedComponent.source === 'url-import' &&
+      (unifiedComponent.source === 'url-import' || unifiedComponent.source === 'library') &&
       unifiedComponent.sourceUrl &&
       (unifiedComponent.format === 'esm' || unifiedComponent.sourceUrl.endsWith('.js'));
 
-    // 🐛 DEBUG: Let's see what's happening with URL imports
-    if (unifiedComponent.source === 'url-import') {
-      console.log('🔍 ComponentNode: URL import detected!');
+    // 🐛 DEBUG: Let's see what's happening with URL-loaded components
+    if (unifiedComponent.source === 'url-import' || unifiedComponent.source === 'library') {
+      console.log('🔍 ComponentNode: URL-loaded component detected!');
       console.log('  - source:', unifiedComponent.source);
       console.log('  - sourceUrl:', unifiedComponent.sourceUrl);
       console.log('  - format:', unifiedComponent.format);
       console.log('  - isUrlImport:', isUrlImport);
       console.log('  - nodeData.sourceUrl:', nodeData.sourceUrl);
-      console.log('  - Full nodeData:', nodeData);
     }
 
     if (isUrlImport && unifiedComponent.sourceUrl) {

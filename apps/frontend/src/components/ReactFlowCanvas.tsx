@@ -1382,8 +1382,6 @@ const ReactFlowCanvas: React.FC = () => {
     // Initialize automatic cleanup scheduling
     storageService.scheduleAutomaticCleanup();
 
-    // Warm up cache with library components in background
-    componentPipeline.warmCacheWithLibraryComponents();
   }, [
     hasLoadedFromStorage,
     setNodes,
@@ -1392,8 +1390,7 @@ const ReactFlowCanvas: React.FC = () => {
     handleRegenerateComponent,
     presentationMode,
     handleDuplicateComponent,
-    handleCompilationComplete, // Warm up cache with library components in background
-    componentPipeline.warmCacheWithLibraryComponents,
+    handleCompilationComplete,
     handleNativeComponentStateUpdate,
     handleScreenshotCapture,
   ]);
@@ -1505,7 +1502,7 @@ const ReactFlowCanvas: React.FC = () => {
       setIsGenerating(true);
       
       try {
-        const result = await componentPipeline.processManifestComponent(manifestEntry, {
+        const result = await componentPipeline.processURLComponent(manifestEntry.url, {}, {
           useCache: true,
           validateOutput: true,
         });
@@ -1519,6 +1516,8 @@ const ReactFlowCanvas: React.FC = () => {
         const nodeData: ComponentNodeData = {
           ...result.component,
           id: `node-${Date.now()}`,
+          name: manifestEntry.name,
+          description: manifestEntry.description,
           // Legacy compatibility fields
           code: result.component.compiledCode || result.component.originalCode || '',
           prompt: result.component.name || manifestEntry.name,
@@ -1528,6 +1527,14 @@ const ReactFlowCanvas: React.FC = () => {
           onRegenerate: handleRegenerateComponent,
           onDuplicate: handleDuplicateComponent,
           onCompilationComplete: handleCompilationComplete,
+          // Add manifest metadata
+          metadata: {
+            ...result.component.metadata,
+            category: manifestEntry.category,
+            tags: manifestEntry.tags,
+            author: manifestEntry.author,
+            version: manifestEntry.version,
+          },
         };
 
         // Create a new node with the processed component

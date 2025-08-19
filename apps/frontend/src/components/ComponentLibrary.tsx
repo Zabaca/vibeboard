@@ -1,10 +1,10 @@
 import React, { useMemo, useState } from 'react';
-import { type PrebuiltComponent, prebuiltComponents } from '../data/prebuiltComponents.ts';
+import { type ComponentManifestEntry, componentManifest } from '../data/componentManifest.ts';
 
 interface ComponentLibraryProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelectComponent: (component: PrebuiltComponent) => void;
+  onSelectComponent: (component: ComponentManifestEntry) => void;
 }
 
 const ComponentLibrary: React.FC<ComponentLibraryProps> = ({
@@ -17,12 +17,12 @@ const ComponentLibrary: React.FC<ComponentLibraryProps> = ({
   const [hoveredComponent, setHoveredComponent] = useState<string | null>(null);
 
   const categories = useMemo(() => {
-    const cats = ['all', ...new Set(prebuiltComponents.map((c) => c.category))];
+    const cats = ['all', ...new Set(componentManifest.map((c) => c.category))];
     return cats;
   }, []);
 
   const filteredComponents = useMemo(() => {
-    let filtered = prebuiltComponents;
+    let filtered = componentManifest;
 
     // Filter by category
     if (selectedCategory !== 'all') {
@@ -56,7 +56,7 @@ const ComponentLibrary: React.FC<ComponentLibraryProps> = ({
     Utility: '🔧',
   };
 
-  const handleSelectComponent = (component: PrebuiltComponent) => {
+  const handleSelectComponent = (component: ComponentManifestEntry) => {
     onSelectComponent(component);
     onClose();
   };
@@ -229,8 +229,8 @@ const ComponentLibrary: React.FC<ComponentLibraryProps> = ({
                 }}
               >
                 {cat === 'all'
-                  ? prebuiltComponents.length
-                  : prebuiltComponents.filter((c) => c.category === cat).length}
+                  ? componentManifest.length
+                  : componentManifest.filter((c) => c.category === cat).length}
               </span>
             </button>
           ))}

@@ -242,14 +242,17 @@ export class ComponentPipeline {
   // Note: containsJSX method removed - now using esmTranspiler.containsJSX for ESM components
 
   /**
-   * Process a pre-built library component
+   * Process a pre-built library component via URL
+   * 
+   * Note: This method now delegates to processURLComponent for unified architecture.
+   * Library components should be accessed via their /components/ URLs.
    */
   async processLibraryComponent(
     component: {
       id?: string;
       name?: string;
       description?: string;
-      code: string;
+      url: string;  // Now required - must be a URL to the component
       category?: string;
       tags?: string[];
       author?: string;
@@ -258,27 +261,24 @@ export class ComponentPipeline {
     },
     options: PipelineOptions = {},
   ): Promise<PipelineResult> {
-    // Convert legacy library component to unified format
-    const unifiedComponent: Partial<UnifiedComponentNode> = {
-      id: component.id,
-      name: component.name,
-      description: component.description,
-      originalCode: component.code,
-      source: 'library' as ComponentSource,
-      format: 'jsx' as ComponentFormat,
-      metadata: {
+    // Use URL-only processing for unified architecture
+    const result = await this.processURLComponent(component.url, {}, options);
+    
+    if (result.success && result.component) {
+      // Enhance the component with additional metadata if provided
+      result.component.name = component.name || result.component.name;
+      result.component.description = component.description || result.component.description;
+      result.component.metadata = {
+        ...result.component.metadata,
         category: component.category,
         tags: component.tags,
         author: component.author,
         version: component.version,
         thumbnail: component.thumbnail,
-      },
-    };
-
-    return this.processComponent(unifiedComponent, {
-      ...options,
-      useCache: true,
-    });
+      };
+    }
+    
+    return result;
   }
 
   /**
@@ -307,118 +307,9 @@ export class ComponentPipeline {
     return this.processComponent(unifiedComponent, options);
   }
 
-  /**
-   * Process a component from the manifest (with loader or URL)
-   */
-  async processManifestComponent(
-    manifest: {
-      id: string;
-      name: string;
-      description: string;
-      loader?: () => Promise<{ default: React.ComponentType }>;
-      url?: string;
-      source: 'builtin' | 'user' | 'external';
-      category?: string;
-      tags?: string[];
-      author?: string;
-      version?: string;
-    },
-    _options: PipelineOptions = {},
-  ): Promise<PipelineResult> {
-    const startTime = performance.now();
-
-    try {
-      let component: React.ComponentType | null = null;
-      let moduleUrl: string | undefined;
-
-      // Handle loader function (built-in components)
-      if (manifest.loader) {
-        const module = await manifest.loader();
-        component = module.default || module;
-        // For loader-based components, we don't have a URL but they're already optimized
-        moduleUrl = `builtin:${manifest.id}`;
-      }
-      // Handle URL loading (user/external components)
-      else if (manifest.url) {
-        // Check if it's a relative URL (local file) or absolute URL (CDN)
-        const isRelativeUrl = manifest.url.startsWith('/') || manifest.url.startsWith('./');
-        
-        if (isRelativeUrl) {
-          // Local file - use dynamic import
-          const module = await import(/* @vite-ignore */ manifest.url);
-          component = module.default || module;
-          moduleUrl = manifest.url;
-        } else {
-          // CDN URL - validate and import
-          const isCDNUrl =
-            manifest.url.startsWith('https://esm.sh/') ||
-            manifest.url.startsWith('https://cdn.jsdelivr.net/') ||
-            manifest.url.startsWith('https://unpkg.com/') ||
-            manifest.url.startsWith('https://cdn.skypack.dev/');
-
-          if (!isCDNUrl && manifest.source === 'external') {
-            return {
-              success: false,
-              error: 'External components must use a valid CDN URL',
-              processingTime: performance.now() - startTime,
-            };
-          }
-
-          const module = await import(/* @vite-ignore */ manifest.url);
-          component = module.default || module;
-          moduleUrl = manifest.url;
-        }
-      } else {
-        return {
-          success: false,
-          error: 'Component must have either a loader function or URL',
-          processingTime: performance.now() - startTime,
-        };
-      }
-
-      if (!component) {
-        throw new Error('No valid React component found');
-      }
-
-      // Create UnifiedComponentNode for manifest-based component
-      const unifiedComponent: UnifiedComponentNode = {
-        id: manifest.id,
-        name: manifest.name,
-        description: manifest.description,
-        originalCode: '', // No source code for async-loaded components
-        compiledCode: '', // Component is already compiled
-        source: manifest.source === 'builtin' ? 'library' : manifest.source === 'user' ? 'url-import' : 'url-import',
-        format: 'esm',
-        sourceUrl: moduleUrl,
-        compiledAt: Date.now(),
-        compilerVersion: this.compilerVersion,
-        metadata: {
-          category: manifest.category,
-          tags: manifest.tags,
-          author: manifest.author,
-          version: manifest.version,
-        },
-      };
-
-      return {
-        success: true,
-        component: unifiedComponent,
-        processingTime: performance.now() - startTime,
-      };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      console.error('Manifest component loading error:', errorMessage);
-
-      return {
-        success: false,
-        error: `Failed to load component: ${errorMessage}`,
-        processingTime: performance.now() - startTime,
-      };
-    }
-  }
 
   /**
-   * Import a component from CDN URL
+   * Import a component from URL (CDN or local)
    */
   async processURLComponent(
     url: string,
@@ -428,30 +319,54 @@ export class ComponentPipeline {
     const startTime = performance.now();
 
     try {
-      // Validate it's a CDN URL
+      // Check if it's a local URL (built-in components) or external CDN URL
+      const isLocalUrl = url.startsWith('/') || url.startsWith('./');
       const isCDNUrl =
         url.startsWith('https://esm.sh/') ||
         url.startsWith('https://cdn.jsdelivr.net/') ||
         url.startsWith('https://unpkg.com/') ||
         url.startsWith('https://cdn.skypack.dev/');
 
-      if (!isCDNUrl) {
+      // Validate URL format
+      if (!isLocalUrl && !isCDNUrl) {
         return {
           success: false,
-          error: 'Please provide a valid CDN URL (esm.sh, unpkg, jsdelivr, or skypack)',
+          error: 'Please provide a valid URL (local /components/ or CDN URL like esm.sh, unpkg, jsdelivr, skypack)',
           processingTime: performance.now() - startTime,
         };
       }
 
-      // Ensure the URL has ?external=react,react-dom for React components
-      if (!url.includes('?external=react')) {
+      // Warn about React externals for CDN URLs only
+      if (isCDNUrl && !url.includes('?external=react')) {
         console.warn(
           '⚠️  CDN URL should include ?external=react,react-dom to prevent React conflicts',
         );
       }
 
-      // Direct ES module import - no blob URLs, no processing
-      const module = await import(/* @vite-ignore */ url);
+      let module: any;
+      
+      if (isLocalUrl) {
+        // For local URLs (public directory), fetch the code and create a blob URL
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch component from ${url}: ${response.status} ${response.statusText}`);
+        }
+        const code = await response.text();
+        
+        // Create a blob URL and import it
+        const blob = new Blob([code], { type: 'application/javascript' });
+        const blobUrl = URL.createObjectURL(blob);
+        
+        try {
+          module = await import(/* @vite-ignore */ blobUrl);
+        } finally {
+          // Clean up blob URL after import
+          URL.revokeObjectURL(blobUrl);
+        }
+      } else {
+        // For CDN URLs, use direct ES module import
+        module = await import(/* @vite-ignore */ url);
+      }
 
       // Extract component from module
       let component = null;
@@ -501,12 +416,12 @@ export class ComponentPipeline {
         id: this.generateId(),
         originalCode: '', // No source code for CDN imports
         compiledCode: '', // Component is already compiled
-        source: 'url-import',
+        source: isLocalUrl ? 'library' : 'url-import',
         format: 'esm',
         sourceUrl: url,
         compiledAt: Date.now(),
         compilerVersion: this.compilerVersion,
-        description: `CDN import from ${url}`,
+        description: isLocalUrl ? `Built-in component from ${url}` : `CDN import from ${url}`,
       };
 
       return {
@@ -516,11 +431,11 @@ export class ComponentPipeline {
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      console.error('CDN import error:', errorMessage);
+      console.error('URL import error:', errorMessage);
 
       return {
         success: false,
-        error: `CDN import failed: ${errorMessage}`,
+        error: `URL import failed: ${errorMessage}`,
         processingTime: performance.now() - startTime,
       };
     }
@@ -804,30 +719,4 @@ export class ComponentPipeline {
     results.filter((r) => r.status === 'fulfilled' && r.value?.success).length;
   }
 
-  /**
-   * Warm cache with library components in background
-   */
-  async warmCacheWithLibraryComponents(): Promise<void> {
-    try {
-      const { compiledComponents } = await import('../data/compiledComponents.generated.ts');
-
-      if (compiledComponents && compiledComponents.length > 0) {
-        // Warm cache with compiled components in background
-        setTimeout(() => {
-          this.warmCache(
-            compiledComponents.map(
-              (comp: { id?: string; originalCode: string; compiledCode?: string }) => ({
-                id: comp.id,
-                originalCode: comp.originalCode,
-                compiledCode: comp.compiledCode,
-                source: 'library' as const,
-              }),
-            ),
-          );
-        }, 2000); // Delay to not block initial app load
-      }
-    } catch (error) {
-      console.warn('Could not warm cache with library components:', error);
-    }
-  }
 }

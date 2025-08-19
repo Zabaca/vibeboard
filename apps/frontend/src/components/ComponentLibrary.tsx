@@ -17,7 +17,18 @@ const ComponentLibrary: React.FC<ComponentLibraryProps> = ({
   const [hoveredComponent, setHoveredComponent] = useState<string | null>(null);
 
   const categories = useMemo(() => {
-    const cats = ['all', ...new Set(componentManifest.map((c) => c.category))];
+    const cats = ['all'];
+    
+    // Add Featured category if there are featured components
+    const hasFeatured = componentManifest.some(c => c.featured);
+    if (hasFeatured) {
+      cats.push('Featured');
+    }
+    
+    // Add regular categories
+    const regularCategories = [...new Set(componentManifest.map((c) => c.category))];
+    cats.push(...regularCategories);
+    
     return cats;
   }, []);
 
@@ -26,7 +37,11 @@ const ComponentLibrary: React.FC<ComponentLibraryProps> = ({
 
     // Filter by category
     if (selectedCategory !== 'all') {
-      filtered = filtered.filter((c) => c.category === selectedCategory);
+      if (selectedCategory === 'Featured') {
+        filtered = filtered.filter((c) => c.featured === true);
+      } else {
+        filtered = filtered.filter((c) => c.category === selectedCategory);
+      }
     }
 
     // Filter by search term
@@ -40,7 +55,14 @@ const ComponentLibrary: React.FC<ComponentLibraryProps> = ({
       );
     }
 
-    return filtered;
+    // Sort: featured components first, then by name
+    return filtered.sort((a, b) => {
+      // Featured components first
+      if (a.featured && !b.featured) return -1;
+      if (!a.featured && b.featured) return 1;
+      // Then sort by name
+      return a.name.localeCompare(b.name);
+    });
   }, [selectedCategory, searchTerm]);
 
   if (!isOpen) {
@@ -48,6 +70,7 @@ const ComponentLibrary: React.FC<ComponentLibraryProps> = ({
   }
 
   const categoryIcons: Record<string, string> = {
+    Featured: '⭐',
     UI: '🎨',
     Data: '📊',
     Forms: '📝',
@@ -189,7 +212,7 @@ const ComponentLibrary: React.FC<ComponentLibraryProps> = ({
             backgroundColor: '#f9fafb',
             display: 'flex',
             gap: '8px',
-            overflowX: 'auto',
+            flexWrap: 'wrap',
           }}
         >
           {categories.map((cat) => (
@@ -230,6 +253,8 @@ const ComponentLibrary: React.FC<ComponentLibraryProps> = ({
               >
                 {cat === 'all'
                   ? componentManifest.length
+                  : cat === 'Featured'
+                  ? componentManifest.filter((c) => c.featured === true).length
                   : componentManifest.filter((c) => c.category === cat).length}
               </span>
             </button>
@@ -272,23 +297,53 @@ const ComponentLibrary: React.FC<ComponentLibraryProps> = ({
                 <div
                   key={component.id}
                   style={{
-                    backgroundColor: hoveredComponent === component.id ? '#f9fafb' : 'white',
+                    backgroundColor: component.featured
+                      ? (hoveredComponent === component.id ? '#fef7e0' : '#fefce8')
+                      : (hoveredComponent === component.id ? '#f9fafb' : 'white'),
                     border: '2px solid',
-                    borderColor: hoveredComponent === component.id ? '#6366f1' : '#e5e7eb',
+                    borderColor: component.featured
+                      ? (hoveredComponent === component.id ? '#f59e0b' : '#fbbf24')
+                      : (hoveredComponent === component.id ? '#6366f1' : '#e5e7eb'),
                     borderRadius: '12px',
                     padding: '16px',
                     cursor: 'pointer',
                     transition: 'all 0.2s ease',
                     transform: hoveredComponent === component.id ? 'translateY(-2px)' : 'none',
-                    boxShadow:
-                      hoveredComponent === component.id
-                        ? '0 10px 25px rgba(99, 102, 241, 0.15)'
-                        : '0 1px 3px rgba(0, 0, 0, 0.1)',
+                    boxShadow: component.featured
+                      ? (hoveredComponent === component.id 
+                          ? '0 10px 25px rgba(245, 158, 11, 0.25)' 
+                          : '0 4px 15px rgba(251, 191, 36, 0.15)')
+                      : (hoveredComponent === component.id
+                          ? '0 10px 25px rgba(99, 102, 241, 0.15)'
+                          : '0 1px 3px rgba(0, 0, 0, 0.1)'),
+                    position: 'relative',
                   }}
                   onMouseEnter={() => setHoveredComponent(component.id)}
                   onMouseLeave={() => setHoveredComponent(null)}
                   onClick={() => handleSelectComponent(component)}
                 >
+                  {component.featured && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: '-8px',
+                        right: '-8px',
+                        backgroundColor: '#f59e0b',
+                        color: 'white',
+                        fontSize: '10px',
+                        fontWeight: '700',
+                        padding: '4px 8px',
+                        borderRadius: '12px',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px',
+                        boxShadow: '0 2px 8px rgba(245, 158, 11, 0.3)',
+                        zIndex: 1,
+                      }}
+                    >
+                      ⭐ Featured
+                    </div>
+                  )}
+                  
                   <div
                     style={{
                       display: 'flex',

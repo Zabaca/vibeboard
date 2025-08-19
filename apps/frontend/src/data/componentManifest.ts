@@ -31,6 +31,7 @@ export interface ComponentManifestEntry {
   version?: string;
   size?: number;  // Approximate size in bytes
   dependencies?: string[];  // External dependencies used
+  featured?: boolean;  // Whether to highlight in Featured section
 }
 
 /**
@@ -90,6 +91,7 @@ export const componentManifest: ComponentManifestEntry[] = [
     source: 'builtin',
     url: '/components/csv-data-notebook.js',
     size: 15360,
+    featured: true,
   },
   
   // Forms Components

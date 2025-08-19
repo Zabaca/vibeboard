@@ -344,17 +344,36 @@ export class ComponentPipeline {
       }
 
       let module: any;
+      let code: string = '';
+      let transpiled: string = '';
       
       if (isLocalUrl) {
         // For local URLs (public directory), fetch the code and create a blob URL
         const response = await fetch(url);
+        
         if (!response.ok) {
           throw new Error(`Failed to fetch component from ${url}: ${response.status} ${response.statusText}`);
         }
-        const code = await response.text();
+        code = await response.text();
+        
+        // Check if code contains JSX and transpile if needed
+        const hasJSX = this.esmTranspiler.containsJSX(code);
+        transpiled = code;
+        
+        if (hasJSX) {
+          const transformResult = this.esmTranspiler.transpile(code, {
+            debug: false,
+          });
+          
+          if (!transformResult.success || !transformResult.code) {
+            throw new Error(`JSX transpilation failed: ${transformResult.error || 'Unknown error'}`);
+          }
+          
+          transpiled = transformResult.code;
+        }
         
         // Create a blob URL and import it
-        const blob = new Blob([code], { type: 'application/javascript' });
+        const blob = new Blob([transpiled], { type: 'application/javascript' });
         const blobUrl = URL.createObjectURL(blob);
         
         try {
@@ -414,8 +433,8 @@ export class ComponentPipeline {
       // Create UnifiedComponentNode for direct import
       const unifiedComponent: UnifiedComponentNode = {
         id: this.generateId(),
-        originalCode: '', // No source code for CDN imports
-        compiledCode: '', // Component is already compiled
+        originalCode: code, // Store original code for reference
+        compiledCode: transpiled, // Store transpiled code for AsyncComponentLoader
         source: isLocalUrl ? 'library' : 'url-import',
         format: 'esm',
         sourceUrl: url,

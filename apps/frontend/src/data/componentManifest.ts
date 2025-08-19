@@ -50,25 +50,105 @@ export const componentManifest: ComponentManifestEntry[] = [
     size: 1024,
   },
   {
-    id: 'simple-counter',
-    name: 'Simple Counter',
-    description: 'A counter with increment and decrement buttons',
-    category: 'Utility',
-    tags: ['counter', 'increment', 'decrement', 'state'],
+    id: 'card-profile',
+    name: 'Profile Card',
+    description: 'A user profile card with avatar and stats',
+    category: 'UI',
+    tags: ['card', 'profile', 'user'],
     source: 'builtin',
-    url: '/components/simple-counter.js',
-    size: 1024,
+    url: '/components/profile-card.js',
+    size: 2048,
   },
   
-  // TODO: Create these component files in /public/components/:
-  // - profile-card.js
-  // - csv-notebook.js  
-  // - contact-form.js
-  // - bar-chart.js
-  // - simple-tabs.js
-  // - countdown-timer.js
-  // - digital-clock.js
-  // - todo-list.js
+  // Data Components
+  {
+    id: 'counter-simple',
+    name: 'Simple Counter',
+    description: 'A counter with increment and decrement buttons',
+    category: 'Data',
+    tags: ['counter', 'state', 'interactive'],
+    source: 'builtin',
+    url: '/components/simple-counter.js',
+    size: 1536,
+  },
+  {
+    id: 'timer-countdown',
+    name: 'Countdown Timer',
+    description: 'A countdown timer with start, pause, and reset functionality',
+    category: 'Data',
+    tags: ['timer', 'countdown', 'time'],
+    source: 'builtin',
+    url: '/components/countdown-timer.js',
+    size: 2560,
+  },
+  {
+    id: 'csv-duckdb-notebook',
+    name: 'CSV Data Notebook',
+    description: 'Interactive SQL notebook for CSV data analysis with DuckDB',
+    category: 'Data',
+    tags: ['csv', 'data', 'sql', 'notebook', 'analysis', 'duckdb', 'query'],
+    source: 'builtin',
+    url: '/components/csv-data-notebook.js',
+    size: 15360,
+  },
+  
+  // Forms Components
+  {
+    id: 'form-contact',
+    name: 'Contact Form',
+    description: 'A contact form with validation and submission feedback',
+    category: 'Forms',
+    tags: ['form', 'contact', 'validation'],
+    source: 'builtin',
+    url: '/components/contact-form.js',
+    size: 3072,
+  },
+  
+  // Charts Components
+  {
+    id: 'chart-bar',
+    name: 'Bar Chart',
+    description: 'An animated bar chart with sample data',
+    category: 'Charts',
+    tags: ['chart', 'bar', 'data', 'visualization'],
+    source: 'builtin',
+    url: '/components/bar-chart.js',
+    size: 2048,
+  },
+  
+  // Layout Components
+  {
+    id: 'tabs-simple',
+    name: 'Simple Tabs',
+    description: 'A tabbed interface with multiple content panels',
+    category: 'Layout',
+    tags: ['tabs', 'navigation', 'layout'],
+    source: 'builtin',
+    url: '/components/simple-tabs.js',
+    size: 2048,
+  },
+  
+  // Utility Components
+  {
+    id: 'clock-digital',
+    name: 'Digital Clock',
+    description: 'A real-time digital clock with date display',
+    category: 'Utility',
+    tags: ['clock', 'time', 'date', 'realtime'],
+    source: 'builtin',
+    url: '/components/digital-clock.js',
+    size: 1536,
+  },
+  {
+    id: 'todo-list',
+    name: 'Todo List',
+    description: 'A simple todo list with add, toggle, and delete functionality',
+    category: 'Utility',
+    tags: ['todo', 'list', 'tasks', 'productivity'],
+    source: 'builtin',
+    url: '/components/todo-list.js',
+    size: 3072,
+  },
 ];
 
 /**

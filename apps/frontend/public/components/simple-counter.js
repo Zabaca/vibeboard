@@ -1,104 +1,83 @@
-/**
- * Simple Counter Component
- * 
- * A counter with increment, decrement, and reset buttons.
- * - Large display of current count value
- * - Red decrement button (-)
- * - Green increment button (+)
- * - Gray reset button
- * - Uses React hooks for state management
- * 
- * @category Utility
- * @tags counter, increment, decrement, state, buttons
- * @author Stiqr
- * @version 1.0.0
- */
-
-const { useState } = window.React;
+import React, { useState } from 'react';
 
 export default function SimpleCounter() {
   const [count, setCount] = useState(0);
   
-  return window.React.createElement('div', {
-    style: {
+  return (
+    <div style={{
       display: 'flex',
       flexDirection: 'column',
-      alignItems: 'center',
       justifyContent: 'center',
+      alignItems: 'center',
       height: '100%',
-      backgroundColor: '#f9fafb',
+      backgroundColor: '#f8fafc',
       fontFamily: 'system-ui, sans-serif'
-    }
-  }, [
-    window.React.createElement('h2', {
-      key: 'counter-display',
-      style: {
+    }}>
+      <h2 style={{ color: '#1e293b', marginBottom: '20px' }}>Counter</h2>
+      <div style={{
         fontSize: '48px',
         fontWeight: 'bold',
-        color: '#1f2937',
-        margin: '0 0 24px 0'
-      }
-    }, count),
-    
-    window.React.createElement('div', {
-      key: 'button-group',
-      style: {
-        display: 'flex',
-        gap: '12px'
-      }
-    }, [
-      window.React.createElement('button', {
-        key: 'decrement',
-        onClick: () => setCount(count - 1),
-        onMouseDown: (e) => e.currentTarget.style.transform = 'scale(0.95)',
-        onMouseUp: (e) => e.currentTarget.style.transform = 'scale(1)',
-        onMouseLeave: (e) => e.currentTarget.style.transform = 'scale(1)',
-        style: {
-          padding: '10px 20px',
-          fontSize: '18px',
-          fontWeight: '600',
-          color: 'white',
-          backgroundColor: '#ef4444',
-          border: 'none',
-          borderRadius: '8px',
-          cursor: 'pointer',
-          transition: 'transform 0.1s',
-        }
-      }, '-'),
-      
-      window.React.createElement('button', {
-        key: 'increment',
-        onClick: () => setCount(count + 1),
-        onMouseDown: (e) => e.currentTarget.style.transform = 'scale(0.95)',
-        onMouseUp: (e) => e.currentTarget.style.transform = 'scale(1)',
-        onMouseLeave: (e) => e.currentTarget.style.transform = 'scale(1)',
-        style: {
-          padding: '10px 20px',
-          fontSize: '18px',
-          fontWeight: '600',
-          color: 'white',
-          backgroundColor: '#10b981',
-          border: 'none',
-          borderRadius: '8px',
-          cursor: 'pointer',
-          transition: 'transform 0.1s',
-        }
-      }, '+')
-    ]),
-    
-    window.React.createElement('button', {
-      key: 'reset',
-      onClick: () => setCount(0),
-      style: {
-        marginTop: '16px',
-        padding: '8px 16px',
-        fontSize: '14px',
-        color: '#6b7280',
-        backgroundColor: '#e5e7eb',
-        border: 'none',
-        borderRadius: '6px',
-        cursor: 'pointer',
-      }
-    }, 'Reset')
-  ]);
+        color: '#3b82f6',
+        margin: '20px 0',
+        padding: '20px',
+        backgroundColor: 'white',
+        borderRadius: '12px',
+        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+        minWidth: '120px',
+        textAlign: 'center'
+      }}>
+        {count}
+      </div>
+      <div style={{ display: 'flex', gap: '12px' }}>
+        <button
+          onClick={() => setCount(count - 1)}
+          style={{
+            padding: '12px 20px',
+            fontSize: '18px',
+            fontWeight: '600',
+            backgroundColor: '#ef4444',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease'
+          }}
+        >
+          -
+        </button>
+        <button
+          onClick={() => setCount(0)}
+          style={{
+            padding: '12px 20px',
+            fontSize: '14px',
+            fontWeight: '600',
+            backgroundColor: '#6b7280',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease'
+          }}
+        >
+          Reset
+        </button>
+        <button
+          onClick={() => setCount(count + 1)}
+          style={{
+            padding: '12px 20px',
+            fontSize: '18px',
+            fontWeight: '600',
+            backgroundColor: '#10b981',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease'
+          }}
+        >
+          +
+        </button>
+      </div>
+    </div>
+  );
 }

@@ -129,7 +129,7 @@ class CerebrasService {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          model: 'qwen-3-coder-480b', // Cerebras fast coding model
+          model: 'gpt-oss-120b', // Cerebras fast coding model
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: enhancedPrompt },
